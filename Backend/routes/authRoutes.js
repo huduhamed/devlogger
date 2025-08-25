@@ -1,13 +1,16 @@
-import express from 'express';
-
+import { Router } from 'express';
 // internal imports
-import { signupUser, loginUser } from '../controllers/authController.js';
+import { signUp, loginUser, signOut } from '../controllers/authController.js';
 
-const router = express.Router();
+const authRouter = Router();
 
-// register a user route
-router.post('/signup', signupUser);
+// sign-up endpoints path => /api/v1/auth/sign-up
+authRouter.post('/signup', signUp);
 
-//login route
-router.post('/login', loginUser);
-export default router;
+// login endpoints path => /api/v1/auth/sign-in
+authRouter.post('/login', loginUser);
+
+// sign-out endpoints path => /api/v1/auth/sign-out
+authRouter.post('/sign-out', signOut);
+
+export default authRouter;
