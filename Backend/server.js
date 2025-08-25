@@ -1,9 +1,9 @@
 import express, { urlencoded } from 'express';
 import cookieParser from 'cookie-parser';
 
-import authRoutes from './routes/authRoutes.js';
+import authRouter from './routes/authRoutes.js';
+import userRouter from './routes/userRoute.js';
 import logRoutes from './routes/logRoutes.js';
-import { protect } from './middleware/auth.js';
 import { PORT } from './config/env.js';
 import connectToDB from './database/mongodb.js';
 
@@ -15,11 +15,12 @@ app.use(cookieParser());
 app.use(urlencoded({ extended: false }));
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/logs', protect, logRoutes);
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/users', userRouter);
+app.use('/api/v1/logs', logRoutes);
 
 app.get('/', (req, res) => {
-	res.send('welcome!');
+	res.send('welcome! onboard buddy');
 });
 
 // listen & connect to DB
