@@ -4,41 +4,39 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { JWT_SECRET } from '../config/env.js';
 
-// protect
+// auth middleware
 async function authorize(req, res, next) {
 	try {
 		let token;
 
-		// if token exists
+		// support Authorization header "Bearer <token>" and cookie named "token"
 		if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
 			token = req.headers.authorization.split(' ')[1];
+		} else if (req.cookies && req.cookies.token) {
+			token = req.cookies.token;
 		}
 
-		// if not token
+		// if no token
 		if (!token) {
-			res.status(401).json({ message: 'unauthorize' });
+			return res.status(401).json({ message: 'Unauthorized: token missing' });
 		}
 
-		// verify token existance
+		// else verify
 		const decoded = jwt.verify(token, JWT_SECRET);
-
-		// search user iN DB
-		const user = await User.findById(decoded.userId);
-
-		// if user doesn't exit in DB
-		if (!user) {
-			return res.status(401).json({ message: 'unauthorize' });
+		const userId = decoded.userId || decoded.id || decoded._id;
+		if (!userId) {
+			return res.status(401).json({ message: 'Unauthorized: invalid token' });
 		}
 
-		// attach user to req
-		req.user = user;
+		const user = await User.findById(userId).select('-password');
+		if (!user) {
+			return res.status(401).json({ message: 'Unauthorized: user not found' });
+		}
 
-		next();
+		req.user = user;
+		return next();
 	} catch (error) {
-		res.status(401).json({
-			message: 'unavailable',
-			error: error.message,
-		});
+		return res.status(401).json({ message: 'Unauthorized', error: error.message });
 	}
 }
 

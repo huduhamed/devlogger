@@ -12,22 +12,23 @@ export async function signUp(req, res, next) {
 	session.startTransaction();
 
 	try {
-		// create new user
+		// destructure & create new user
 		const { name, email, password } = req.body;
 
 		// throw error if req. body is empty
 		if (!name || !email || !password) {
 			await session.abortTransaction();
 			session.endSession();
-			return res.status(400).json({ message: 'name, email and password are required' });
+
+			return res.status(400).json({ message: 'Name, Email and Password are required' });
 		}
 
 		// check existing user
-		const existing = await User.findOne({ email }).session(session);
-		if (existing) {
+		const existingUser = await User.findOne({ email }).session(session);
+		if (existingUser) {
 			await session.abortTransaction();
 			session.endSession();
-			return res.status(409).json({ message: 'email already in use' });
+			return res.status(409).json({ message: 'email already in use, please sign-in' });
 		}
 
 		// hash password and create user
@@ -41,9 +42,14 @@ export async function signUp(req, res, next) {
 		// sign token with userId to match middleware (authorize looks for decoded.userId)
 		const token = jwt.sign({ userId: newUser._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
+		// return
 		return res.status(201).json({
-			user: { id: newUser._id, name: newUser.name, email: newUser.email },
-			token,
+			success: true,
+			message: 'new user created successfullly',
+			data: {
+				token,
+				user: newUser,
+			},
 		});
 	} catch (error) {
 		await session.abortTransaction();
@@ -53,10 +59,11 @@ export async function signUp(req, res, next) {
 }
 
 // login user
-export const loginUser = async (req, res) => {
+export async function signIn(req, res) {
 	try {
 		// sign in user
 		const { email, password } = req.body;
+
 		if (!email || !password)
 			return res.status(400).json({ message: 'email and password required' });
 
@@ -68,16 +75,21 @@ export const loginUser = async (req, res) => {
 		const match = await bcrypt.compare(password, user.password);
 		if (!match) return res.status(401).json({ message: 'invalid credentials' });
 
-		const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
+		const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
+		// return
 		return res.status(200).json({
-			user: { id: user._id, name: user.name, email: user.email },
-			token,
+			success: true,
+			message: 'user signed in',
+			data: {
+				token,
+				user,
+			},
 		});
 	} catch (error) {
 		return res.status(500).json({ message: 'server error', error: error.message });
 	}
-};
+}
 
 // sign out logic
 export async function signOut(req, res, next) {
@@ -95,6 +107,7 @@ export async function signOut(req, res, next) {
 			await BlacklistToken.create({ token, expiry });
 		}
 
+		// return
 		res.status(200).json({
 			success: true,
 			message: 'User successfully signed out',
