@@ -7,7 +7,7 @@ export async function getLogs(req, res, next) {
 		// fetch userId
 		const userId = req.user && (req.user._id || req.user.id);
 		// get logs, most recent first
-		const logs = await Log.find({ user: userId }).sort({ createdAt: -1, timestamp: -1 });
+		const logs = await Log.find({ user: userId }).sort({ createdAt: -1 });
 
 		// return
 		return res.status(200).json({
@@ -74,9 +74,7 @@ export async function createLog(req, res, next) {
 			data: log,
 		});
 	} catch (error) {
-		const err = new Error('failed to create log', { cause: error });
-		err.statusCode = 400;
-		throw err;
+		next(error);
 	}
 }
 

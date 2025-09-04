@@ -11,7 +11,7 @@ router.get('/', getLogs);
 router.get('/:id', authorize, getLog);
 
 // create log endpoint
-router.post('/', createLog);
+router.post('/', authorize, createLog);
 
 // update a log
 router.put('/:id', authorize, updateLog);

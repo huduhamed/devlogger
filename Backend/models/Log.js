@@ -15,7 +15,6 @@ const logSchema = new mongoose.Schema(
 		tags: [{ type: String }],
 		meta: { type: Schema.Types.Mixed },
 		user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-		timestamp: { type: Date, default: Date.now },
 	},
 	{
 		timestamps: true,
@@ -23,7 +22,7 @@ const logSchema = new mongoose.Schema(
 );
 
 // common query/index for fetching recent logs per user
-logSchema.index({ user: 1, timestamp: -1 });
+logSchema.index({ user: 1, createdAt: -1 });
 
 const Log = mongoose.model('Log', logSchema);
 
