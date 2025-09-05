@@ -4,8 +4,8 @@ import { BrowserRouter as Router } from 'react-router-dom';
 
 // internal imports
 import App from './App.jsx';
-import './index.css';
 import { AuthProvider } from './context/AuthContext.jsx';
+import './index.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 // internal imports
 import API from '../services/api';
-import LogForm from '../components/LogForm';
+import LogForm from './LogForm';
 import { logout } from '../services/auth';
 import { useNavigate } from 'react-router-dom';
 

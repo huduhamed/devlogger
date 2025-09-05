@@ -26,29 +26,31 @@ export default function SignUp() {
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className="max-w-sm mx-auto mt-20 w-[400px] space-y-6 flex items-center justify-center min-h-screen flex-col"
+			className="mx-auto mt-20 w-[400px] space-y-6 flex items-center justify-center min-h-screen flex-col"
 		>
 			<h3 className="text-center text-blue-700 text-xl font-semibold">Sign up</h3>
-			<input
-				name="name"
-				onChange={handleChange}
-				placeholder="Name"
-				className="w-full p-8 border m-4"
-			/>
-			<input
-				name="email"
-				onChange={handleChange}
-				placeholder="Email"
-				className="w-full p-2 border m-6"
-			/>
-			<input
-				name="password"
-				onChange={handleChange}
-				placeholder="Password"
-				type="password"
-				className="w-full p-2 border"
-			/>
-			<button className="w-full bg-green-500 text-white p-2">Sign Up</button>
+			<div className="space-y-4 w-full">
+				<input
+					name="name"
+					onChange={handleChange}
+					placeholder="Name"
+					className="w-full p-2 border m-6"
+				/>
+				<input
+					name="email"
+					onChange={handleChange}
+					placeholder="Email"
+					className="w-full p-2 border m-6"
+				/>
+				<input
+					name="password"
+					onChange={handleChange}
+					placeholder="Password"
+					type="password"
+					className="w-full p-2 border m-6"
+				/>
+			</div>
+			<button className="w-full bg-green-500 text-white p-2 m-6">Sign Up</button>
 		</form>
 	);
 }
