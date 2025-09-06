@@ -58,7 +58,7 @@ export async function signUp(req, res, next) {
 	}
 }
 
-// login user
+// signin user
 export async function signIn(req, res) {
 	try {
 		// sign in user
