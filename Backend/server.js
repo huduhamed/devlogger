@@ -1,5 +1,6 @@
 import express, { urlencoded } from 'express';
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 
 import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoute.js';
@@ -8,6 +9,7 @@ import { PORT } from './config/env.js';
 import connectToDB from './database/mongodb.js';
 
 const app = express();
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 
 // middlewares
 app.use(express.json());

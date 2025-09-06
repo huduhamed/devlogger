@@ -8,7 +8,7 @@ function App() {
 	return (
 		<Routes>
 			<Route path="/" element={isAuthenticated() ? <Navigate to="/dashboard" /> : <SignIn />} />
-			<Route path="/signup" element={<SignUp />} />
+			<Route path="/sign-up" element={<SignUp />} />
 			<Route element={<PrivateRoute />}>
 				<Route
 					path="/dashboard"

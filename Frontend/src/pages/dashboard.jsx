@@ -36,6 +36,8 @@ export default function Dashboard() {
 
 	return (
 		<div className="max-w-2xl mx-auto mt-10">
+			<h1 className="text-2xl font-bold mb-4">Welcome to the Dashboard!</h1>
+			console.log('Dashboard rendered');
 			<LogForm
 				onSuccess={() => {
 					fetchLogs();
