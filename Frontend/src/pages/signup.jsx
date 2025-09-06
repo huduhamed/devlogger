@@ -15,7 +15,11 @@ function SignUp() {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {
-			const res = await API.post('/signup', form);
+			const res = await API.post('/sign-up', form);
+
+			const token = res.data.token;
+			if (!token) throw new Error('No token returned from API');
+
 			localStorage.setItem('token', res.data.token);
 			navigate('/dashboard');
 		} catch (err) {

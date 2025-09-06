@@ -13,8 +13,11 @@ function SignIn() {
 		console.log('Form submitted:', form); // check form values
 
 		try {
-			const res = await API.post('/signin', form);
-			if (!res.data.token) throw new Error('No token returned from API');
+			const res = await API.post('/sign-in', form);
+
+			const token = res.data.token;
+			if (!token) throw new Error('No token returned from API');
+
 			localStorage.setItem('token', res.data.token);
 			navigate('/dashboard');
 		} catch (error) {
@@ -56,7 +59,7 @@ function SignIn() {
 
 			<p className="text-center text-sm">
 				Don’t have an account?{' '}
-				<Link to="/signup" className="text-blue-600 hover:underline">
+				<Link to="/sign-up" className="text-blue-600 hover:underline">
 					Sign up here
 				</Link>
 			</p>

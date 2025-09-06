@@ -46,10 +46,8 @@ export async function signUp(req, res, next) {
 		return res.status(201).json({
 			success: true,
 			message: 'new user created successfullly',
-			data: {
-				token,
-				user: newUser,
-			},
+			token,
+			user: newUser,
 		});
 	} catch (error) {
 		await session.abortTransaction();
@@ -81,10 +79,8 @@ export async function signIn(req, res) {
 		return res.status(200).json({
 			success: true,
 			message: 'user signed in',
-			data: {
-				token,
-				user,
-			},
+			token,
+			user,
 		});
 	} catch (error) {
 		return res.status(500).json({ message: 'server error', error: error.message });
