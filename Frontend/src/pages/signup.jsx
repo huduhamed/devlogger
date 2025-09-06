@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 //internal imports
 import API from '../services/api';
 
-export default function SignUp() {
+function SignUp() {
 	const [form, setForm] = useState({ name: '', email: '', password: '' });
 	const navigate = useNavigate();
 
@@ -28,29 +28,31 @@ export default function SignUp() {
 			onSubmit={handleSubmit}
 			className="mx-auto mt-20 w-[400px] space-y-6 flex items-center justify-center min-h-screen flex-col"
 		>
-			<h3 className="text-center text-blue-700 text-xl font-semibold">Sign up</h3>
-			<div className="space-y-4 w-full">
+			<h3 className="text-center text-blue-500 text-xl font-semibold">Sign up</h3>
+			<div className="space-y-4 w-full flex flex-col">
 				<input
 					name="name"
 					onChange={handleChange}
 					placeholder="Name"
-					className="w-full p-2 border m-6"
+					className="w-full p-2 border"
 				/>
 				<input
 					name="email"
 					onChange={handleChange}
 					placeholder="Email"
-					className="w-full p-2 border m-6"
+					className="w-full p-2 border"
 				/>
 				<input
 					name="password"
 					onChange={handleChange}
 					placeholder="Password"
 					type="password"
-					className="w-full p-2 border m-6"
+					className="w-full p-2 border"
 				/>
+				<button className="w-80 bg-blue-500 text-white rounded p-2 self-center">Sign Up</button>
 			</div>
-			<button className="w-full bg-green-500 text-white p-2 m-6">Sign Up</button>
 		</form>
 	);
 }
+
+export default SignUp;

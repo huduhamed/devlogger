@@ -7,7 +7,7 @@ const authRouter = Router();
 // sign-up endpoints path => /api/v1/auth/sign-up
 authRouter.post('/sign-up', signUp);
 
-// login endpoints path => /api/v1/auth/sign-in
+// signin endpoints path => /api/v1/auth/sign-in
 authRouter.post('/sign-in', signIn);
 
 // sign-out endpoints path => /api/v1/auth/sign-out

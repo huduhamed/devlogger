@@ -1,3 +1,3 @@
-export { default as Login } from './pages/login';
-export { default as SignUp } from './pages/signup';
-export { default as Dashboard } from './pages/dashboard';
+export { default as SignIn } from './pages/SignIn.jsx';
+export { default as SignUp } from './pages/SignUp.jsx';
+export { default as Dashboard } from './pages/Dashboard.jsx';

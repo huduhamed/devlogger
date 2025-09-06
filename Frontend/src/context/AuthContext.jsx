@@ -9,8 +9,8 @@ export const AuthProvider = ({ children }) => {
 		return token ? jwtDecode(token) : null;
 	});
 
-	// login
-	const login = (token) => {
+	// signin
+	const signin = (token) => {
 		localStorage.setItem('token', token);
 		setUser(jwtDecode(token));
 	};
@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
 		setUser(null);
 	};
 
-	return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>;
+	return <AuthContext.Provider value={{ user, signin, logout }}>{children}</AuthContext.Provider>;
 };
 
 export default AuthContext;
