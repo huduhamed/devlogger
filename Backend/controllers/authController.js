@@ -83,7 +83,7 @@ export async function signIn(req, res) {
 			user,
 		});
 	} catch (error) {
-		return res.status(500).json({ message: 'server error', error: error.message });
+		return res.status(500).json({ message: 'Something went worng, please try again later.' });
 	}
 }
 

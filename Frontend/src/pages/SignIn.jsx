@@ -1,15 +1,22 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+
+// internal imoports
 import API from '../services/api';
 
+// sign-in logic
 function SignIn() {
 	const [form, setForm] = useState({ email: '', password: '' });
 	const navigate = useNavigate();
 
+	// handle chnGE
 	const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+	// handle submit
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+
 		console.log('Form submitted:', form); // check form values
 
 		try {
@@ -21,8 +28,7 @@ function SignIn() {
 			localStorage.setItem('token', res.data.token);
 			navigate('/dashboard');
 		} catch (error) {
-			alert('Signin failed: ' + (error.response?.data?.message || error.message));
-			console.error(error);
+			toast.error('Signin failed: ' + (error.response?.data?.message || error.message));
 		}
 	};
 

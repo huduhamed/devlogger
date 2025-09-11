@@ -4,6 +4,7 @@ import { useState } from 'react';
 import API from '../services/api';
 
 function LogForm({ onSuccess, initialData = null, onCancel }) {
+	// handle form here
 	const [form, setForm] = useState({
 		title: initialData?.title || '',
 		description: initialData?.description || '',
@@ -16,6 +17,7 @@ function LogForm({ onSuccess, initialData = null, onCancel }) {
 	// handle submit
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+
 		const tagsArray = form.tags.split(',').map((t) => t.trim());
 
 		// if editing
@@ -27,6 +29,7 @@ function LogForm({ onSuccess, initialData = null, onCancel }) {
 
 		setForm({ title: '', description: '', tags: '' });
 		onSuccess();
+
 		if (onCancel) onCancel();
 	};
 

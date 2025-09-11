@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 //internal imports
 import API from '../services/api';
@@ -23,7 +24,7 @@ function SignUp() {
 			localStorage.setItem('token', res.data.token);
 			navigate('/dashboard');
 		} catch (err) {
-			alert('Signup failed: ' + (err.response?.data?.message || err.message));
+			toast.err('Signup failed: ' + (err.response?.data?.message || err.message));
 		}
 	};
 
