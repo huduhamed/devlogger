@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 // internal imoports
 import API from '../services/api';
+import AuthContext from '../context/AuthContext';
 
 // sign-in logic
 function SignIn() {
 	const [form, setForm] = useState({ email: '', password: '' });
 	const navigate = useNavigate();
+
+	const { setUser } = useContext(AuthContext);
 
 	// handle chnGE
 	const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -26,7 +29,10 @@ function SignIn() {
 			if (!token) throw new Error('No token returned from API');
 
 			localStorage.setItem('token', res.data.token);
-			navigate('/dashboard');
+			setUser(res.data.user); // update context
+
+			// redirect user to dashboard
+			navigate('/dashboard', { replace: true });
 		} catch (error) {
 			toast.error('Signin failed: ' + (error.response?.data?.message || error.message));
 		}

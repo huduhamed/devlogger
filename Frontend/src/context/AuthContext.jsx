@@ -22,7 +22,11 @@ export function AuthProvider({ children }) {
 		setUser(null);
 	};
 
-	return <AuthContext.Provider value={{ user, signin, logout }}>{children}</AuthContext.Provider>;
+	return (
+		<AuthContext.Provider value={{ user, setUser, signin, logout }}>
+			{children}
+		</AuthContext.Provider>
+	);
 }
 
 export default AuthContext;
