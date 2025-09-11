@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // internal imports
 import API from '../services/api';
 import LogForm from './LogForm';
 import { logout } from '../services/auth';
-import { useNavigate } from 'react-router-dom';
 
-export default function Dashboard() {
+function Dashboard() {
 	const [logs, setLogs] = useState([]);
 	const [editingLog, setEditingLog] = useState(null);
-
 	const navigate = useNavigate();
 
 	// handle logout
@@ -36,7 +35,7 @@ export default function Dashboard() {
 
 	return (
 		<div className="max-w-2xl mx-auto mt-10">
-			<h1 className="text-2xl font-bold mb-4">Welcome to the Dashboard!</h1>
+			<h1 className="text-2xl font-bold mb-4">Dashboard</h1>
 			console.log('Dashboard rendered');
 			<LogForm
 				onSuccess={() => {
@@ -68,3 +67,4 @@ export default function Dashboard() {
 		</div>
 	);
 }
+export default Dashboard;

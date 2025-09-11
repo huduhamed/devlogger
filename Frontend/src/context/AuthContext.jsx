@@ -3,7 +3,8 @@ import * as jwtDecode from 'jwt-decode';
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+// auth provider
+export function AuthProvider({ children }) {
 	const [user, setUser] = useState(() => {
 		const token = localStorage.getItem('token');
 		return token ? jwtDecode(token) : null;
@@ -22,6 +23,6 @@ export const AuthProvider = ({ children }) => {
 	};
 
 	return <AuthContext.Provider value={{ user, signin, logout }}>{children}</AuthContext.Provider>;
-};
+}
 
 export default AuthContext;
