@@ -6,9 +6,15 @@ import AuthContext from '../context/AuthContext';
 
 // private routes
 function PrivateRoute() {
-	const { user } = useContext(AuthContext);
+	const { auth } = useContext(AuthContext);
 
-	return user ? <Outlet /> : <Navigate to="/" />;
+	// if no token, redirect to sign-in
+	if (!auth?.token) {
+		return <Navigate to="/sign-in" replace />;
+	}
+
+	// if token exists
+	return <Outlet />;
 }
 
 export default PrivateRoute;

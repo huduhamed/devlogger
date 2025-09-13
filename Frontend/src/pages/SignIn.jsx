@@ -1,7 +1,6 @@
 import { useContext, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-
 // internal imoports
 import API from '../services/api';
 import AuthContext from '../context/AuthContext';
@@ -11,7 +10,7 @@ function SignIn() {
 	const [form, setForm] = useState({ email: '', password: '' });
 	const navigate = useNavigate();
 
-	const { setUser } = useContext(AuthContext);
+	const { signin } = useContext(AuthContext);
 
 	// handle chnGE
 	const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -20,16 +19,14 @@ function SignIn() {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 
-		console.log('Form submitted:', form); // check form values
-
 		try {
-			const res = await API.post('/sign-in', form);
+			const res = await API.post('/auth/sign-in', form);
 
-			const token = res.data.token;
-			if (!token) throw new Error('No token returned from API');
+			const { token, user } = res.data;
+			if (!token || !user) throw new Error('Invalid response from API');
 
-			localStorage.setItem('token', res.data.token);
-			setUser(res.data.user); // update context
+			// save user & token into context & localstaorage
+			signin(token, user);
 
 			// redirect user to dashboard
 			navigate('/dashboard', { replace: true });

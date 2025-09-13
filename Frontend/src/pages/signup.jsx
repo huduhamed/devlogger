@@ -1,13 +1,22 @@
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 //internal imports
 import API from '../services/api';
+import AuthContext from '../context/AuthContext';
 
 function SignUp() {
 	const [form, setForm] = useState({ name: '', email: '', password: '' });
+	const { signin, auth } = useContext(AuthContext);
 	const navigate = useNavigate();
+
+	// redirect if already logged in
+	useEffect(() => {
+		if (auth?.token) {
+			navigate('/dashboard', { replace: true });
+		}
+	}, [auth, navigate]);
 
 	// handle form change
 	const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -16,13 +25,13 @@ function SignUp() {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {
-			const res = await API.post('/sign-up', form);
+			const res = await API.post('/auth/sign-up', form);
+			const { token, user } = res.data;
 
-			const token = res.data.token;
-			if (!token) throw new Error('No token returned from API');
+			if (!token || !user) throw new Error('Invalid response from API');
+			signin(token, user);
 
-			localStorage.setItem('token', res.data.token);
-			navigate('/dashboard');
+			navigate('/dashboard', { replace: true });
 		} catch (err) {
 			toast.err('Signup failed: ' + (err.response?.data?.message || err.message));
 		}
