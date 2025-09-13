@@ -1,70 +1,110 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-// internal imports
 import API from '../services/api';
 import LogForm from './LogForm';
-import { logout } from '../services/auth';
+import AuthContext from '../context/AuthContext';
 
 function Dashboard() {
 	const [logs, setLogs] = useState([]);
 	const [editingLog, setEditingLog] = useState(null);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState(null);
+
+	const { auth, logout } = useContext(AuthContext); // get logged-in user
 	const navigate = useNavigate();
 
 	// handle logout
 	const handleLogout = () => {
 		logout();
-		navigate('/');
+		navigate('/'); // redirect to sign-in
 	};
 
 	// fetch logs
 	const fetchLogs = async () => {
-		const res = await API.get('/logs');
-		setLogs(res.data);
+		setLoading(true);
+		try {
+			const res = await API.get('/logs');
+			setLogs(res.data.data || []);
+		} catch (err) {
+			setError(err.response?.data?.message || err.message || 'Failed to fetch logs');
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	// handle delete
+	const handleDelete = async (id) => {
+		if (!window.confirm('Are you sure you want to delete this log?')) return;
+		await API.delete(`/logs/${id}`);
+		fetchLogs(); // refresh logs
 	};
 
 	useEffect(() => {
 		fetchLogs();
 	}, []);
 
-	// handle delete
-	const handleDelete = async (id) => {
-		await API.delete(`/logs/${id}`);
-		fetchLogs();
-	};
-
 	return (
-		<div className="max-w-2xl mx-auto mt-10">
-			<h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-			console.log('Dashboard rendered');
+		<div className="max-w-3xl mx-auto mt-8 px-4">
+			{/* Top header */}
+			<div className="flex justify-between items-center mb-6">
+				<h1 className="text-2xl font-bold">Dashboard</h1>
+
+				{/* User profile */}
+				<div className="flex items-center gap-3">
+					<div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
+						{auth.user?.name?.[0] || 'U'} {/* First letter of name */}
+					</div>
+					<span className="font-medium">{auth.user?.name}</span>
+					<button onClick={handleLogout} className="text-red-500 underline ml-3 text-sm">
+						Logout
+					</button>
+				</div>
+			</div>
+
+			{/* Error / Loading */}
+			{error && <p className="text-red-500 mb-4">{error}</p>}
+			{loading && <p>Loading logs...</p>}
+
+			{/* Log form */}
 			<LogForm
-				onSuccess={() => {
-					fetchLogs();
-					setEditingLog(null);
-				}}
 				initialData={editingLog}
+				onSubmit={async (data, id) => {
+					if (id) await API.put(`/logs/${id}`, data);
+					else await API.post('/logs', data);
+					setEditingLog(null);
+					fetchLogs(); // refresh logs
+				}}
 				onCancel={() => setEditingLog(null)}
 			/>
-			<ul className="mt-6 space-y-2">
+
+			{/* Logs list */}
+			<ul className="mt-6 space-y-3">
 				{logs.map((log) => (
-					<li key={log._id} className="p-3 bg-gray-100 rounded flex justify-between items-center">
+					<li key={log._id} className="p-4 bg-gray-100 rounded flex justify-between items-start">
 						<div>
 							<h3 className="font-bold">{log.title}</h3>
-							<p>{log.description}</p>
+							<p className="text-gray-700">{log.description}</p>
+							<small className="text-gray-500">{log.tags.join(', ')}</small>
 						</div>
-						<button onClick={() => setEditingLog(log)} className="text-blue-500 mr-2">
-							Edit
-						</button>
-						<button onClick={handleLogout} className="mb-4 text-sm text-red-500 underline">
-							Logout
-						</button>
-						<button onClick={() => handleDelete(log._id)} className="text-red-500">
-							Delete
-						</button>
+						<div className="flex flex-col gap-1 ml-4">
+							<button
+								onClick={() => setEditingLog(log)}
+								className="text-blue-500 hover:underline text-sm"
+							>
+								Edit
+							</button>
+							<button
+								onClick={() => handleDelete(log._id)}
+								className="text-red-500 hover:underline text-sm"
+							>
+								Delete
+							</button>
+						</div>
 					</li>
 				))}
 			</ul>
 		</div>
 	);
 }
+
 export default Dashboard;
