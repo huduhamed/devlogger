@@ -1,8 +1,18 @@
 import { Router } from 'express';
-import { createLog, updateLog, getLogs, deleteLog, getLog } from '../controllers/logController.js';
+import {
+	createLog,
+	updateLog,
+	getLogs,
+	deleteLog,
+	getLog,
+	getAllLogs,
+} from '../controllers/logController.js';
 import authorize from '../middleware/auth.js';
 
 const router = Router();
+
+// fetch all logs (optional, admin/public dashboard)
+router.get('/all', authorize, getAllLogs);
 
 // Get all logs
 router.get('/', getLogs);
