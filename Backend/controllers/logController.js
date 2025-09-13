@@ -1,6 +1,16 @@
 // internal imports
 import Log from '../models/Log.js';
 
+// all logs, regardless of user
+export async function getAllLogs(req, res, next) {
+	try {
+		const logs = await Log.find().sort({ createdAt: -1 }).populate('user', 'name email');
+		return res.status(200).json({ success: true, data: logs });
+	} catch (error) {
+		next(error);
+	}
+}
+
 // get logs
 export async function getLogs(req, res, next) {
 	try {

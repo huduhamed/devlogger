@@ -1,13 +1,17 @@
 import { createContext, useState, useEffect } from 'react';
+
+// internal imports
 import API from '../services/api';
 
-const LogsContext = createContext(); // <-- create context
+const LogsContext = createContext();
 
+// logs provider
 export function LogsProvider({ children }) {
 	const [logs, setLogs] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(null);
 
+	// fetch logs
 	const fetchLogs = async () => {
 		setLoading(true);
 		try {
