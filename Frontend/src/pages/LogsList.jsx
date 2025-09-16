@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 
 // internal imports
 import API from '../services/api';
-import { AuthContext } from '../context/AuthContext';
+import AuthContext from '../context/AuthContext';
 
 // logs list
 function LogsList() {

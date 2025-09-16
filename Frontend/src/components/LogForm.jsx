@@ -54,57 +54,60 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 	};
 
 	return (
-		<form onSubmit={handleSubmit} className="space-y-3">
-			<input
-				name="title"
-				value={form.title}
-				onChange={handleChange}
-				placeholder="Title ..."
-				className="w-full p-2 border"
-				required
-			/>
-			<textarea
-				name="description"
-				value={form.description}
-				onChange={handleChange}
-				placeholder="Description ..."
-				className="w-full p-2 border"
-				required
-			/>
-			<input
-				name="tags"
-				value={form.tags}
-				onChange={handleChange}
-				placeholder="Tags (comma-separated) ..."
-				className="w-full p-2 border"
-			/>
-			<div className="flex justify-between items-center">
-				<button
-					type="submit"
-					disabled={loading}
-					className={`px-4 py-2 rounded text-white ${
-						loading ? 'bg-gray-400' : 'bg-indigo-500 hover:bg-indigo-600'
-					}`}
-				>
-					{loading
-						? initialData
-							? 'Updating...'
-							: 'Adding...'
-						: initialData
-						? 'Update Log'
-						: 'Add Log'}
-				</button>
-				{initialData && onCancel && (
+		<>
+			<h1 className="text-2xl font-bold mb-4">Create Log</h1>
+			<form onSubmit={handleSubmit} className="space-y-3">
+				<input
+					name="title"
+					value={form.title}
+					onChange={handleChange}
+					placeholder="Title ..."
+					className="w-full p-2 border"
+					required
+				/>
+				<textarea
+					name="description"
+					value={form.description}
+					onChange={handleChange}
+					placeholder="Description ..."
+					className="w-full p-2 border"
+					required
+				/>
+				<input
+					name="tags"
+					value={form.tags}
+					onChange={handleChange}
+					placeholder="Tags (comma-separated) ..."
+					className="w-full p-2 border"
+				/>
+				<div className="flex justify-between items-center">
 					<button
-						type="button"
-						onClick={onCancel}
-						className="text-red-500 px-3 py-1 border border-red-500 rounded hover:bg-red-50"
+						type="submit"
+						disabled={loading}
+						className={`px-4 py-2 rounded text-white ${
+							loading ? 'bg-gray-400' : 'bg-indigo-500 hover:bg-indigo-600'
+						}`}
 					>
-						Cancel
+						{loading
+							? initialData
+								? 'Updating...'
+								: 'Adding...'
+							: initialData
+							? 'Update Log'
+							: 'Add Log'}
 					</button>
-				)}
-			</div>
-		</form>
+					{initialData && onCancel && (
+						<button
+							type="button"
+							onClick={onCancel}
+							className="text-red-500 px-3 py-1 border border-red-500 rounded hover:bg-red-50"
+						>
+							Cancel
+						</button>
+					)}
+				</div>
+			</form>
+		</>
 	);
 }
 
