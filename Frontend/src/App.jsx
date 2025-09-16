@@ -1,24 +1,33 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+
+// internal imports
 import PrivateRoute from './components/PrivateRoute.jsx';
-import { Dashboard, SignIn, SignUp } from './index';
-// import { isAuthenticated } from './services/auth.js';
-import './index.css';
+import { Dashboard, SignIn, SignUp, Navbar, LogForm, LogsList } from './index';
 
 function App() {
 	return (
-		<Routes>
-			{/* public routes */}
-			<Route path="/" element={<SignIn />} />
-			<Route path="/sign-up" element={<SignUp />} />
+		<div className="min-h-screen flex flex-col">
+			{/* Navbar always at top, but hidden for guests */}
+			<Navbar />
 
-			{/* private routes */}
-			<Route element={<PrivateRoute />}>
-				<Route path="/dashboard" element={<Dashboard />} />
-			</Route>
+			<div className="flex-1 p-6">
+				<Routes>
+					{/* public routes */}
+					<Route path="/" element={<SignIn />} />
+					<Route path="/sign-up" element={<SignUp />} />
 
-			{/* redirect unknown routes */}
-			<Route path="*" element={<Navigate to="/" replace />} />
-		</Routes>
+					{/* private routes */}
+					<Route element={<PrivateRoute />}>
+						<Route path="/dashboard" element={<Dashboard />} />
+						<Route path="/create-log" element={<LogForm onSuccess={() => {}} />} />
+						<Route path="/view-logs" element={<LogsList />} />
+					</Route>
+
+					{/* redirect unknown */}
+					<Route path="*" element={<Navigate to="/" replace />} />
+				</Routes>
+			</div>
+		</div>
 	);
 }
 
