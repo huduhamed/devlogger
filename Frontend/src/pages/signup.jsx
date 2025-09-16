@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 //internal imports
@@ -40,7 +40,7 @@ function SignUp() {
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className="mx-auto mt-20 w-[400px] space-y-6 flex items-center justify-center min-h-screen flex-col"
+			className="mx-auto  w-[400px] space-y-6 flex items-center justify-center min-h-screen flex-col"
 		>
 			<h3 className="text-center text-blue-500 text-xl font-semibold">Sign up</h3>
 			<div className="space-y-4 w-full flex flex-col">
@@ -63,7 +63,16 @@ function SignUp() {
 					type="password"
 					className="w-full p-2 border"
 				/>
-				<button className="w-80 bg-blue-500 text-white rounded p-2 self-center">Sign Up</button>
+				<button className="w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded transition">
+					Sign Up
+				</button>
+
+				<div className="text-center text-sm">
+					Already have an account?{' '}
+					<Link to="/sign-in" className="text-blue-600 hover:underline">
+						Sign In
+					</Link>
+				</div>
 			</div>
 		</form>
 	);

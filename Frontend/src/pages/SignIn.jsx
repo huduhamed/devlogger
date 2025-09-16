@@ -38,9 +38,9 @@ function SignIn() {
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className="w-full max-w-sm mx-auto mt-20 space-y-6 flex flex-col items-center justify-center min-h-screen"
+			className="w-full max-w-sm mx-auto space-y-6 flex flex-col items-center justify-center min-h-screen"
 		>
-			<h3 className="text-center text-blue-700 text-xl font-semibold">Sign-in to Dashboard</h3>
+			<h3 className="text-center text-blue-500 text-xl font-semibold">Sign-in to Dashboard</h3>
 
 			<input
 				type="email"
@@ -66,12 +66,12 @@ function SignIn() {
 				Sign In
 			</button>
 
-			<p className="text-center text-sm">
+			<div className="text-center text-sm">
 				Don’t have an account?{' '}
 				<Link to="/sign-up" className="text-blue-600 hover:underline">
-					Sign up here
+					Sign up
 				</Link>
-			</p>
+			</div>
 		</form>
 	);
 }

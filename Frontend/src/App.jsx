@@ -20,7 +20,7 @@ function App() {
 					<Route element={<PrivateRoute />}>
 						<Route path="/dashboard" element={<Dashboard />} />
 						<Route path="/create-log" element={<LogForm onSuccess={() => {}} />} />
-						<Route path="/view-logs" element={<LogsList />} />
+						<Route path="/logs" element={<LogsList />} />
 					</Route>
 
 					{/* redirect unknown */}
