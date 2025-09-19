@@ -14,8 +14,8 @@ const router = Router();
 // fetch all logs (optional, admin/public dashboard)
 router.get('/all', authorize, getAllLogs);
 
-// Get all logs
-router.get('/', getLogs);
+// Get all logs for current authenticated user
+router.get('/', authorize, getLogs);
 
 // Get single log (owner only)
 router.get('/:id', authorize, getLog);

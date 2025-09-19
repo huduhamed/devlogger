@@ -121,9 +121,11 @@ export async function updateLog(req, res, next) {
 			data: updated,
 		});
 	} catch (error) {
-		const err = new Error('failed to update log', { cause: error });
+		const err = new Error('failed to update log');
 		err.statusCode = 400;
-		throw err;
+		err.cause = error;
+
+		return next(err);
 	}
 }
 
@@ -147,8 +149,10 @@ export async function deleteLog(req, res, next) {
 			message: 'log deleted',
 		});
 	} catch (error) {
-		const err = new Error('failed to delete log', { cause: error });
+		const err = new Error('failed to delete log');
 		err.statusCode = 400;
-		throw err;
+		err.cause = error;
+
+		return next(err);
 	}
 }

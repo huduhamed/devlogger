@@ -6,6 +6,7 @@ import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoute.js';
 import logRoutes from './routes/logRoutes.js';
 import { PORT } from './config/env.js';
+import errorHandler from './middleware/errorHandler.js';
 import connectToDB from './database/mongodb.js';
 
 const app = express();
@@ -24,6 +25,9 @@ app.use('/api/v1/logs', logRoutes);
 app.get('/', (req, res) => {
 	res.send('welcome onboard buddy!');
 });
+
+// Error handler (after all routes)
+app.use(errorHandler);
 
 // Only start listening and connect to DB when NOT testing
 if (process.env.NODE_ENV !== 'test') {

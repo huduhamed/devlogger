@@ -1,11 +1,12 @@
 // internal imports
+import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 
 // fetch all users from database
 export async function getUsers(req, res, next) {
 	try {
-		// find users
-		const users = await User.find();
+		('		// find users without password field');
+		const users = await User.find().select('-password');
 
 		// return json
 		res.status(200).json({
@@ -25,9 +26,9 @@ export async function getUser(req, res, next) {
 
 		// check if no user
 		if (!user) {
-			const error = new error('user not found');
-			error.statusCode(404);
-			throw error;
+			const err = new Error('user not found');
+			err.statusCode = 404;
+			return next(err);
 		}
 
 		// return json
@@ -41,70 +42,80 @@ export async function getUser(req, res, next) {
 }
 
 // create a user
-export async function createUser(req, res) {
+export async function createUser(req, res, next) {
 	try {
-		const user = new User(req.body);
+		const { password, ...rest } = req.body;
+		let hashed = password;
+		if (password) {
+			hashed = await bcrypt.hash(password, 10);
+		}
+		const user = new User({ ...rest, password: hashed });
 		await user.save();
+
+		const safeUser = user.toObject();
+		delete safeUser.password;
 
 		res.status(201).json({
 			success: true,
 			message: 'New user successfully created',
+			data: safeUser,
 		});
 	} catch (error) {
-		const err = new Error('failed to create user', { cause: error });
+		const err = new Error('failed to create user');
 		err.statusCode = 400;
-		throw err;
+		err.cause = error;
+
+		return next(err);
 	}
 }
 
 // update user
-export async function updateUser(req, res) {
+export async function updateUser(req, res, next) {
 	try {
-		const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+		const update = { ...req.body };
+		if (update.password) {
+			update.password = await bcrypt.hash(update.password, 10);
+		}
+
+		const user = await User.findByIdAndUpdate(req.params.id, update, {
 			new: true,
 			runValidators: true,
-		});
+		}).select('-password');
 
 		// if no user
 		if (!user) {
-			const error = new Error('user not found');
-			error.statusCode = 404;
-			throw error;
+			const err = new Error('user not found');
+			err.statusCode = 404;
+			return next(err);
 		}
 
-		// return
-		res.status(200).json({
-			success: true,
-			data: user,
-		});
+		res.status(200).json({ success: true, data: user });
 	} catch (error) {
-		const err = new Error('failed to update user', { cause: error });
+		const err = new Error('failed to update user');
 		err.statusCode = 400;
-		throw err;
+		err.cause = error;
+
+		return next(err);
 	}
 }
 
 // delete user
-export async function deleteUser(req, res) {
+export async function deleteUser(req, res, next) {
 	try {
-		// find user in DB
 		const user = await User.findByIdAndDelete(req.params.id);
 
-		// if user not found
 		if (!user) {
-			const error = new Error('cannot find user');
-			error.statusCode = 404;
-			throw error;
-		}
+			const err = new Error('cannot find user');
+			err.statusCode = 404;
 
-		// return
-		res.status(200).json({
-			success: true,
-			message: 'user deleted successfully',
-		});
+			return next(err);
+		}
+		res.status(200).json({ success: true, message: 'user deleted successfully' });
 	} catch (error) {
-		const err = new Error('failed to delete user', { cause: error });
+		const err = new Error('failed to delete user');
 		err.statusCode = 400;
-		throw err;
+		err.cause = error;
+
+		return next(err);
 	}
 }

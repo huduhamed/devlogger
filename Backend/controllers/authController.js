@@ -88,27 +88,7 @@ export async function signIn(req, res) {
 }
 
 // sign out logic
-export async function signOut(req, res, next) {
-	try {
-		const authHeader = req.headers.authorization;
-		if (authHeader && authHeader.startsWith('Bearer ')) {
-			const token = authHeader.split(' ')[1];
-
-			// decode token to get expiry
-			const decoded = jwt.decode(token);
-			const expiry =
-				decoded && decoded.exp ? new Date(decoded.exp * 1000) : new Date(dayjs + 3600 * 1000);
-
-			// save token to blacklist
-			await BlacklistToken.create({ token, expiry });
-		}
-
-		// return
-		res.status(200).json({
-			success: true,
-			message: 'User successfully signed out',
-		});
-	} catch (error) {
-		next(error);
-	}
+export async function signOut(req, res) {
+	// Stateless JWT logout: client just discards token. Placeholder for future blacklist logic.
+	return res.status(200).json({ success: true, message: 'User successfully signed out' });
 }
