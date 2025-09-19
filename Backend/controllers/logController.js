@@ -58,7 +58,7 @@ export async function getLog(req, res, next) {
 export async function createLog(req, res, next) {
 	try {
 		// destructure & create log
-		const { title, description, tags } = req.body;
+		const { title, description, tags, level } = req.body;
 		if (!title)
 			return res.status(400).json({
 				message: 'title is required',
@@ -76,7 +76,7 @@ export async function createLog(req, res, next) {
 
 		// map user, then create log
 		const userId = req.user && (req.user._id || req.user.id);
-		const log = await Log.create({ title, description, tags: tagsArray, user: userId });
+		const log = await Log.create({ title, description, level, tags: tagsArray, user: userId });
 
 		return res.status(201).json({
 			success: true,
