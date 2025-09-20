@@ -2,7 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 // internal imports
 import PrivateRoute from './components/PrivateRoute.jsx';
-import { Dashboard, SignIn, SignUp, Navbar, LogForm, LogsList } from './index';
+import { Dashboard, SignIn, SignUp, Navbar, LogsList } from './index';
+import CreateLog from './pages/CreateLog.jsx';
 
 function App() {
 	return (
@@ -14,12 +15,13 @@ function App() {
 				<Routes>
 					{/* public routes */}
 					<Route path="/" element={<SignIn />} />
+					<Route path="/sign-in" element={<SignIn />} />
 					<Route path="/sign-up" element={<SignUp />} />
 
 					{/* private routes */}
 					<Route element={<PrivateRoute />}>
 						<Route path="/dashboard" element={<Dashboard />} />
-						<Route path="/create-log" element={<LogForm onSuccess={() => {}} />} />
+						<Route path="/create-log" element={<CreateLog />} />
 						<Route path="/logs" element={<LogsList />} />
 					</Route>
 

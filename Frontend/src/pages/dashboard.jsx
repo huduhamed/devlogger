@@ -1,29 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useContext } from 'react';
 
-// internal imports
-import API from '../services/api';
+// internal import
+import LogsContext from '../context/LogsContext.jsx';
 
 // dashaboard
 function Dashboard() {
-	const [logs, setLogs] = useState([]);
-	const [loading, setLoading] = useState(true);
-
-	// fetch logs
-	const fetchLogs = async () => {
-		try {
-			const res = await API.get('/logs');
-			const data = res.data.data || [];
-			setLogs(data);
-		} catch (err) {
-			console.error(err);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	useEffect(() => {
-		fetchLogs();
-	}, []);
+	const { logs, loading } = useContext(LogsContext);
 
 	// list 5 most recent
 	const recentLogs = logs.slice(0, 5);

@@ -7,6 +7,7 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 		title: '',
 		description: '',
 		tags: '',
+		level: 'info',
 	});
 
 	// loading state for submit button
@@ -19,6 +20,7 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 				title: initialData.title || '',
 				description: initialData.description || '',
 				tags: initialData.tags?.join(', ') || '',
+				level: initialData.level || 'info',
 			});
 		}
 	}, [initialData]);
@@ -32,7 +34,7 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 
 		const payload = {
 			...form,
-			tags: form.tags.split(',').map((t) => t.trim()),
+			tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
 		};
 
 		setLoading(true);
@@ -42,7 +44,7 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 			await onSubmit(payload, initialData?._id);
 
 			// reset form after successful submit
-			setForm({ title: '', description: '', tags: '' });
+			setForm({ title: '', description: '', tags: '', level: 'info' });
 
 			// call cancel handler if editing
 			if (onCancel) onCancel();
@@ -73,6 +75,17 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 					className="w-full p-2 border"
 					required
 				/>
+				<select
+					name="level"
+					value={form.level}
+					onChange={handleChange}
+					className="w-full p-2 border"
+				>
+					<option value="debug">Debug</option>
+					<option value="info">Info</option>
+					<option value="warn">Warn</option>
+					<option value="error">Error</option>
+				</select>
 				<input
 					name="tags"
 					value={form.tags}

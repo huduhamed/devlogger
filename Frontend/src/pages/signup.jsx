@@ -33,7 +33,7 @@ function SignUp() {
 
 			navigate('/dashboard', { replace: true });
 		} catch (err) {
-			toast.err('Signup failed: ' + (err.response?.data?.message || err.message));
+			toast.error('Signup failed: ' + (err.response?.data?.message || err.message));
 		}
 	};
 

@@ -57,7 +57,24 @@ function LogsList() {
 						className="p-4 bg-gray-100 rounded-lg shadow flex justify-between items-start"
 					>
 						<div>
-							<h3 className="text-lg font-semibold">{log.title}</h3>
+							<h3 className="text-lg font-semibold flex items-center gap-2">
+								{log.title}
+								{log.level && (
+									<span
+										className={`text-xs px-2 py-0.5 rounded-full capitalize border ${
+											log.level === 'error'
+												? 'bg-red-100 text-red-700 border-red-300'
+											: log.level === 'warn'
+											? 'bg-yellow-100 text-yellow-700 border-yellow-300'
+											: log.level === 'debug'
+											? 'bg-gray-200 text-gray-700 border-gray-400'
+											: 'bg-blue-100 text-blue-700 border-blue-300'
+										}`}
+									>
+										{log.level}
+									</span>
+								)}
+							</h3>
 							<p className="text-gray-700">{log.description}</p>
 							<small className="block text-gray-500 mt-1">
 								By: <span className="capitalize">{log.user?.name}</span> •{' '}
