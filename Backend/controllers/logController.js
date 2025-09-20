@@ -4,7 +4,10 @@ import Log from '../models/Log.js';
 // all logs, regardless of user
 export async function getAllLogs(req, res, next) {
 	try {
-		const logs = await Log.find().sort({ createdAt: -1 }).populate('user', 'name email');
+		// restrict to organization scope if present on user (multi-tenancy)
+		const orgId = req.user && req.user.organization;
+		const query = orgId ? { organization: orgId } : {};
+		const logs = await Log.find(query).sort({ createdAt: -1 }).populate('user', 'name email');
 		return res.status(200).json({ success: true, data: logs });
 	} catch (error) {
 		next(error);
@@ -14,10 +17,12 @@ export async function getAllLogs(req, res, next) {
 // get logs
 export async function getLogs(req, res, next) {
 	try {
-		// fetch userId
+		// fetch org + user
 		const userId = req.user && (req.user._id || req.user.id);
-		// get logs, most recent first
-		const logs = await Log.find({ user: userId }).sort({ createdAt: -1 });
+		const orgId = req.user && req.user.organization;
+		// scope by organization primarily; optionally by user if no org yet (legacy)
+		const baseQuery = orgId ? { organization: orgId } : { user: userId };
+		const logs = await Log.find(baseQuery).sort({ createdAt: -1 });
 
 		// return
 		return res.status(200).json({
@@ -35,14 +40,17 @@ export async function getLog(req, res, next) {
 		// get id
 		const { id } = req.params;
 
-		// get log from DB
+		// get log from DB (ensure organization scoping)
 		const log = await Log.findById(id);
 		if (!log) return res.status(404).json({ message: 'Log not found' });
 
-		// authenticate user against log
+		// authenticate user against log (org scoped OR ownership fallback)
 		const userId = req.user && (req.user._id || req.user.id);
-		if (log.user.toString() !== userId.toString()) {
-			return res.status(403).json({ message: 'Forbidden: not the owner' });
+		const orgId = req.user && req.user.organization;
+		const owns = log.user.toString() === userId.toString();
+		const sameOrg = orgId && log.organization && log.organization.toString() === orgId.toString();
+		if (!owns && !sameOrg) {
+			return res.status(403).json({ message: 'Forbidden: outside your organization' });
 		}
 
 		return res.status(200).json({
@@ -76,7 +84,15 @@ export async function createLog(req, res, next) {
 
 		// map user, then create log
 		const userId = req.user && (req.user._id || req.user.id);
-		const log = await Log.create({ title, description, level, tags: tagsArray, user: userId });
+		const orgId = req.user && req.user.organization;
+		const log = await Log.create({
+			title,
+			description,
+			level,
+			tags: tagsArray,
+			user: userId,
+			organization: orgId,
+		});
 
 		return res.status(201).json({
 			success: true,
@@ -98,10 +114,13 @@ export async function updateLog(req, res, next) {
 		const log = await Log.findById(id);
 		if (!log) return res.status(404).json({ message: 'Log not found' });
 
-		// authenticate user
+		// authenticate user (ownership or same organization)
 		const userId = req.user && (req.user._id || req.user.id);
-		if (log.user.toString() !== userId.toString()) {
-			return res.status(403).json({ message: 'Forbidden: not the owner' });
+		const orgId = req.user && req.user.organization;
+		const owns = log.user.toString() === userId.toString();
+		const sameOrg = orgId && log.organization && log.organization.toString() === orgId.toString();
+		if (!owns && !sameOrg) {
+			return res.status(403).json({ message: 'Forbidden: outside your organization' });
 		}
 
 		const updateData = { ...req.body };
@@ -137,10 +156,13 @@ export async function deleteLog(req, res, next) {
 		const log = await Log.findById(id);
 		if (!log) return res.status(404).json({ message: 'log not found' });
 
-		// authenticate user to match log
+		// authenticate user (ownership or org membership)
 		const userId = req.user && (req.user._id || req.user.id);
-		if (log.user.toString() !== userId.toString()) {
-			return res.status(403).json({ message: 'Forbidden: not the owner' });
+		const orgId = req.user && req.user.organization;
+		const owns = log.user.toString() === userId.toString();
+		const sameOrg = orgId && log.organization && log.organization.toString() === orgId.toString();
+		if (!owns && !sameOrg) {
+			return res.status(403).json({ message: 'Forbidden: outside your organization' });
 		}
 
 		await log.deleteOne();
