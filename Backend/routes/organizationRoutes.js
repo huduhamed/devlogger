@@ -12,6 +12,7 @@ import {
 	listApiKeys,
 	revokeApiKey,
 	ingestLog,
+	upgradePlan,
 } from '../controllers/organizationController.js';
 
 const router = Router();
@@ -26,6 +27,7 @@ router.delete('/members/:userId', authorize, requireOrgOwner, removeMember);
 router.post('/api-keys', authorize, requireOrgOwner, createApiKey);
 router.get('/api-keys', authorize, requireOrgOwner, listApiKeys);
 router.post('/api-keys/:keyName/revoke', authorize, requireOrgOwner, revokeApiKey);
+router.post('/upgrade', authorize, requireOrgOwner, upgradePlan);
 
 // Public ingestion endpoint (uses x-api-key, no bearer auth)
 router.post('/ingest', ingestLog);

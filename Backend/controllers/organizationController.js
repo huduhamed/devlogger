@@ -157,6 +157,23 @@ export async function revokeApiKey(req, res, next) {
 	}
 }
 
+export async function upgradePlan(req, res, next) {
+	try {
+		const { plan } = req.body;
+		const allowed = ['free', 'pro', 'enterprise'];
+		if (!allowed.includes(plan))
+			return res.status(400).json({ message: 'Invalid plan selection' });
+		const orgId = req.user?.organization;
+		const org = await Organization.findById(orgId);
+		if (!org) return res.status(404).json({ message: 'Organization not found' });
+		org.plan = plan;
+		await org.save();
+		return res.status(200).json({ success: true, message: 'Plan updated', plan });
+	} catch (err) {
+		next(err);
+	}
+}
+
 // Public-style ingestion using x-api-key header
 export async function ingestLog(req, res, next) {
 	try {
