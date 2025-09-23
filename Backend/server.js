@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoute.js';
 import logRoutes from './routes/logRoutes.js';
+import organizationRoutes from './routes/organizationRoutes.js';
 import { PORT } from './config/env.js';
 import errorHandler from './middleware/errorHandler.js';
 import connectToDB from './database/mongodb.js';
@@ -35,6 +36,7 @@ app.use(urlencoded({ extended: false }));
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/logs', logRoutes);
+app.use('/api/v1/organizations', organizationRoutes);
 
 app.get('/', (req, res) => {
 	res.send('welcome onboard buddy!');

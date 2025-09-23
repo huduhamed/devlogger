@@ -156,6 +156,15 @@ export async function createLog(req, res, next) {
 			organization: orgId,
 		});
 
+		// If enforceUsage middleware ran, increment count
+		if (req.organization) {
+			const monthKey = req.organization.usage?.month;
+			if (monthKey) {
+				req.organization.usage.logCount += 1;
+				await req.organization.save();
+			}
+		}
+
 		return res.status(201).json({
 			success: true,
 			message: 'new log created successfully',

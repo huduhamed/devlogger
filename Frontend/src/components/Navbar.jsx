@@ -40,6 +40,9 @@ function Navbar() {
 					<NavLink to="/logs" className={linkClasses}>
 						View Logs
 					</NavLink>
+					<NavLink to="/organization" className={linkClasses}>
+						Organization
+					</NavLink>
 				</div>
 
 				{/* Right side - user profile & logout */}
