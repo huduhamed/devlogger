@@ -6,6 +6,7 @@ import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import OrgContext from '../context/OrgContext.jsx';
+import UpgradeBanner from '../components/UpgradeBanner.jsx';
 
 // dashaboard
 function Dashboard() {
@@ -26,6 +27,11 @@ function Dashboard() {
 						{org.limits?.logsPerMonth != null && org.usage?.logCount != null && (
 							<span> • {org.usage.logCount} / {org.limits.logsPerMonth} logs this month</span>
 						)}
+					</div>
+				)}
+				{org && (
+					<div className="mt-3">
+						<UpgradeBanner org={org} />
 					</div>
 				)}
 			</div>

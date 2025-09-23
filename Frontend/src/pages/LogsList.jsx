@@ -13,9 +13,12 @@ import Badge from '../components/ui/Badge.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
 import Pagination from '../components/Pagination.jsx';
 import EditLogModal from '../components/EditLogModal.jsx';
+import OrgContext from '../context/OrgContext.jsx';
+import UpgradeBanner from '../components/UpgradeBanner.jsx';
 
 function LogsList() {
 	const { auth } = useContext(AuthContext);
+	const { org } = useContext(OrgContext);
 	const {
 		logs,
 		loading,
@@ -55,6 +58,7 @@ function LogsList() {
 				<div>
 					<h2 className="text-2xl font-bold">Logs</h2>
 					<p className="text-sm text-gray-600">Browse and filter your application logs</p>
+					{org && <div className="mt-3"><UpgradeBanner org={org} /></div>}
 				</div>
 				<Card className="md:min-w-[520px]">
 					<CardBody>

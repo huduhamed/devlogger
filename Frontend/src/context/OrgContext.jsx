@@ -1,4 +1,4 @@
-import { createContext, useCallback, useMemo, useState } from 'react';
+import { createContext, useCallback, useMemo, useRef, useState } from 'react';
 
 // internal imports
 import API from '../services/api';
@@ -9,8 +9,11 @@ export function OrgProvider({ children }) {
 	const [org, setOrg] = useState(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(null);
+  const inflight = useRef(false);
 
 	const refresh = useCallback(async () => {
+		if (inflight.current) return;
+		inflight.current = true;
 		setLoading(true);
 		setError(null);
 		try {
@@ -20,6 +23,7 @@ export function OrgProvider({ children }) {
 			setError(err.response?.data?.message || err.message || 'Failed to load organization');
 		} finally {
 			setLoading(false);
+			inflight.current = false;
 		}
 	}, []);
 

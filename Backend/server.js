@@ -5,11 +5,14 @@ import helmet from 'helmet';
 import requestId from './middleware/requestId.js';
 import rateLimit from 'express-rate-limit';
 
+// internal imports
 import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoute.js';
 import logRoutes from './routes/logRoutes.js';
 import organizationRoutes from './routes/organizationRoutes.js';
 import { PORT } from './config/env.js';
+import billingRoutes from './routes/billingRoutes.js';
+import { stripeWebhook } from './controllers/billingController.js';
 import errorHandler from './middleware/errorHandler.js';
 import connectToDB from './database/mongodb.js';
 
@@ -41,7 +44,23 @@ app.use((req, _res, next) => {
 });
 
 // body & cookie parsing
-app.use(express.json({ limit: '200kb' }));
+// Stripe webhook needs raw body; use a conditional parser
+app.use((req, res, next) => {
+	if (req.originalUrl === '/api/v1/billing/webhook') {
+		// capture raw body for stripe signature verification
+		let data = '';
+		req.setEncoding('utf8');
+		req.on('data', (chunk) => {
+			data += chunk;
+		});
+		req.on('end', () => {
+			req.rawBody = data;
+			next();
+		});
+	} else {
+		express.json({ limit: '200kb' })(req, res, next);
+	}
+});
 app.use(cookieParser());
 app.use(urlencoded({ extended: false }));
 
@@ -50,6 +69,10 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/logs', logRoutes);
 app.use('/api/v1/organizations', organizationRoutes);
+app.use('/api/v1/billing', billingRoutes);
+
+// Stripe webhook endpoint (must be after body parsing setup)
+app.post('/api/v1/billing/webhook', stripeWebhook);
 
 app.get('/', (req, res) => {
 	res.send('welcome onboard buddy!');
