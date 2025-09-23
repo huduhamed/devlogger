@@ -5,6 +5,9 @@ import { toast } from 'react-toastify';
 //internal imports
 import API from '../services/api';
 import AuthContext from '../context/AuthContext';
+import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
+import Input from '../components/ui/Input.jsx';
+import Button from '../components/ui/Button.jsx';
 
 function SignUp() {
 	const [form, setForm] = useState({ name: '', email: '', password: '' });
@@ -38,43 +41,25 @@ function SignUp() {
 	};
 
 	return (
-		<form
-			onSubmit={handleSubmit}
-			className="mx-auto  w-[400px] space-y-6 flex items-center justify-center min-h-screen flex-col"
-		>
-			<h3 className="text-center text-blue-500 text-xl font-semibold">Sign up</h3>
-			<div className="space-y-4 w-full flex flex-col">
-				<input
-					name="name"
-					onChange={handleChange}
-					placeholder="Name"
-					className="w-full p-2 border"
-				/>
-				<input
-					name="email"
-					onChange={handleChange}
-					placeholder="Email"
-					className="w-full p-2 border"
-				/>
-				<input
-					name="password"
-					onChange={handleChange}
-					placeholder="Password"
-					type="password"
-					className="w-full p-2 border"
-				/>
-				<button className="w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded transition">
-					Sign Up
-				</button>
-
-				<div className="text-center text-sm">
-					Already have an account?{' '}
-					<Link to="/sign-in" className="text-blue-600 hover:underline">
-						Sign In
-					</Link>
-				</div>
-			</div>
-		</form>
+		<div className="min-h-[80vh] flex items-center justify-center px-4">
+			<Card className="w-full max-w-md">
+				<CardHeader title="Create your account" subtitle="Start logging and monitoring events" />
+				<CardBody>
+					<form onSubmit={handleSubmit} className="space-y-4">
+						<Input name="name" onChange={handleChange} placeholder="Jane Doe" label="Full name" required />
+						<Input name="email" type="email" onChange={handleChange} placeholder="you@example.com" label="Email" required />
+						<Input name="password" type="password" onChange={handleChange} placeholder="••••••••" label="Password" required />
+						<Button type="submit" className="w-full">Sign Up</Button>
+					</form>
+					<div className="text-center text-sm mt-4">
+						Already have an account?{' '}
+						<Link to="/sign-in" className="text-blue-600 hover:underline">
+							Sign In
+						</Link>
+					</div>
+				</CardBody>
+			</Card>
+		</div>
 	);
 }
 

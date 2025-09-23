@@ -4,6 +4,9 @@ import { toast } from 'react-toastify';
 // internal imoports
 import API from '../services/api';
 import AuthContext from '../context/AuthContext';
+import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
+import Input from '../components/ui/Input.jsx';
+import Button from '../components/ui/Button.jsx';
 
 // sign-in logic
 function SignIn() {
@@ -36,43 +39,44 @@ function SignIn() {
 	};
 
 	return (
-		<form
-			onSubmit={handleSubmit}
-			className="w-full max-w-sm mx-auto space-y-6 flex flex-col items-center justify-center min-h-screen"
-		>
-			<h3 className="text-center text-blue-500 text-xl font-semibold">Sign-in to Dashboard</h3>
-
-			<input
-				type="email"
-				name="email"
-				value={form.email}
-				onChange={handleChange}
-				placeholder="Email"
-				className="w-full p-2 border border-gray-300 rounded"
-				autoComplete="email"
-			/>
-
-			<input
-				type="password"
-				name="password"
-				value={form.password}
-				onChange={handleChange}
-				placeholder="Password"
-				className="w-full p-2 border border-gray-300 rounded"
-				autoComplete="current-password"
-			/>
-
-			<button className="w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded transition">
-				Sign In
-			</button>
-
-			<div className="text-center text-sm">
-				Don’t have an account?{' '}
-				<Link to="/sign-up" className="text-blue-600 hover:underline">
-					Sign up
-				</Link>
-			</div>
-		</form>
+		<div className="min-h-[80vh] flex items-center justify-center px-4">
+			<Card className="w-full max-w-md">
+				<CardHeader title="Welcome back" subtitle="Sign in to access your DevLogger dashboard" />
+				<CardBody>
+					<form onSubmit={handleSubmit} className="space-y-4">
+						<Input
+							type="email"
+							name="email"
+							value={form.email}
+							onChange={handleChange}
+							placeholder="you@example.com"
+							label="Email"
+							autoComplete="email"
+							required
+						/>
+						<Input
+							type="password"
+							name="password"
+							value={form.password}
+							onChange={handleChange}
+							placeholder="••••••••"
+							label="Password"
+							autoComplete="current-password"
+							required
+						/>
+						<Button className="w-full" type="submit" variant="primary">
+							Sign In
+						</Button>
+					</form>
+					<div className="text-center text-sm mt-4">
+						Don’t have an account?{' '}
+						<Link to="/sign-up" className="text-blue-600 hover:underline">
+							Sign up
+						</Link>
+					</div>
+				</CardBody>
+			</Card>
+		</div>
 	);
 }
 

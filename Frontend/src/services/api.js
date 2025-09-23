@@ -19,3 +19,17 @@ API.interceptors.request.use(
 );
 
 export default API;
+
+// Normalize error messages (e.g., 401)
+API.interceptors.response.use(
+	(res) => res,
+	(error) => {
+		const status = error?.response?.status;
+		if (status === 401) {
+			error.message = error.response?.data?.message || 'Unauthorized. Please sign in again.';
+		} else if (status === 403) {
+			error.message = error.response?.data?.message || 'Forbidden. You do not have access.';
+		}
+		return Promise.reject(error);
+	}
+);

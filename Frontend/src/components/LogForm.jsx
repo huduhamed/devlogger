@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
+// internal imports
+import Input from './ui/Input.jsx';
+import Textarea from './ui/Textarea.jsx';
+import Select from './ui/Select.jsx';
+import Button from './ui/Button.jsx';
+
 function LogForm({ onSubmit, initialData = null, onCancel }) {
 	// form state
 	const [form, setForm] = useState({
@@ -34,7 +40,10 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 
 		const payload = {
 			...form,
-			tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+			tags: form.tags
+				.split(',')
+				.map((t) => t.trim())
+				.filter(Boolean),
 		};
 
 		setLoading(true);
@@ -57,66 +66,45 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 
 	return (
 		<>
-			<h1 className="text-2xl font-bold mb-4">Create Log</h1>
+			<h1 className="text-2xl font-bold mb-4">{initialData ? 'Edit Log' : 'Create Log'}</h1>
 			<form onSubmit={handleSubmit} className="space-y-3">
-				<input
+				<Input
 					name="title"
 					value={form.title}
 					onChange={handleChange}
-					placeholder="Title ..."
-					className="w-full p-2 border"
+					placeholder="Title"
+					label="Title"
 					required
 				/>
-				<textarea
+				<Textarea
 					name="description"
 					value={form.description}
 					onChange={handleChange}
-					placeholder="Description ..."
-					className="w-full p-2 border"
+					placeholder="Describe what happened..."
+					label="Description"
 					required
 				/>
-				<select
-					name="level"
-					value={form.level}
-					onChange={handleChange}
-					className="w-full p-2 border"
-				>
+				<Select name="level" value={form.level} onChange={handleChange} label="Level">
 					<option value="debug">Debug</option>
 					<option value="info">Info</option>
 					<option value="warn">Warn</option>
 					<option value="error">Error</option>
-				</select>
-				<input
+				</Select>
+				<Input
 					name="tags"
 					value={form.tags}
 					onChange={handleChange}
-					placeholder="Tags (comma-separated) ..."
-					className="w-full p-2 border"
+					placeholder="ui, api, auth"
+					label="Tags (comma separated)"
 				/>
 				<div className="flex justify-between items-center">
-					<button
-						type="submit"
-						disabled={loading}
-						className={`px-4 py-2 rounded text-white ${
-							loading ? 'bg-gray-400' : 'bg-indigo-500 hover:bg-indigo-600'
-						}`}
-					>
-						{loading
-							? initialData
-								? 'Updating...'
-								: 'Adding...'
-							: initialData
-							? 'Update Log'
-							: 'Add Log'}
-					</button>
+					<Button type="submit" loading={loading}>
+						{initialData ? 'Update Log' : 'Add Log'}
+					</Button>
 					{initialData && onCancel && (
-						<button
-							type="button"
-							onClick={onCancel}
-							className="text-red-500 px-3 py-1 border border-red-500 rounded hover:bg-red-50"
-						>
+						<Button type="button" variant="outline" onClick={onCancel}>
 							Cancel
-						</button>
+						</Button>
 					)}
 				</div>
 			</form>

@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import API from '../services/api';
 import { toast } from 'react-toastify';
+import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
+import Input from '../components/ui/Input.jsx';
+import Button from '../components/ui/Button.jsx';
 
 function OrganizationSettings() {
   const [org, setOrg] = useState(null);
@@ -99,69 +102,81 @@ function OrganizationSettings() {
   const usagePct = org.usage && org.limits ? Math.min(100, Math.round((org.usage.logCount / org.limits.logsPerMonth) * 100)) : 0;
 
   return (
-    <div className="max-w-5xl mx-auto p-4 space-y-10">
-      <section>
-        <h1 className="text-2xl font-bold mb-2">Organization</h1>
-        <p className="text-sm text-gray-600">Name: <span className="font-medium">{org.name}</span></p>
-        <p className="text-sm text-gray-600">Plan: <span className="font-medium capitalize">{org.plan}</span></p>
-        <p className="text-sm text-gray-600">Monthly Logs: {org.usage?.logCount || 0} / {org.limits?.logsPerMonth}</p>
-        <div className="w-full bg-gray-200 h-3 rounded mt-2">
-          <div className="h-3 rounded bg-blue-500 transition-all" style={{ width: usagePct + '%' }} />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-xl font-semibold mb-3">Members</h2>
-        <form onSubmit={addMember} className="flex gap-2 mb-4 flex-wrap">
-          <input value={newMemberEmail} onChange={(e) => setNewMemberEmail(e.target.value)} placeholder="user@example.com" className="border p-2 flex-1 min-w-[220px]" />
-          <button className="bg-blue-600 text-white px-4 py-2 rounded">Add Member</button>
-        </form>
-        <ul className="space-y-2">
-          {members.map((m) => (
-            <li key={m.user._id} className="flex justify-between items-center border rounded p-2 bg-white">
-              <div>
-                <span className="font-medium">{m.user.name}</span> <span className="text-xs text-gray-500">{m.user.email}</span> <span className="ml-2 text-xs px-2 py-0.5 rounded bg-gray-100">{m.role}</span>
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
+      <Card>
+        <CardHeader title="Organization" subtitle="Overview of your plan and usage" />
+        <CardBody>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-600">Name: <span className="font-medium">{org.name}</span></p>
+              <p className="text-sm text-gray-600">Plan: <span className="font-medium capitalize">{org.plan}</span></p>
+              <p className="text-sm text-gray-600">Monthly Logs: {org.usage?.logCount || 0} / {org.limits?.logsPerMonth}</p>
+              <div className="w-full bg-gray-200 h-3 rounded mt-2">
+                <div className="h-3 rounded bg-blue-500 transition-all" style={{ width: usagePct + '%' }} />
               </div>
-              {m.role !== 'owner' && (
-                <button onClick={() => removeMember(m.user._id)} className="text-red-600 text-sm hover:underline">Remove</button>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        <h2 className="text-xl font-semibold mb-3">API Keys</h2>
-        <form onSubmit={createKey} className="flex gap-2 mb-4 flex-wrap">
-          <input value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="Key Name" className="border p-2 flex-1 min-w-[200px]" />
-          <button className="bg-indigo-600 text-white px-4 py-2 rounded">Create Key</button>
-        </form>
-        {createdKey && (
-          <div className="p-3 bg-yellow-100 border border-yellow-300 rounded text-sm mb-4">
-            <p className="font-medium">New Key (copy now):</p>
-            <code className="break-all text-xs">{createdKey}</code>
+            </div>
           </div>
-        )}
-        <ul className="space-y-2">
-          {apiKeys.map((k) => (
-            <li key={k.keyId || k.name} className="flex justify-between items-center border rounded p-2 bg-white">
-              <div>
-                <span className="font-medium">{k.name}</span>
-                {k.keyId && (
-                  <span className="ml-2 text-xs text-gray-400">id: {k.keyId}</span>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader title="Members" />
+        <CardBody>
+          <form onSubmit={addMember} className="flex gap-2 mb-4 flex-wrap">
+            <div className="flex-1 min-w-[220px]">
+              <Input value={newMemberEmail} onChange={(e) => setNewMemberEmail(e.target.value)} placeholder="user@example.com" />
+            </div>
+            <Button type="submit">Add Member</Button>
+          </form>
+          <ul className="space-y-2">
+            {members.map((m) => (
+              <li key={m.user._id} className="flex justify-between items-center border rounded p-2 bg-white dark:bg-gray-900">
+                <div>
+                  <span className="font-medium">{m.user.name}</span> <span className="text-xs text-gray-500">{m.user.email}</span> <span className="ml-2 text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800">{m.role}</span>
+                </div>
+                {m.role !== 'owner' && (
+                  <button onClick={() => removeMember(m.user._id)} className="text-red-600 text-sm hover:underline">Remove</button>
                 )}
-                <span className="ml-2 text-xs text-gray-500">{k.revoked ? 'revoked' : 'active'}</span>
-                {k.lastUsedAt && (
-                  <span className="ml-2 text-xs text-gray-400">last used {new Date(k.lastUsedAt).toLocaleString()}</span>
+              </li>
+            ))}
+          </ul>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader title="API Keys" />
+        <CardBody>
+          <form onSubmit={createKey} className="flex gap-2 mb-4 flex-wrap">
+            <div className="flex-1 min-w-[200px]"><Input value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="Key Name" /></div>
+            <Button type="submit" variant="secondary">Create Key</Button>
+          </form>
+          {createdKey && (
+            <div className="p-3 bg-yellow-100 border border-yellow-300 rounded text-sm mb-4">
+              <p className="font-medium">New Key (copy now):</p>
+              <code className="break-all text-xs">{createdKey}</code>
+            </div>
+          )}
+          <ul className="space-y-2">
+            {apiKeys.map((k) => (
+              <li key={k.keyId || k.name} className="flex justify-between items-center border rounded p-2 bg-white dark:bg-gray-900">
+                <div>
+                  <span className="font-medium">{k.name}</span>
+                  {k.keyId && (
+                    <span className="ml-2 text-xs text-gray-400">id: {k.keyId}</span>
+                  )}
+                  <span className="ml-2 text-xs text-gray-500">{k.revoked ? 'revoked' : 'active'}</span>
+                  {k.lastUsedAt && (
+                    <span className="ml-2 text-xs text-gray-400">last used {new Date(k.lastUsedAt).toLocaleString()}</span>
+                  )}
+                </div>
+                {!k.revoked && (
+                  <button onClick={() => revokeKey(k.keyId)} className="text-red-600 text-sm hover:underline">Revoke</button>
                 )}
-              </div>
-              {!k.revoked && (
-                <button onClick={() => revokeKey(k.keyId)} className="text-red-600 text-sm hover:underline">Revoke</button>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
+              </li>
+            ))}
+          </ul>
+        </CardBody>
+      </Card>
     </div>
   );
 }

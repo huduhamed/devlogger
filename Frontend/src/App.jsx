@@ -8,7 +8,7 @@ import CreateLog from './pages/CreateLog.jsx';
 
 function App() {
 	return (
-		<div className="min-h-screen flex flex-col">
+		<div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
 			{/* Navbar always at top, but hidden for guests */}
 			<Navbar />
 

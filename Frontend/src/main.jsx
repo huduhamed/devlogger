@@ -8,18 +8,24 @@ import 'react-toastify/dist/ReactToastify.css';
 import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { LogsProvider } from './context/LogsContext';
+import { ThemeProvider } from './context/ThemeContext.jsx';
+import { OrgProvider } from './context/OrgContext.jsx';
 import './index.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
 	<React.StrictMode>
 		<Router>
-			<AuthProvider>
-				<LogsProvider>
-					<App />
-					<ToastContainer position="top-right" autoClose={3000} hideProgressBar theme="light" />
-				</LogsProvider>
-			</AuthProvider>
+			<ThemeProvider>
+				<AuthProvider>
+					<OrgProvider>
+						<LogsProvider>
+							<App />
+							<ToastContainer position="top-right" autoClose={3000} hideProgressBar theme="colored" />
+						</LogsProvider>
+					</OrgProvider>
+				</AuthProvider>
+			</ThemeProvider>
 		</Router>
 	</React.StrictMode>
 );

@@ -35,7 +35,7 @@ app.use((req, _res, next) => {
 	const { method, url, requestId: rid } = req;
 	_res.on('finish', () => {
 		const ms = Date.now() - start;
-		console.log(JSON.stringify({ level: 'info', msg: 'req', method, url, status: _res.statusCode, ms, requestId: rid }));
+		// console.log(JSON.stringify({ level: 'info', msg: 'req', method, url, status: _res.statusCode, ms, requestId: rid }));
 	});
 	return next();
 });
