@@ -43,7 +43,8 @@ export function LogsProvider({ children }) {
 					setPages(res.data.pagination.pages);
 				}
 			} catch (err) {
-				setError(err.message || 'Failed to fetch logs');
+				const msg = err.response?.data?.message || err.message || 'Failed to fetch logs';
+				setError(msg);
 			} finally {
 				setLoading(false);
 			}

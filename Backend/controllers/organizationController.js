@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 // internal imports
 import Organization from '../models/Organization.js';
 import User from '../models/User.js';
+import ApiKey from '../models/ApiKey.js';
+import { getPlanConfig } from '../config/plans.js';
 
 // Helper to get current billing month key
 function currentMonthKey() {
@@ -27,7 +29,7 @@ export async function getOrganization(req, res, next) {
 		if (!orgId) return res.status(400).json({ message: 'No organization for user' });
 
 		const org = await Organization.findById(orgId)
-			.select('-apiKeys.keyHash')
+			.select('-apiKeys')
 			.populate('owner', 'name email')
 			.populate('members.user', 'name email');
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
@@ -57,6 +59,13 @@ export async function addMember(req, res, next) {
 		const orgId = req.user?.organization;
 		const org = await Organization.findById(orgId);
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
+
+		// Enforce per-plan API key limits (count non-revoked keys)
+		const planCfg = getPlanConfig(org.plan);
+		const activeKeyCount = await ApiKey.countDocuments({ org: org._id, revoked: false });
+		if (activeKeyCount >= (planCfg.apiKeys || 0)) {
+			return res.status(403).json({ message: 'API key limit reached for current plan' });
+		}
 
 		if (org.members.length >= org.limits.members)
 			return res.status(403).json({ message: 'Member limit reached for current plan' });
@@ -107,13 +116,13 @@ export async function createApiKey(req, res, next) {
 		const org = await Organization.findById(orgId);
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
 
-		// Raw key (show once) and hashed storage
-		const rawKey = `dlog_${crypto.randomBytes(24).toString('hex')}`;
-		const keyHash = await bcrypt.hash(rawKey, 12);
+		// Key format: dlog_<keyId>_<secret>
+		const keyId = crypto.randomBytes(8).toString('hex');
+		const secret = crypto.randomBytes(24).toString('hex');
+		const rawKey = `dlog_${keyId}_${secret}`;
+		const keyHash = await bcrypt.hash(secret, 12);
 
-		org.apiKeys.push({ name, keyHash });
-		await org.save();
-
+		await ApiKey.create({ org: org._id, name, keyId, keyHash });
 		return res.status(201).json({ success: true, message: 'API key created', apiKey: rawKey });
 	} catch (err) {
 		next(err);
@@ -123,15 +132,9 @@ export async function createApiKey(req, res, next) {
 export async function listApiKeys(req, res, next) {
 	try {
 		const orgId = req.user?.organization;
-		const org = await Organization.findById(orgId).select('apiKeys');
+		const org = await Organization.findById(orgId).select('_id');
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
-
-		const keys = org.apiKeys.map((k) => ({
-			name: k.name,
-			createdAt: k.createdAt,
-			lastUsedAt: k.lastUsedAt,
-			revoked: k.revoked,
-		}));
+		const keys = await ApiKey.find({ org: org._id }).select('name keyId createdAt lastUsedAt revoked');
 		return res.status(200).json({ success: true, data: keys });
 	} catch (err) {
 		next(err);
@@ -140,17 +143,14 @@ export async function listApiKeys(req, res, next) {
 
 export async function revokeApiKey(req, res, next) {
 	try {
-		const { keyName } = req.params;
+		const { keyId } = req.params;
 		const orgId = req.user?.organization;
-		const org = await Organization.findById(orgId);
+		const org = await Organization.findById(orgId).select('_id');
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
-
-		const key = org.apiKeys.find((k) => k.name === keyName && !k.revoked);
+		const key = await ApiKey.findOne({ org: org._id, keyId, revoked: false });
 		if (!key) return res.status(404).json({ message: 'Key not found or already revoked' });
-
 		key.revoked = true;
-		await org.save();
-
+		await key.save();
 		return res.status(200).json({ success: true, message: 'API key revoked' });
 	} catch (err) {
 		next(err);
@@ -180,14 +180,17 @@ export async function ingestLog(req, res, next) {
 		const rawKey = req.header('x-api-key');
 		if (!rawKey) return res.status(401).json({ message: 'Missing API key' });
 
-		// Find org by comparing hashes (iterate; for scale move to dedicated collection with keyed hash index)
-		const org = await Organization.findOne({ 'apiKeys.revoked': { $ne: true } });
+		// Expect dlog_<keyId>_<secret>
+		const parts = rawKey.split('_');
+		if (parts.length !== 3 || parts[0] !== 'dlog') return res.status(401).json({ message: 'Invalid API key' });
+		const keyId = parts[1];
+		const secret = parts[2];
+
+		const keyDoc = await ApiKey.findOne({ keyId, revoked: false });
+		if (!keyDoc) return res.status(401).json({ message: 'Invalid API key' });
+		const org = await Organization.findById(keyDoc.org);
 		if (!org) return res.status(401).json({ message: 'Invalid API key' });
-
-		const activeKey = org.apiKeys.find((k) => !k.revoked);
-		if (!activeKey) return res.status(401).json({ message: 'Invalid API key' });
-
-		const match = await bcrypt.compare(rawKey, activeKey.keyHash);
+		const match = await bcrypt.compare(secret, keyDoc.keyHash);
 		if (!match) return res.status(401).json({ message: 'Invalid API key' });
 
 		// Rotate usage month if needed and check plan limit
@@ -210,8 +213,8 @@ export async function ingestLog(req, res, next) {
 		});
 
 		org.usage.logCount += 1;
-		activeKey.lastUsedAt = new Date();
-		await org.save();
+		keyDoc.lastUsedAt = new Date();
+		await Promise.all([org.save(), keyDoc.save()]);
 
 		return res.status(201).json({ success: true, data: logDoc });
 	} catch (err) {

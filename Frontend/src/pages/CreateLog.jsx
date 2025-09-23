@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import API from '../services/api';
 import LogsContext from '../context/LogsContext';
 import LogForm from '../components/LogForm.jsx';
+import Card, { CardBody } from '../components/ui/Card.jsx';
 
 // create log
 function CreateLog() {
@@ -16,16 +17,31 @@ function CreateLog() {
 		try {
 			await API.post('/logs', payload);
 			toast.success('Log created');
-			await fetchLogs();
-
-			navigate('/logs');
 		} catch (err) {
 			toast.error(err.response?.data?.message || 'Failed to create log');
 			throw err;
 		}
+
+		// try to refresh list, but don't block UI if it fails
+		try {
+			await fetchLogs();
+		} catch (err) {
+			// non-blocking: inform but continue
+			console.warn('Post-create refresh failed:', err);
+		}
+
+		navigate('/logs');
 	};
 
-	return <LogForm onSubmit={handleSubmit} />;
+	return (
+		<div className="max-w-3xl mx-auto">
+			<Card>
+				<CardBody>
+					<LogForm onSubmit={handleSubmit} />
+				</CardBody>
+			</Card>
+		</div>
+	);
 }
 
 export default CreateLog;
