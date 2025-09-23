@@ -9,15 +9,22 @@ export async function getAllLogs(req, res, next) {
 		const query = orgId ? { organization: orgId } : {};
 
 		// filtering
-		const { level, tag, q } = req.query;
+		const { level, tag, q, searchMode } = req.query;
 		if (level) query.level = level;
 		if (tag) query.tags = tag; // single tag exact match
+		let projection = null;
+		let sort = { createdAt: -1 };
 		if (q) {
-			// simple case-insensitive partial match on title or description
-			query.$or = [
-				{ title: { $regex: q, $options: 'i' } },
-				{ description: { $regex: q, $options: 'i' } },
-			];
+			if (searchMode === 'text') {
+				query.$text = { $search: q };
+				projection = { score: { $meta: 'textScore' } };
+				sort = { score: { $meta: 'textScore' } };
+			} else {
+				query.$or = [
+					{ title: { $regex: q, $options: 'i' } },
+					{ description: { $regex: q, $options: 'i' } },
+				];
+			}
 		}
 
 		// pagination
@@ -25,14 +32,12 @@ export async function getAllLogs(req, res, next) {
 		const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
 		const skip = (page - 1) * limit;
 
-		const [logs, total] = await Promise.all([
-			Log.find(query)
-				.sort({ createdAt: -1 })
-				.skip(skip)
-				.limit(limit)
-				.populate('user', 'name email'),
-			Log.countDocuments(query),
-		]);
+		const findChain = Log.find(query, projection)
+			.sort(sort)
+			.skip(skip)
+			.limit(limit)
+			.populate('user', 'name email');
+		const [logs, total] = await Promise.all([findChain, Log.countDocuments(query)]);
 
 		return res.status(200).json({
 			success: true,
@@ -60,14 +65,22 @@ export async function getLogs(req, res, next) {
 
 		// filtering
 		const query = { ...baseQuery };
-		const { level, tag, q } = req.query;
+		const { level, tag, q, searchMode } = req.query;
 		if (level) query.level = level;
 		if (tag) query.tags = tag;
+		let projection = null;
+		let sort = { createdAt: -1 };
 		if (q) {
-			query.$or = [
-				{ title: { $regex: q, $options: 'i' } },
-				{ description: { $regex: q, $options: 'i' } },
-			];
+			if (searchMode === 'text') {
+				query.$text = { $search: q };
+				projection = { score: { $meta: 'textScore' } };
+				sort = { score: { $meta: 'textScore' } };
+			} else {
+				query.$or = [
+					{ title: { $regex: q, $options: 'i' } },
+					{ description: { $regex: q, $options: 'i' } },
+				];
+			}
 		}
 
 		// pagination
@@ -75,10 +88,8 @@ export async function getLogs(req, res, next) {
 		const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
 		const skip = (page - 1) * limit;
 
-		const [logs, total] = await Promise.all([
-			Log.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
-			Log.countDocuments(query),
-		]);
+		const findChain = Log.find(query, projection).sort(sort).skip(skip).limit(limit);
+		const [logs, total] = await Promise.all([findChain, Log.countDocuments(query)]);
 
 		// return
 		return res.status(200).json({
@@ -155,6 +166,15 @@ export async function createLog(req, res, next) {
 			user: userId,
 			organization: orgId,
 		});
+
+		// If enforceUsage middleware ran, increment count
+		if (req.organization) {
+			const monthKey = req.organization.usage?.month;
+			if (monthKey) {
+				req.organization.usage.logCount += 1;
+				await req.organization.save();
+			}
+		}
 
 		return res.status(201).json({
 			success: true,

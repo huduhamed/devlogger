@@ -18,6 +18,19 @@ const organizationSchema = new mongoose.Schema(
 			logsPerMonth: { type: Number, default: 10000 },
 			members: { type: Number, default: 5 },
 		},
+		usage: {
+			month: { type: String }, // format YYYY-MM
+			logCount: { type: Number, default: 0 },
+		},
+		apiKeys: [
+			{
+				name: { type: String, required: true },
+				keyHash: { type: String, required: true },
+				createdAt: { type: Date, default: Date.now },
+				lastUsedAt: { type: Date },
+				revoked: { type: Boolean, default: false },
+			},
+		],
 	},
 	{ timestamps: true }
 );

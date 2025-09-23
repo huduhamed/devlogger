@@ -11,6 +11,7 @@ import {
 } from '../controllers/logController.js';
 import { validate } from '../middleware/validate.js';
 import { createLogSchema, updateLogSchema } from '../validation/schemas.js';
+import enforceUsage from '../middleware/enforceUsage.js';
 import authorize from '../middleware/auth.js';
 
 const router = Router();
@@ -25,7 +26,7 @@ router.get('/', authorize, getLogs);
 router.get('/:id', authorize, getLog);
 
 // create log endpoint
-router.post('/', authorize, validate(createLogSchema), createLog);
+router.post('/', authorize, enforceUsage, validate(createLogSchema), createLog);
 
 // update a log
 router.put('/:id', authorize, validate(updateLogSchema), updateLog);

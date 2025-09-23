@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 // internal imports
 import PrivateRoute from './components/PrivateRoute.jsx';
 import { Dashboard, SignIn, SignUp, Navbar, LogsList } from './index';
+import OrganizationSettings from './pages/OrganizationSettings.jsx';
 import CreateLog from './pages/CreateLog.jsx';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
 						<Route path="/dashboard" element={<Dashboard />} />
 						<Route path="/create-log" element={<CreateLog />} />
 						<Route path="/logs" element={<LogsList />} />
+						<Route path="/organization" element={<OrganizationSettings />} />
 					</Route>
 
 					{/* redirect unknown */}
