@@ -1,12 +1,5 @@
 import { jest } from '@jest/globals';
 
-/*
-  Unit tests for the logController.
-  - We mock the Log model entirely and call controller functions directly with fake req/res/next.
-  - This keeps tests fast and DB-free; we validate behavior and ownership checks.
-  - Assertions are written to tolerate minor differences in message text while still verifying core behavior.
-*/
-
 // logs
 let getLogs, createLog, updateLog, deleteLog, getLog, Log;
 
@@ -54,22 +47,32 @@ describe('logController', () => {
 
 	// get logs
 	describe('getLogs', () => {
-		test('returns all logs for authenticated users', async () => {
-			// arrange: mock Log.find(...).sort(...) chain to resolve with fake logs
+		test('returns paginated logs for authenticated users (legacy no org)', async () => {
 			const fakeLogs = [{ title: 'logtitle1' }, { title: 'logtitle2' }];
-			Log.find.mockReturnValue({ sort: jest.fn().mockResolvedValue(fakeLogs) });
+			const sortMock = jest.fn().mockReturnThis();
+			const skipMock = jest.fn().mockReturnThis();
+			const limitMock = jest.fn().mockResolvedValue(fakeLogs);
+			Log.find.mockReturnValue({ sort: sortMock, skip: skipMock, limit: limitMock });
+			Log.countDocuments = jest.fn().mockResolvedValue(2);
 
-			const req = { user: { _id: 'user1' } };
+			const req = { user: { _id: 'user1' }, query: {} };
 			const res = makeRes();
 			const next = jest.fn();
 
-			// act
 			await getLogs(req, res, next);
 
-			// query user & response contains data
 			expect(Log.find).toHaveBeenCalledWith({ user: 'user1' });
+			expect(sortMock).toHaveBeenCalledWith({ createdAt: -1 });
+			expect(skipMock).toHaveBeenCalledWith(0); // page 1
+			expect(limitMock).toHaveBeenCalledWith(20); // default limit
 			expect(res.status).toHaveBeenCalledWith(200);
-			expect(res.json).toHaveBeenCalledWith({ success: true, data: fakeLogs });
+			expect(res.json).toHaveBeenCalledWith(
+				expect.objectContaining({
+					success: true,
+					data: fakeLogs,
+					pagination: expect.objectContaining({ page: 1, limit: 20, total: 2, pages: 1 }),
+				})
+			);
 		});
 	});
 
@@ -145,7 +148,7 @@ describe('logController', () => {
 
 			// if not owner of log
 			expect(res.status).toHaveBeenCalledWith(403);
-			expect(res.json).toHaveBeenCalledWith({ message: 'Forbidden: not the owner' });
+			expect(res.json).toHaveBeenCalledWith({ message: 'Forbidden: outside your organization' });
 		});
 
 		// finally updates if owner matches
@@ -209,7 +212,7 @@ describe('logController', () => {
 			await deleteLog(req, res, next);
 
 			expect(res.status).toHaveBeenCalledWith(403);
-			expect(res.json).toHaveBeenCalledWith({ message: 'Forbidden: not the owner' });
+			expect(res.json).toHaveBeenCalledWith({ message: 'Forbidden: outside your organization' });
 		});
 
 		test('deletes when owner', async () => {
