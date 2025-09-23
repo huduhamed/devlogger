@@ -7,8 +7,43 @@ export async function getAllLogs(req, res, next) {
 		// restrict to organization scope if present on user (multi-tenancy)
 		const orgId = req.user && req.user.organization;
 		const query = orgId ? { organization: orgId } : {};
-		const logs = await Log.find(query).sort({ createdAt: -1 }).populate('user', 'name email');
-		return res.status(200).json({ success: true, data: logs });
+
+		// filtering
+		const { level, tag, q } = req.query;
+		if (level) query.level = level;
+		if (tag) query.tags = tag; // single tag exact match
+		if (q) {
+			// simple case-insensitive partial match on title or description
+			query.$or = [
+				{ title: { $regex: q, $options: 'i' } },
+				{ description: { $regex: q, $options: 'i' } },
+			];
+		}
+
+		// pagination
+		const page = Math.max(parseInt(req.query.page || '1', 10), 1);
+		const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
+		const skip = (page - 1) * limit;
+
+		const [logs, total] = await Promise.all([
+			Log.find(query)
+				.sort({ createdAt: -1 })
+				.skip(skip)
+				.limit(limit)
+				.populate('user', 'name email'),
+			Log.countDocuments(query),
+		]);
+
+		return res.status(200).json({
+			success: true,
+			data: logs,
+			pagination: {
+				page,
+				limit,
+				total,
+				pages: Math.ceil(total / limit) || 1,
+			},
+		});
 	} catch (error) {
 		next(error);
 	}
@@ -22,12 +57,39 @@ export async function getLogs(req, res, next) {
 		const orgId = req.user && req.user.organization;
 		// scope by organization primarily; optionally by user if no org yet (legacy)
 		const baseQuery = orgId ? { organization: orgId } : { user: userId };
-		const logs = await Log.find(baseQuery).sort({ createdAt: -1 });
+
+		// filtering
+		const query = { ...baseQuery };
+		const { level, tag, q } = req.query;
+		if (level) query.level = level;
+		if (tag) query.tags = tag;
+		if (q) {
+			query.$or = [
+				{ title: { $regex: q, $options: 'i' } },
+				{ description: { $regex: q, $options: 'i' } },
+			];
+		}
+
+		// pagination
+		const page = Math.max(parseInt(req.query.page || '1', 10), 1);
+		const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
+		const skip = (page - 1) * limit;
+
+		const [logs, total] = await Promise.all([
+			Log.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+			Log.countDocuments(query),
+		]);
 
 		// return
 		return res.status(200).json({
 			success: true,
 			data: logs,
+			pagination: {
+				page,
+				limit,
+				total,
+				pages: Math.ceil(total / limit) || 1,
+			},
 		});
 	} catch (error) {
 		next(error);

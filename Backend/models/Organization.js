@@ -22,7 +22,7 @@ const organizationSchema = new mongoose.Schema(
 	{ timestamps: true }
 );
 
-organizationSchema.index({ slug: 1 });
+// Removed explicit slug index; `unique: true` on slug already creates the index and avoids duplicate warning.
 
 const Organization = mongoose.model('Organization', organizationSchema);
 export default Organization;
