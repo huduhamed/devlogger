@@ -14,6 +14,12 @@ const organizationSchema = new mongoose.Schema(
 			},
 		],
 		plan: { type: String, enum: ['free', 'pro', 'enterprise'], default: 'free' },
+		billing: {
+			customerId: { type: String },
+			subscriptionId: { type: String },
+			status: { type: String },
+			currentPeriodEnd: { type: Date },
+		},
 		limits: {
 			logsPerMonth: { type: Number, default: 10000 },
 			members: { type: Number, default: 5 },
@@ -34,8 +40,6 @@ const organizationSchema = new mongoose.Schema(
 	},
 	{ timestamps: true }
 );
-
-// Removed explicit slug index; `unique: true` on slug already creates the index and avoids duplicate warning.
 
 const Organization = mongoose.model('Organization', organizationSchema);
 export default Organization;
