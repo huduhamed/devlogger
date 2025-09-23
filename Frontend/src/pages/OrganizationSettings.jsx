@@ -82,10 +82,10 @@ function OrganizationSettings() {
     }
   };
 
-  const revokeKey = async (name) => {
+  const revokeKey = async (keyId) => {
     if (!window.confirm('Revoke this API key?')) return;
     try {
-      await API.post(`/organizations/api-keys/${encodeURIComponent(name)}/revoke`);
+      await API.post(`/organizations/api-keys/${encodeURIComponent(keyId)}/revoke`);
       fetchApiKeys();
       toast.success('Key revoked');
     } catch (err) {
@@ -144,16 +144,19 @@ function OrganizationSettings() {
         )}
         <ul className="space-y-2">
           {apiKeys.map((k) => (
-            <li key={k.name} className="flex justify-between items-center border rounded p-2 bg-white">
+            <li key={k.keyId || k.name} className="flex justify-between items-center border rounded p-2 bg-white">
               <div>
                 <span className="font-medium">{k.name}</span>
+                {k.keyId && (
+                  <span className="ml-2 text-xs text-gray-400">id: {k.keyId}</span>
+                )}
                 <span className="ml-2 text-xs text-gray-500">{k.revoked ? 'revoked' : 'active'}</span>
                 {k.lastUsedAt && (
                   <span className="ml-2 text-xs text-gray-400">last used {new Date(k.lastUsedAt).toLocaleString()}</span>
                 )}
               </div>
               {!k.revoked && (
-                <button onClick={() => revokeKey(k.name)} className="text-red-600 text-sm hover:underline">Revoke</button>
+                <button onClick={() => revokeKey(k.keyId)} className="text-red-600 text-sm hover:underline">Revoke</button>
               )}
             </li>
           ))}
