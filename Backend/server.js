@@ -10,14 +10,14 @@ import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoute.js';
 import logRoutes from './routes/logRoutes.js';
 import organizationRoutes from './routes/organizationRoutes.js';
-import { PORT } from './config/env.js';
+import { PORT, FRONTEND_URL } from './config/env.js';
 import billingRoutes from './routes/billingRoutes.js';
 import { stripeWebhook } from './controllers/billingController.js';
 import errorHandler from './middleware/errorHandler.js';
 import connectToDB from './database/mongodb.js';
 
 const app = express();
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+app.use(cors({ origin: FRONTEND_URL || 'http://localhost:5173', credentials: true }));
 
 // security + tracing middlewares
 app.use(requestId);

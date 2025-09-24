@@ -6,6 +6,7 @@ import {
 	createCheckoutSession,
 	createPortalSession,
 	stripeWebhook,
+	getBillingConfig,
 } from '../controllers/billingController.js';
 
 const router = Router();
@@ -15,5 +16,6 @@ router.post('/webhook', (req, res, next) => next());
 
 router.post('/checkout', authorize, createCheckoutSession);
 router.post('/portal', authorize, createPortalSession);
+router.get('/config', authorize, getBillingConfig);
 
 export default router;
