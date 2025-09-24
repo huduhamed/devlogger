@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useContext } from 'react';
+import { toast } from 'react-toastify';
 
 // internal imports
 import API from '../services/api';
-import { toast } from 'react-toastify';
 import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
 import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
 import OrgContext from '../context/OrgContext.jsx';
-import { useContext } from 'react';
+import { PLANS } from '../config/plans.js';
 
 function OrganizationSettings() {
 	const { refresh: refreshOrg, org: orgCtx } = useContext(OrgContext);
@@ -153,7 +154,9 @@ function OrganizationSettings() {
 			: 0;
 
 	const status = org.billing?.status;
-	const statusEnd = org.billing?.currentPeriodEnd ? new Date(org.billing.currentPeriodEnd).toLocaleDateString() : null;
+	const statusEnd = org.billing?.currentPeriodEnd
+		? new Date(org.billing.currentPeriodEnd).toLocaleDateString()
+		: null;
 	let billingStatus = null;
 	if (status) {
 		switch (status) {
@@ -188,7 +191,9 @@ function OrganizationSettings() {
 								Plan: <span className="font-medium capitalize">{org.plan}</span>
 							</p>
 							{billingStatus && (
-								<p className="text-sm text-gray-600">Billing: <span className="font-medium">{billingStatus}</span></p>
+								<p className="text-sm text-gray-600">
+									Billing: <span className="font-medium">{billingStatus}</span>
+								</p>
 							)}
 							<p className="text-sm text-gray-600">
 								Monthly Logs: {org.usage?.logCount || 0} / {org.limits?.logsPerMonth}
@@ -219,25 +224,44 @@ function OrganizationSettings() {
 							<p className="text-sm text-gray-600 font-medium">Plans</p>
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 								<div className="border rounded-lg p-3 bg-white dark:bg-gray-900">
-									<h4 className="font-semibold">Pro</h4>
+									<h4 className="font-semibold">
+										{PLANS.pro.name}{' '}
+										<span className="text-sm text-gray-500 font-normal">
+											${PLANS.pro.priceMonthly}/mo
+										</span>
+									</h4>
 									<ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300 mt-1">
 										<li>Higher monthly log limit</li>
 										<li>Email support</li>
 									</ul>
 									<div className="mt-2">
-										<Button size="sm" onClick={() => startCheckout('pro')} disabled={org.plan === 'pro'}>
+										<Button
+											size="sm"
+											onClick={() => startCheckout('pro')}
+											disabled={org.plan === 'pro'}
+										>
 											{org.plan === 'pro' ? 'Current Plan' : 'Choose Pro'}
 										</Button>
 									</div>
 								</div>
 								<div className="border rounded-lg p-3 bg-white dark:bg-gray-900">
-									<h4 className="font-semibold">Enterprise</h4>
+									<h4 className="font-semibold">
+										{PLANS.enterprise.name}{' '}
+										<span className="text-sm text-gray-500 font-normal">
+											${PLANS.enterprise.priceMonthly}/mo
+										</span>
+									</h4>
 									<ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300 mt-1">
 										<li>Custom limits</li>
 										<li>Priority support</li>
 									</ul>
 									<div className="mt-2">
-										<Button size="sm" variant="secondary" onClick={() => startCheckout('enterprise')} disabled={org.plan === 'enterprise'}>
+										<Button
+											size="sm"
+											variant="secondary"
+											onClick={() => startCheckout('enterprise')}
+											disabled={org.plan === 'enterprise'}
+										>
 											{org.plan === 'enterprise' ? 'Current Plan' : 'Choose Enterprise'}
 										</Button>
 									</div>

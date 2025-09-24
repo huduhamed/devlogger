@@ -47,6 +47,9 @@ function Navbar() {
 					<NavLink to="/logs" className={linkClasses}>
 						View Logs
 					</NavLink>
+					<NavLink to="/pricing" className={linkClasses}>
+						Pricing
+					</NavLink>
 					<NavLink to="/organization" className={linkClasses}>
 						Organization
 					</NavLink>

@@ -65,6 +65,25 @@ Response pagination structure:
 	npm run dev
 	```
 
+	### Stripe Billing Setup
+	To enable plan checkout and the billing portal:
+
+	1) Create products and prices in Stripe (Dashboard → Products). Copy the monthly price IDs for Pro and Enterprise.
+	2) Set backend env vars (see `Backend/.env.example`):
+		- `STRIPE_SECRET_KEY`
+		- `STRIPE_WEBHOOK_SECRET` (from Stripe CLI or Dashboard webhook endpoint)
+		- `STRIPE_PRICE_PRO_MONTHLY`
+		- `STRIPE_PRICE_ENTERPRISE_MONTHLY`
+		- `FRONTEND_URL` (e.g., `http://localhost:5173` for dev)
+	3) Start backend and frontend.
+	4) In a separate terminal, run Stripe CLI to forward webhooks:
+
+	```bash
+	stripe listen --forward-to localhost:5500/api/v1/billing/webhook
+	```
+
+	5) Visit `/pricing` in the app, click a paid plan, and complete checkout. You’ll return to `/organization` and should see your plan and billing status update.
+
 ## Multi-Tenancy Model
 On sign-up:
 * User created
