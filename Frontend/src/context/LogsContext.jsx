@@ -56,6 +56,21 @@ export function LogsProvider({ children }) {
 		fetchLogs();
 	}, [fetchLogs]);
 
+	// Revalidate logs on window focus & periodic interval (only if not actively loading)
+	useEffect(() => {
+		const onFocus = () => {
+			if (!document.hidden && !loading) fetchLogs();
+		};
+		window.addEventListener('focus', onFocus);
+		const intervalId = setInterval(() => {
+			if (!loading) fetchLogs();
+		}, 45000);
+		return () => {
+			window.removeEventListener('focus', onFocus);
+			clearInterval(intervalId);
+		};
+	}, [fetchLogs, loading]);
+
 	const updateFilters = (f) => {
 		setFilters((prev) => ({ ...prev, ...f }));
 		setPage(1); // reset to first page when filters change

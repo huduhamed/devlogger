@@ -1,4 +1,4 @@
-import { createContext, useCallback, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // internal imports
 import API from '../services/api';
@@ -31,6 +31,25 @@ export function OrgProvider({ children }) {
 		() => ({ org, setOrg, loading, error, refresh }),
 		[org, loading, error, refresh]
 	);
+
+	// Auto refresh on window focus and periodic interval
+	useEffect(() => {
+		let intervalId;
+		const onFocus = () => {
+			if (!document.hidden) refresh();
+		};
+		window.addEventListener('focus', onFocus);
+		// periodic every 60s
+		intervalId = setInterval(() => {
+			refresh();
+		}, 60000);
+		// initial attempt if none loaded yet
+		if (!org) refresh();
+		return () => {
+			window.removeEventListener('focus', onFocus);
+			clearInterval(intervalId);
+		};
+	}, [refresh, org]);
 
 	return <OrgContext.Provider value={value}>{children}</OrgContext.Provider>;
 }
