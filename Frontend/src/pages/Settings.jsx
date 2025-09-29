@@ -22,6 +22,7 @@ export default function Settings() {
 		avatarUrl: user?.avatarUrl || '',
 	});
 	const [orgForm, setOrgForm] = useState({ name: org?.name || '' });
+	const isOwner = org?.owner?._id && user?._id && org.owner._id === user._id;
 	const [loading, setLoading] = useState(false);
 	const [orgLoading, setOrgLoading] = useState(false);
 
@@ -66,6 +67,18 @@ export default function Settings() {
 			toast.error(err.response?.data?.message || 'Failed to update organization');
 		} finally {
 			setOrgLoading(false);
+		}
+	};
+
+	const deleteAccount = async () => {
+		if (!window.confirm('Delete your account? This cannot be undone.')) return;
+		try {
+			await API.delete(`/users/${user._id}`);
+			toast.success('Account deleted');
+			// simple full reload clears state
+			window.location.href = '/';
+		} catch (err) {
+			toast.error(err.response?.data?.message || 'Failed to delete account');
 		}
 	};
 
@@ -163,20 +176,14 @@ export default function Settings() {
 							<div className="flex items-center gap-2 text-sm text-gray-600">
 								<Spinner /> Loading organization...
 							</div>
+						) : !isOwner ? (
+							<div className="text-sm text-gray-600">You are not the owner. Only the owner can rename the organization.</div>
 						) : (
 							<form onSubmit={saveOrg} className="space-y-4">
-								<Input
-									label="Organization Name"
-									name="name"
-									value={orgForm.name}
-									onChange={onOrgChange}
-									required
-								/>
+								<Input label="Organization Name" name="name" value={orgForm.name} onChange={onOrgChange} required />
 								<p className="text-xs text-gray-500">Slug auto-updates from the name.</p>
 								<div className="flex justify-end">
-									<Button type="submit" loading={orgLoading}>
-										Save Organization
-									</Button>
+									<Button type="submit" loading={orgLoading}>Save Organization</Button>
 								</div>
 							</form>
 						)}
@@ -188,16 +195,22 @@ export default function Settings() {
 				<CardHeader title="Advanced" subtitle="Additional controls" />
 				<CardBody>
 					<ul className="text-sm list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
-						<li>
-							Password changes immediately invalidate old credential (token refresh handled on next
-							login).
-						</li>
-						<li>
-							Avatar is stored client-side (base64) for now. For production, move to object storage
-							(S3, etc.).
-						</li>
-						<li>Org name changes propagate to members on next refresh.</li>
+						<li>Password changes immediately invalidate old credentials (fresh token on next login).</li>
+						<li>Avatar stored client-side base64 now; prefer object storage in production.</li>
+						<li>Org rename propagates on next member refresh.</li>
 					</ul>
+				</CardBody>
+			</Card>
+
+			<Card>
+				<CardHeader title="Danger Zone" subtitle="Irreversible actions" />
+				<CardBody>
+					<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 border border-red-300 rounded bg-red-50 dark:bg-red-900/20 dark:border-red-700">
+						<div className="text-sm text-red-700 dark:text-red-300">
+							<strong>Delete Account:</strong> This permanently removes your user and cannot be undone.
+						</div>
+						<Button variant="danger" onClick={deleteAccount}>Delete Account</Button>
+					</div>
 				</CardBody>
 			</Card>
 		</div>
