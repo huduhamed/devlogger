@@ -119,3 +119,24 @@ export async function deleteUser(req, res, next) {
 		return next(err);
 	}
 }
+
+// partial self update (profile settings)
+export async function updateSelf(req, res, next) {
+	try {
+		const userId = req.user?._id;
+		if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+		const allowed = ['name', 'email', 'password', 'avatarUrl'];
+		const update = {};
+		for (const key of allowed) {
+			if (req.body[key] != null && req.body[key] !== '') update[key] = req.body[key];
+		}
+		if (update.password) {
+			update.password = await bcrypt.hash(update.password, 10);
+		}
+		const user = await User.findByIdAndUpdate(userId, update, { new: true, runValidators: true }).select('-password');
+		if (!user) return res.status(404).json({ message: 'User not found' });
+		res.json({ success: true, data: user });
+	} catch (error) {
+		next(error);
+	}
+}

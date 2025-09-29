@@ -13,6 +13,7 @@ import {
 	revokeApiKey,
 	ingestLog,
 	upgradePlan,
+	updateOrganization,
 } from '../controllers/organizationController.js';
 
 const router = Router();
@@ -20,6 +21,7 @@ const router = Router();
 // Authenticated org-level operations
 router.get('/me', authorize, getOrganization);
 router.get('/members', authorize, listMembers);
+router.patch('/me', authorize, requireOrgOwner, updateOrganization);
 router.post('/members', authorize, requireOrgOwner, addMember);
 router.delete('/members/:userId', authorize, requireOrgOwner, removeMember);
 

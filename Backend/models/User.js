@@ -28,6 +28,10 @@ const userSchema = new mongoose.Schema(
 			default: 'user',
 		},
 		organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization' },
+		avatarUrl: {
+			type: String,
+			default: '',
+		},
 	},
 	{ timestamps: true }
 );

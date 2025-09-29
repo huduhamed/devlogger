@@ -174,6 +174,32 @@ export async function upgradePlan(req, res, next) {
 	}
 }
 
+export async function updateOrganization(req, res, next) {
+	try {
+		const orgId = req.user?.organization;
+		if (!orgId) return res.status(400).json({ message: 'No organization for user' });
+		const allowed = ['name'];
+		const update = {};
+		for (const key of allowed) {
+			if (req.body[key] != null && req.body[key] !== '') update[key] = req.body[key];
+		}
+		if (update.name) {
+			update.slug = update.name
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/(^-|-$)+/g, '');
+		}
+		const org = await Organization.findByIdAndUpdate(orgId, update, { new: true, runValidators: true })
+			.select('-apiKeys')
+			.populate('owner', 'name email')
+			.populate('members.user', 'name email');
+		if (!org) return res.status(404).json({ message: 'Organization not found' });
+		return res.json({ success: true, data: org });
+	} catch (err) {
+		next(err);
+	}
+}
+
 // Public-style ingestion using x-api-key header
 export async function ingestLog(req, res, next) {
 	try {

@@ -7,6 +7,7 @@ import {
 	getUser,
 	getUsers,
 	updateUser,
+	updateSelf,
 } from '../controllers/userController.js';
 import authorize from '../middleware/auth.js';
 import { requireRole, requireSelfOrAdmin } from '../middleware/roles.js';
@@ -25,6 +26,9 @@ userRouter.post('/', authorize, requireRole('admin'), createUser);
 
 // update user endpoint (self or admin)
 userRouter.put('/:id', authorize, requireSelfOrAdmin('id'), updateUser);
+
+// self update convenience (profile settings)
+userRouter.patch('/me', authorize, updateSelf);
 
 // delete user endpoint (self or admin)
 userRouter.delete('/:id', authorize, requireSelfOrAdmin('id'), deleteUser);

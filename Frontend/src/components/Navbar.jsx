@@ -64,27 +64,22 @@ function Navbar() {
 						{theme === 'dark' ? '🌙' : '☀️'}
 					</Button>
 					{auth?.user ? (
-						<>
-							<div className="flex items-center gap-3">
-								{org && (
-									<div className="hidden md:flex flex-col items-end mr-2 text-xs text-gray-600 dark:text-gray-300">
-										<span className="font-medium">{org.name}</span>
-										<span className="capitalize">Plan: {org.plan}</span>
-									</div>
-								)}
-								<div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
-									{auth.user?.name?.[0]?.toUpperCase() || 'U'}
+						<div className="flex items-center gap-3">
+							{org && (
+								<div className="hidden md:flex flex-col items-end mr-2 text-xs text-gray-600 dark:text-gray-300">
+									<span className="font-medium">{org.name}</span>
+									<span className="capitalize">Plan: {org.plan}</span>
 								</div>
-								<span className="capitalize font-medium">{auth.user?.name}</span>
+							)}
+							<NavLink to="/settings" className={linkClasses} title="Settings">⚙️</NavLink>
+							<div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
+								{auth.user?.name?.[0]?.toUpperCase() || 'U'}
 							</div>
-							<Button variant="danger" onClick={handleLogout}>
-								Logout
-							</Button>
-						</>
+							<span className="capitalize font-medium mr-2">{auth.user?.name}</span>
+							<Button variant="danger" onClick={handleLogout}>Logout</Button>
+						</div>
 					) : (
-						<NavLink to="/sign-in" className="text-sm text-blue-600 hover:underline">
-							Sign In
-						</NavLink>
+						<NavLink to="/sign-in" className="text-sm text-blue-600 hover:underline">Sign In</NavLink>
 					)}
 				</div>
 			</div>
