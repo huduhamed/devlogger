@@ -75,6 +75,7 @@ export async function updateUser(req, res, next) {
 		const update = { ...req.body };
 		if (update.password) {
 			update.password = await bcrypt.hash(update.password, 10);
+			update.passwordChangedAt = new Date();
 		}
 
 		const user = await User.findByIdAndUpdate(req.params.id, update, {
@@ -130,9 +131,10 @@ export async function updateSelf(req, res, next) {
 		for (const key of allowed) {
 			if (req.body[key] != null && req.body[key] !== '') update[key] = req.body[key];
 		}
-		if (update.password) {
-			update.password = await bcrypt.hash(update.password, 10);
-		}
+			if (update.password) {
+				update.password = await bcrypt.hash(update.password, 10);
+				update.passwordChangedAt = new Date();
+			}
 		const user = await User.findByIdAndUpdate(userId, update, { new: true, runValidators: true }).select('-password');
 		if (!user) return res.status(404).json({ message: 'User not found' });
 		res.json({ success: true, data: user });
