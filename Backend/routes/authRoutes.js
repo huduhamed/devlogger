@@ -15,6 +15,6 @@ authRouter.post('/sign-in', validate(signInSchema), signIn);
 
 // sign-out endpoints path => /api/v1/auth/sign-out
 authRouter.post('/sign-out', signOut);
-router.post('/google', googleSignIn);
+authRouter.post('/google', googleSignIn);
 
 export default authRouter;

@@ -14,7 +14,13 @@ function SignIn() {
 	const [form, setForm] = useState({ email: '', password: '' });
 	const [loading, setLoading] = useState(false);
 	const navigate = useNavigate();
-	const { signin } = useContext(AuthContext);
+	const { auth, signin } = useContext(AuthContext);
+
+	// redirect if already logged in
+	if (auth?.token && auth?.user) {
+		navigate('/dashboard', { replace: true });
+		return null;
+	}
 
 	// handle change
 	const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -37,26 +43,36 @@ function SignIn() {
 	};
 
 	// Google Sign-In handler
-	const handleGoogleSignIn = async () => {
+	const handleGoogleSignIn = () => {
 		setLoading(true);
-		try {
-			// Use Google Identity Services (popup)
-			if (!window.google) {
-				toast.error('Google API not loaded');
-				setLoading(false);
-				return;
-			}
-			const client = window.google.accounts.id;
-			client.prompt((notification) => {
-				if (notification.isNotDisplayed()) {
-					toast.error('Google Sign-In not available');
+		const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+		if (!window.google || !clientId) {
+			toast.error('Google API or Client ID not available');
+			setLoading(false);
+			return;
+		}
+		window.google.accounts.id.initialize({
+			client_id: clientId,
+			callback: async (response) => {
+				if (!response.credential) {
+					toast.error('Google Sign-In failed: No credential');
+					setLoading(false);
+					return;
+				}
+				try {
+					const res = await API.post('/auth/google', { idToken: response.credential });
+					const { token, user } = res.data;
+					if (!token || !user) throw new Error('Invalid response from API');
+					signin(token, user);
+					navigate('/dashboard', { replace: true });
+				} catch (error) {
+					toast.error('Google Sign-In failed: ' + (error.response?.data?.message || error.message));
+				} finally {
 					setLoading(false);
 				}
-			});
-		} catch (error) {
-			toast.error('Google Sign-In failed: ' + error.message);
-			setLoading(false);
-		}
+			},
+		});
+		window.google.accounts.id.prompt();
 	};
 
 	return (
