@@ -2,6 +2,76 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 // internal imports
+import { verifyGoogleToken } from '../config/google.js';
+
+// Google Sign-In
+export async function googleSignIn(req, res, next) {
+	try {
+		const { idToken } = req.body;
+		if (!idToken) {
+			return res.status(400).json({ message: 'Google ID token required' });
+		}
+		// Verify Google token and extract payload
+		let payload;
+		try {
+			payload = await verifyGoogleToken(idToken);
+		} catch (err) {
+			return res.status(401).json({ message: 'Invalid Google token' });
+		}
+		const { email, name, picture, sub: googleId } = payload;
+		if (!email) {
+			return res.status(400).json({ message: 'Google account must have an email' });
+		}
+		let user = await User.findOne({ email });
+		let isNewUser = false;
+		if (!user) {
+			// Create user and organization for first-time Google login
+			user = await User.create({
+				name: name || 'Google User',
+				email,
+				password: googleId,
+				avatarUrl: picture || '',
+			});
+			// create organization
+			const orgBase = (name || 'google-user')
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z0-9\s-]/g, '')
+				.replace(/\s+/g, '-');
+			let slugCandidate = orgBase || `org-${user._id.toString().slice(-6)}`;
+			let counter = 1;
+			while (await Organization.findOne({ slug: slugCandidate })) {
+				slugCandidate = `${orgBase}-${counter++}`;
+			}
+			const organization = await Organization.create({
+				name: `${name || 'Google User'}'s Org`,
+				slug: slugCandidate,
+				owner: user._id,
+				members: [{ user: user._id, role: 'owner' }],
+			});
+			user.organization = organization._id;
+			await user.save();
+			isNewUser = true;
+		}
+		// issue JWT
+		const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+		let org = null;
+		if (isNewUser) {
+			org = await Organization.findById(user.organization);
+		}
+		return res.status(200).json({
+			success: true,
+			message: isNewUser ? 'Google user created and signed in' : 'Google user signed in',
+			token,
+			user,
+			organization: org,
+		});
+	} catch (error) {
+		return next(error);
+	}
+}
+
+// internal imports
 import User from '../models/User.js';
 import Organization from '../models/Organization.js';
 import { JWT_EXPIRES_IN, JWT_SECRET } from '../config/env.js';
@@ -24,7 +94,11 @@ export async function signUp(req, res, next) {
 		let newUser = await User.create({ name, email, password: hashed });
 
 		// derive organization name & slug (basic slugify: lowercase, alphanum + hyphen)
-		const orgBase = name.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+		const orgBase = name
+			.trim()
+			.toLowerCase()
+			.replace(/[^a-z0-9\s-]/g, '')
+			.replace(/\s+/g, '-');
 		let slugCandidate = orgBase || `org-${newUser._id.toString().slice(-6)}`;
 		// ensure uniqueness by appending counter if needed
 		let counter = 1;
@@ -37,9 +111,7 @@ export async function signUp(req, res, next) {
 			name: `${name}'s Org`,
 			slug: slugCandidate,
 			owner: newUser._id,
-			members: [
-				{ user: newUser._id, role: 'owner' },
-			],
+			members: [{ user: newUser._id, role: 'owner' }],
 		});
 
 		// update user with organization reference
