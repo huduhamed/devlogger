@@ -72,9 +72,19 @@ function Navbar() {
 								</div>
 							)}
 							<NavLink to="/settings" className={linkClasses} title="Settings">⚙️</NavLink>
-							<div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
-								{auth.user?.name?.[0]?.toUpperCase() || 'U'}
-							</div>
+							<NavLink to="/settings" title="Profile Settings">
+								<div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold overflow-hidden cursor-pointer">
+									{auth.user?.avatarUrl ? (
+										<img
+											src={auth.user.avatarUrl}
+											alt="avatar"
+											className="w-full h-full object-cover"
+										/>
+									) : (
+										auth.user?.name?.[0]?.toUpperCase() || 'U'
+									)}
+								</div>
+							</NavLink>
 							<span className="capitalize font-medium mr-2">{auth.user?.name}</span>
 							<Button variant="danger" onClick={handleLogout}>Logout</Button>
 						</div>

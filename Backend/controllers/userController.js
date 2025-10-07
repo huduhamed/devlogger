@@ -125,20 +125,33 @@ export async function deleteUser(req, res, next) {
 export async function updateSelf(req, res, next) {
 	try {
 		const userId = req.user?._id;
-		if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+		if (!userId) {
+			console.error('Avatar upload failed: Not authenticated');
+			return res.status(401).json({ message: 'Not authenticated' });
+		}
 		const allowed = ['name', 'email', 'password', 'avatarUrl'];
 		const update = {};
 		for (const key of allowed) {
 			if (req.body[key] != null && req.body[key] !== '') update[key] = req.body[key];
 		}
-			if (update.password) {
-				update.password = await bcrypt.hash(update.password, 10);
-				update.passwordChangedAt = new Date();
-			}
-		const user = await User.findByIdAndUpdate(userId, update, { new: true, runValidators: true }).select('-password');
-		if (!user) return res.status(404).json({ message: 'User not found' });
+		if (update.avatarUrl) {
+			console.log('Avatar upload attempt for user:', userId, 'Size:', update.avatarUrl.length);
+		}
+		if (update.password) {
+			update.password = await bcrypt.hash(update.password, 10);
+			update.passwordChangedAt = new Date();
+		}
+		const user = await User.findByIdAndUpdate(userId, update, {
+			new: true,
+			runValidators: true,
+		}).select('-password -passwordChangedAt');
+		if (!user) {
+			console.error('Avatar upload failed: User not found', userId);
+			return res.status(404).json({ message: 'User not found' });
+		}
 		res.json({ success: true, data: user });
 	} catch (error) {
+		console.error('Avatar upload error:', error);
 		next(error);
 	}
 }

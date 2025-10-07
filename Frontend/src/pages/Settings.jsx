@@ -43,13 +43,24 @@ export default function Settings() {
 			const res = await API.patch('/users/me', payload);
 			// update auth context user
 			const updated = res.data.data;
+			// always keep token in localStorage for API auth
 			const token = auth.token;
 			localStorage.setItem('user', JSON.stringify(updated));
+			if (token) localStorage.setItem('token', token);
 			setAuth({ token, user: updated });
 			toast.success('Profile updated');
 			setProfile((p) => ({ ...p, password: '' }));
 		} catch (err) {
-			toast.error(err.response?.data?.message || 'Failed to update profile');
+			// Show full error details for troubleshooting
+			let msg = 'Failed to update profile';
+			if (err.response) {
+				msg = `Error: ${err.response.status} - ${err.response.data?.message || err.message}`;
+				if (err.response.data?.error) msg += ` (${err.response.data.error})`;
+			} else if (err.message) {
+				msg = err.message;
+			}
+			toast.error(msg);
+			console.error('Avatar upload error:', err);
 		} finally {
 			setLoading(false);
 		}
@@ -177,13 +188,23 @@ export default function Settings() {
 								<Spinner /> Loading organization...
 							</div>
 						) : !isOwner ? (
-							<div className="text-sm text-gray-600">You are not the owner. Only the owner can rename the organization.</div>
+							<div className="text-sm text-gray-600">
+								You are not the owner. Only the owner can rename the organization.
+							</div>
 						) : (
 							<form onSubmit={saveOrg} className="space-y-4">
-								<Input label="Organization Name" name="name" value={orgForm.name} onChange={onOrgChange} required />
+								<Input
+									label="Organization Name"
+									name="name"
+									value={orgForm.name}
+									onChange={onOrgChange}
+									required
+								/>
 								<p className="text-xs text-gray-500">Slug auto-updates from the name.</p>
 								<div className="flex justify-end">
-									<Button type="submit" loading={orgLoading}>Save Organization</Button>
+									<Button type="submit" loading={orgLoading}>
+										Save Organization
+									</Button>
 								</div>
 							</form>
 						)}
@@ -195,7 +216,9 @@ export default function Settings() {
 				<CardHeader title="Advanced" subtitle="Additional controls" />
 				<CardBody>
 					<ul className="text-sm list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
-						<li>Password changes immediately invalidate old credentials (fresh token on next login).</li>
+						<li>
+							Password changes immediately invalidate old credentials (fresh token on next login).
+						</li>
 						<li>Avatar stored client-side base64 now; prefer object storage in production.</li>
 						<li>Org rename propagates on next member refresh.</li>
 					</ul>
@@ -207,9 +230,12 @@ export default function Settings() {
 				<CardBody>
 					<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 border border-red-300 rounded bg-red-50 dark:bg-red-900/20 dark:border-red-700">
 						<div className="text-sm text-red-700 dark:text-red-300">
-							<strong>Delete Account:</strong> This permanently removes your user and cannot be undone.
+							<strong>Delete Account:</strong> This permanently removes your user and cannot be
+							undone.
 						</div>
-						<Button variant="danger" onClick={deleteAccount}>Delete Account</Button>
+						<Button variant="danger" onClick={deleteAccount}>
+							Delete Account
+						</Button>
 					</div>
 				</CardBody>
 			</Card>

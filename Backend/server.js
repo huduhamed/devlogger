@@ -43,7 +43,6 @@ app.use((req, _res, next) => {
 	return next();
 });
 
-// body & cookie parsing
 // Stripe webhook needs raw body; use a conditional parser
 app.use((req, res, next) => {
 	if (req.originalUrl === '/api/v1/billing/webhook') {
