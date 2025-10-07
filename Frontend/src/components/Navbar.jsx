@@ -32,8 +32,10 @@ function Navbar() {
 	return (
 		<nav className="bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-gray-900/80 shadow-md sticky top-0 z-50">
 			<div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-				{/* Left side - app title */}
-				<h1 className="text-xl font-bold text-blue-600">DevLogger</h1>
+				{/* Left side - app title (clickable logo) */}
+				<NavLink to="/" title="Home">
+					<h1 className="text-xl font-bold text-blue-600 cursor-pointer hover:scale-105 transition-transform">DevLogger</h1>
+				</NavLink>
 
 				{/* Middle links */}
 				<div className="flex gap-4">

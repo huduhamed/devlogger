@@ -6,6 +6,7 @@ import { Dashboard, SignIn, SignUp, Navbar, LogsList, Pricing } from './index';
 import Settings from './pages/Settings.jsx';
 import OrganizationSettings from './pages/OrganizationSettings.jsx';
 import CreateLog from './pages/CreateLog.jsx';
+import Home from './pages/Home.jsx';
 
 function App() {
 	return (
@@ -15,13 +16,13 @@ function App() {
 
 			<div className="flex-1 p-6">
 				<Routes>
-					{/* public routes */}
-					<Route path="/" element={<SignIn />} />
+					{/* public home page */}
+					<Route path="/" element={<Home />} />
 					<Route path="/sign-in" element={<SignIn />} />
 					<Route path="/sign-up" element={<SignUp />} />
 
 					{/* private routes */}
-					<Route element={<PrivateRoute />}>
+					<Route element={<PrivateRoute />}> 
 						<Route path="/dashboard" element={<Dashboard />} />
 						<Route path="/create-log" element={<CreateLog />} />
 						<Route path="/logs" element={<LogsList />} />
