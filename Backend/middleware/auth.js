@@ -28,7 +28,7 @@ async function authorize(req, res, next) {
 			return res.status(401).json({ message: 'Unauthorized: invalid token' });
 		}
 
-		const user = await User.findById(userId).select('-password passwordChangedAt');
+		const user = await User.findById(userId).select('-password -passwordChangedAt');
 		if (!user) {
 			return res.status(401).json({ message: 'Unauthorized: user not found' });
 		}
@@ -37,7 +37,9 @@ async function authorize(req, res, next) {
 		if (user.passwordChangedAt && decoded.iat) {
 			const changedAt = Math.floor(new Date(user.passwordChangedAt).getTime() / 1000);
 			if (decoded.iat < changedAt) {
-				return res.status(401).json({ message: 'Unauthorized: password changed, please log in again.' });
+				return res
+					.status(401)
+					.json({ message: 'Unauthorized: password changed, please log in again.' });
 			}
 		}
 
