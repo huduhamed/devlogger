@@ -1,3 +1,37 @@
+// Create organization for user if none exists
+export async function createOrganization(req, res, next) {
+	try {
+		const userId = req.user?._id;
+		if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+		const user = await User.findById(userId);
+		if (!user) return res.status(404).json({ message: 'User not found' });
+		if (user.organization) {
+			return res.status(400).json({ message: 'User already has an organization' });
+		}
+		const { name } = req.body;
+		if (!name || typeof name !== 'string' || name.trim().length < 2) {
+			return res.status(400).json({ message: 'Organization name required' });
+		}
+		// slugify name
+		const orgBase = name.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+		let slugCandidate = orgBase || `org-${userId.toString().slice(-6)}`;
+		let counter = 1;
+		while (await Organization.findOne({ slug: slugCandidate })) {
+			slugCandidate = `${orgBase}-${counter++}`;
+		}
+		const organization = await Organization.create({
+			name,
+			slug: slugCandidate,
+			owner: user._id,
+			members: [{ user: user._id, role: 'owner' }],
+		});
+		user.organization = organization._id;
+		await user.save();
+		return res.status(201).json({ success: true, message: 'Organization created', data: organization });
+	} catch (err) {
+		next(err);
+	}
+}
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 

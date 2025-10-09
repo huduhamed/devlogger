@@ -14,10 +14,13 @@ import {
 	ingestLog,
 	upgradePlan,
 	updateOrganization,
+	createOrganization,
 } from '../controllers/organizationController.js';
 
 const router = Router();
 
+// Organization creation (if user has none)
+router.post('/', authorize, createOrganization);
 // Authenticated org-level operations
 router.get('/me', authorize, getOrganization);
 router.get('/members', authorize, listMembers);
