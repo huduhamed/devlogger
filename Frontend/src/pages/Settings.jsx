@@ -8,7 +8,7 @@ import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
 import { toast } from 'react-toastify';
 import API from '../services/api';
-import Spinner from '../components/ui/Spinner.jsx';
+// import Spinner from '../components/ui/Spinner.jsx';
 
 export default function Settings() {
 	const { auth, setAuth } = useContext(AuthContext);
@@ -184,9 +184,35 @@ export default function Settings() {
 					<CardHeader title="Organization" subtitle="Name & identity" />
 					<CardBody>
 						{!org ? (
-							<div className="flex items-center gap-2 text-sm text-gray-600">
-								<Spinner /> Loading organization...
-							</div>
+							<form
+								onSubmit={async (e) => {
+									e.preventDefault();
+									setOrgLoading(true);
+									try {
+										const res = await API.post('/organizations', { name: orgForm.name });
+										toast.success('Organization created');
+										await refreshOrg?.();
+									} catch (err) {
+										toast.error(err.response?.data?.message || 'Failed to create organization');
+									} finally {
+										setOrgLoading(false);
+									}
+								}}
+								className="space-y-4"
+							>
+								<Input
+									label="Organization Name"
+									name="name"
+									value={orgForm.name}
+									onChange={onOrgChange}
+									required
+								/>
+								<div className="flex justify-end">
+									<Button type="submit" loading={orgLoading}>
+										Create Organization
+									</Button>
+								</div>
+							</form>
 						) : !isOwner ? (
 							<div className="text-sm text-gray-600">
 								You are not the owner. Only the owner can rename the organization.
