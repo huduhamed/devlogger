@@ -1,7 +1,13 @@
+import { useContext } from 'react';
 import { Link } from 'react-router-dom';
+
+// internal imports
 import Button from '../components/ui/Button.jsx';
+import AuthContext from '../context/AuthContext.jsx';
 
 export default function Home() {
+	const { auth } = useContext(AuthContext);
+	const isSignedIn = !!auth?.token && !!auth?.user;
 	return (
 		<div className="max-w-4xl mx-auto py-16 px-4 flex flex-col items-center text-center">
 			<h1 className="text-5xl font-extrabold text-blue-700 dark:text-blue-300 mb-4 tracking-tight">
@@ -22,18 +28,26 @@ export default function Home() {
 				</div>
 			</div>
 			<div className="flex flex-col gap-4 w-full max-w-md mb-8">
-				<Link to="/sign-up" className="w-full md:w-auto">
-					<Button variant="primary" size="lg" className="w-full text-lg font-bold">
-						Get Started Free
-					</Button>
-				</Link>
-				<Link to="/sign-in" className="w-full md:w-auto">
-					<Button variant="outline" size="lg" className="w-full text-lg font-bold">
-						Sign In
-					</Button>
-				</Link>
+				{!isSignedIn && (
+					<>
+						<Link to="/sign-up" className="w-full md:w-auto">
+							<Button variant="primary" size="lg" className="w-full text-lg font-bold">
+								Get Started Free
+							</Button>
+						</Link>
+						<Link to="/sign-in" className="w-full md:w-auto">
+							<Button variant="outline" size="lg" className="w-full text-lg font-bold">
+								Sign In
+							</Button>
+						</Link>
+					</>
+				)}
 				<Link to="/pricing" className="w-full md:w-auto">
-					<Button variant="ghost" size="lg" className="w-full text-lg">
+					<Button
+						variant="ghost"
+						size="lg"
+						className="w-full text-lg font-bold border-2 border-blue-400 shadow-lg hover:scale-105 hover:border-blue-600 transition-transform duration-200"
+					>
 						See Pricing
 					</Button>
 				</Link>
