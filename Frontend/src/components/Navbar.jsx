@@ -34,14 +34,16 @@ function Navbar() {
 			<div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
 				{/* Left side - app title (clickable logo) */}
 				<NavLink to="/" title="Home">
-					<h1 className="text-xl font-bold text-blue-600 cursor-pointer hover:scale-105 transition-transform">DevLogger</h1>
+					<h1
+						className="text-2xl font-extrabold text-blue-700 dark:text-blue-300 cursor-pointer select-none flex items-center gap-2 tracking-tight drop-shadow-sm hover:scale-105 hover:text-blue-900 dark:hover:text-blue-100 transition-transform duration-200"
+						style={{ letterSpacing: '-1px' }}
+					>
+						<span className="inline-block bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-700 bg-clip-text text-transparent">DevLogger</span>
+					</h1>
 				</NavLink>
 
 				{/* Middle links */}
 				<div className="flex gap-4">
-					<NavLink to="/pricing" className={linkClasses}>
-						Pricing
-					</NavLink>
 					{auth?.user && (
 						<>
 							<NavLink to="/dashboard" className={linkClasses}>
@@ -91,7 +93,17 @@ function Navbar() {
 							<Button variant="danger" onClick={handleLogout}>Logout</Button>
 						</div>
 					) : (
-						<NavLink to="/sign-in" className="text-sm text-blue-600 hover:underline">Sign In</NavLink>
+						<div className="flex gap-2">
+							<NavLink to="/pricing">
+								<Button variant="ghost" size="sm" className="font-semibold border border-blue-400 px-4 py-1 hover:bg-blue-50 transition">Pricing</Button>
+							</NavLink>
+							<NavLink to="/sign-up">
+								<Button variant="primary" size="sm" className="font-semibold px-4 py-1">Sign Up</Button>
+							</NavLink>
+							<NavLink to="/sign-in">
+								<Button variant="outline" size="sm" className="font-semibold px-4 py-1">Sign In</Button>
+							</NavLink>
+						</div>
 					)}
 				</div>
 			</div>
