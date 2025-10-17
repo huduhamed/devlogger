@@ -10,7 +10,7 @@ export default function Home() {
 	const isSignedIn = !!auth?.token && !!auth?.user;
 	return (
 		<div className="max-w-4xl mx-auto py-16 px-4 flex flex-col items-center text-center">
-			<h1 className="text-5xl font-extrabold text-blue-700 dark:text-blue-300 mb-4 tracking-tight">
+			<h1 className="text-5xl font-extrabold brand-text mb-4 tracking-tight">
 				DevLogger: Your Team's Logging HQ 🚀
 			</h1>
 			<p className="text-xl text-gray-700 dark:text-gray-200 mb-6 max-w-2xl mx-auto">

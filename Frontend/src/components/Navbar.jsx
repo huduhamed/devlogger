@@ -30,15 +30,15 @@ function Navbar() {
 	// We show a minimal navbar for guests (pricing, sign in links could be added later)
 
 	return (
-		<nav className="bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-gray-900/80 shadow-md sticky top-0 z-50">
+		<nav className="glass-navbar glass-navbar--primary sticky top-0 z-50">
 			<div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
 				{/* Left side - app title (clickable logo) */}
 				<NavLink to="/" title="Home">
 					<h1
-						className="text-2xl font-extrabold text-blue-700 dark:text-blue-300 cursor-pointer select-none flex items-center gap-2 tracking-tight drop-shadow-sm hover:scale-105 hover:text-blue-900 dark:hover:text-blue-100 transition-transform duration-200"
+						className="text-2xl font-extrabold brand-text cursor-pointer select-none flex items-center gap-2 tracking-tight drop-shadow-sm hover:scale-105 dark:hover:text-blue-100 transition-transform duration-200"
 						style={{ letterSpacing: '-1px' }}
 					>
-						<span className="inline-block bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-700 bg-clip-text text-transparent">DevLogger</span>
+						<span className="inline-block brand-text">DevLogger</span>
 					</h1>
 				</NavLink>
 
@@ -75,7 +75,9 @@ function Navbar() {
 									<span className="capitalize">Plan: {org.plan}</span>
 								</div>
 							)}
-							<NavLink to="/settings" className={linkClasses} title="Settings">⚙️</NavLink>
+							<NavLink to="/settings" className={linkClasses} title="Settings">
+								⚙️
+							</NavLink>
 							<NavLink to="/settings" title="Profile Settings">
 								<div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold overflow-hidden cursor-pointer">
 									{auth.user?.avatarUrl ? (
@@ -90,18 +92,30 @@ function Navbar() {
 								</div>
 							</NavLink>
 							<span className="capitalize font-medium mr-2">{auth.user?.name}</span>
-							<Button variant="danger" onClick={handleLogout}>Logout</Button>
+							<Button variant="danger" onClick={handleLogout}>
+								Logout
+							</Button>
 						</div>
 					) : (
 						<div className="flex gap-2">
 							<NavLink to="/pricing">
-								<Button variant="ghost" size="sm" className="font-semibold border border-blue-400 px-4 py-1 hover:bg-blue-50 transition">Pricing</Button>
+								<Button
+									variant="ghost"
+									size="sm"
+									className="font-semibold border border-blue-400 px-4 py-1 hover:bg-blue-50 transition"
+								>
+									Pricing
+								</Button>
 							</NavLink>
 							<NavLink to="/sign-up">
-								<Button variant="primary" size="sm" className="font-semibold px-4 py-1">Sign Up</Button>
+								<Button variant="primary" size="sm" className="font-semibold px-4 py-1">
+									Sign Up
+								</Button>
 							</NavLink>
 							<NavLink to="/sign-in">
-								<Button variant="outline" size="sm" className="font-semibold px-4 py-1">Sign In</Button>
+								<Button variant="outline" size="sm" className="font-semibold px-4 py-1">
+									Sign In
+								</Button>
 							</NavLink>
 						</div>
 					)}
