@@ -5,13 +5,12 @@ import { useContext } from 'react';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext.jsx';
 import Button from './ui/Button.jsx';
-import OrgContext from '../context/OrgContext.jsx';
+// no org context usage in navbar to keep UI minimal
 
 // nav bar
 function Navbar() {
 	const { auth, logout } = useContext(AuthContext);
 	const { theme, toggle } = useContext(ThemeContext);
-	const { org } = useContext(OrgContext);
 	const navigate = useNavigate();
 
 	// handle log out
@@ -69,12 +68,6 @@ function Navbar() {
 					</Button>
 					{auth?.user ? (
 						<div className="flex items-center gap-3">
-							{org && (
-								<div className="hidden md:flex flex-col items-end mr-2 text-xs text-gray-600 dark:text-gray-300">
-									<span className="font-medium">{org.name}</span>
-									<span className="capitalize">Plan: {org.plan}</span>
-								</div>
-							)}
 							<NavLink to="/settings" className={linkClasses} title="Settings">
 								⚙️
 							</NavLink>

@@ -10,11 +10,6 @@ function PrivateRoute() {
 	const { auth } = useContext(AuthContext);
 	const { refresh, org } = useContext(OrgContext);
 
-	// if no token, redirect to sign-in
-	if (!auth?.token) {
-		return <Navigate to="/sign-in" replace />;
-	}
-
 	// bootstrap org on first entry
 	useEffect(() => {
 		if (auth?.token && !org) {
@@ -22,8 +17,8 @@ function PrivateRoute() {
 		}
 	}, [auth?.token, org, refresh]);
 
-	// if token exists
-	return <Outlet />;
+	// Route based on auth presence
+	return auth?.token ? <Outlet /> : <Navigate to="/sign-in" replace />;
 }
 
 export default PrivateRoute;
