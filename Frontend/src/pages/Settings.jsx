@@ -4,11 +4,11 @@ import { useContext, useState, useEffect } from 'react';
 import AuthContext from '../context/AuthContext.jsx';
 import OrgContext from '../context/OrgContext.jsx';
 import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
+import Badge from '../components/ui/Badge.jsx';
 import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
 import { toast } from 'react-toastify';
 import API from '../services/api';
-// import Spinner from '../components/ui/Spinner.jsx';
 
 export default function Settings() {
 	const { auth, setAuth } = useContext(AuthContext);
@@ -109,9 +109,17 @@ export default function Settings() {
 
 	return (
 		<div className="max-w-5xl mx-auto space-y-6">
-			<div className="flex items-center gap-3 mb-2">
+			<div className="flex items-center flex-wrap gap-3 mb-2">
 				<span className="text-2xl font-bold">Settings</span>
 				<span className="text-gray-500">Manage your profile & organization</span>
+				{org && (
+					<div className="ml-auto flex items-center gap-2">
+						<Badge color="blue" className="font-medium">
+							{org.name}
+						</Badge>
+						<Badge className="capitalize">Plan: {org.plan}</Badge>
+					</div>
+				)}
 			</div>
 
 			<div className="grid md:grid-cols-2 gap-6">
@@ -189,7 +197,7 @@ export default function Settings() {
 									e.preventDefault();
 									setOrgLoading(true);
 									try {
-										const res = await API.post('/organizations', { name: orgForm.name });
+										await API.post('/organizations', { name: orgForm.name });
 										toast.success('Organization created');
 										await refreshOrg?.();
 									} catch (err) {
