@@ -14,6 +14,7 @@ const stripe = STRIPE_SECRET_KEY
 	? new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' })
 	: null;
 
+// billing
 export function getBillingConfig(_req, res) {
 	const configured = Boolean(
 		STRIPE_SECRET_KEY && STRIPE_PRICE_PRO_MONTHLY && STRIPE_PRICE_ENTERPRISE_MONTHLY
@@ -28,6 +29,7 @@ export function getBillingConfig(_req, res) {
 	});
 }
 
+// checkout session
 export async function createCheckoutSession(req, res, next) {
 	try {
 		if (!stripe) return res.status(500).json({ message: 'Stripe not configured' });

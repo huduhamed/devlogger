@@ -11,9 +11,10 @@ export async function getAllLogs(req, res, next) {
 		// filtering
 		const { level, tag, q, searchMode } = req.query;
 		if (level) query.level = level;
-		if (tag) query.tags = tag; // single tag exact match
+		if (tag) query.tags = tag;
 		let projection = null;
 		let sort = { createdAt: -1 };
+
 		if (q) {
 			if (searchMode === 'text') {
 				query.$text = { $search: q };
@@ -60,7 +61,7 @@ export async function getLogs(req, res, next) {
 		// fetch org + user
 		const userId = req.user && (req.user._id || req.user.id);
 		const orgId = req.user && req.user.organization;
-		// scope by organization primarily; optionally by user if no org yet (legacy)
+		// scope by organization primarily
 		const baseQuery = orgId ? { organization: orgId } : { user: userId };
 
 		// filtering
@@ -70,6 +71,7 @@ export async function getLogs(req, res, next) {
 		if (tag) query.tags = tag;
 		let projection = null;
 		let sort = { createdAt: -1 };
+
 		if (q) {
 			if (searchMode === 'text') {
 				query.$text = { $search: q };
@@ -167,7 +169,7 @@ export async function createLog(req, res, next) {
 			organization: orgId,
 		});
 
-		// If enforceUsage middleware ran, increment count
+		// if enforceUsage middleware ran, increment count
 		if (req.organization) {
 			const monthKey = req.organization.usage?.month;
 			if (monthKey) {

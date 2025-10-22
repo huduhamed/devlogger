@@ -3,8 +3,6 @@ import mongoose from 'mongoose';
 // internal imports
 import { MONGODB_URL } from '../config/env.js';
 
-// internal imports
-
 // check DB connection
 if (!MONGODB_URL) throw new Error('MONGODB_URL is not defined.');
 

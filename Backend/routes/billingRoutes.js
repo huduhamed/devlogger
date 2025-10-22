@@ -11,7 +11,7 @@ import {
 
 const router = Router();
 
-// Stripe webhook requires raw body
+// stripe webhook requires raw body
 router.post('/webhook', (req, res, next) => next());
 
 router.post('/checkout', authorize, createCheckoutSession);

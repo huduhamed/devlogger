@@ -1,14 +1,14 @@
-// internal imports
 import bcrypt from 'bcryptjs';
+
+// internal imports
 import User from '../models/User.js';
 
-// fetch all users from database
+// fetch all users from db
 export async function getUsers(req, res, next) {
 	try {
-		('		// find users without password field');
+		// find users
 		const users = await User.find().select('-password');
 
-		// return json
 		res.status(200).json({
 			success: true,
 			data: users,
@@ -18,20 +18,19 @@ export async function getUsers(req, res, next) {
 	}
 }
 
-// fetch single user from database
+// fetch single user from db
 export async function getUser(req, res, next) {
 	try {
-		// find a user
+		// find a single user
 		const user = await User.findById(req.params.id).select('-password');
 
-		// check if no user
+		// check if user exists
 		if (!user) {
 			const err = new Error('user not found');
 			err.statusCode = 404;
 			return next(err);
 		}
 
-		// return json
 		res.status(200).json({
 			success: true,
 			data: user,
@@ -49,6 +48,7 @@ export async function createUser(req, res, next) {
 		if (password) {
 			hashed = await bcrypt.hash(password, 10);
 		}
+
 		const user = new User({ ...rest, password: hashed });
 		await user.save();
 
@@ -121,7 +121,7 @@ export async function deleteUser(req, res, next) {
 	}
 }
 
-// partial self update (profile settings)
+// update profile settings
 export async function updateSelf(req, res, next) {
 	try {
 		const userId = req.user?._id;
@@ -129,8 +129,10 @@ export async function updateSelf(req, res, next) {
 			console.error('Avatar upload failed: Not authenticated');
 			return res.status(401).json({ message: 'Not authenticated' });
 		}
+
 		const allowed = ['name', 'email', 'password', 'avatarUrl'];
 		const update = {};
+
 		for (const key of allowed) {
 			if (req.body[key] != null && req.body[key] !== '') update[key] = req.body[key];
 		}
@@ -141,6 +143,7 @@ export async function updateSelf(req, res, next) {
 			update.password = await bcrypt.hash(update.password, 10);
 			update.passwordChangedAt = new Date();
 		}
+
 		const user = await User.findByIdAndUpdate(userId, update, {
 			new: true,
 			runValidators: true,
@@ -149,6 +152,7 @@ export async function updateSelf(req, res, next) {
 			console.error('Avatar upload failed: User not found', userId);
 			return res.status(404).json({ message: 'User not found' });
 		}
+
 		res.json({ success: true, data: user });
 	} catch (error) {
 		console.error('Avatar upload error:', error);

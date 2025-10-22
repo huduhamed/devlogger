@@ -19,9 +19,9 @@ import {
 
 const router = Router();
 
-// Organization creation (if user has none)
+// organization creation (if user has none)
 router.post('/', authorize, createOrganization);
-// Authenticated org-level operations
+// authenticated org-level operations
 router.get('/me', authorize, getOrganization);
 router.get('/members', authorize, listMembers);
 router.patch('/me', authorize, requireOrgOwner, updateOrganization);
@@ -34,7 +34,7 @@ router.get('/api-keys', authorize, requireOrgOwner, listApiKeys);
 router.post('/api-keys/:keyId/revoke', authorize, requireOrgOwner, revokeApiKey);
 router.post('/upgrade', authorize, requireOrgOwner, upgradePlan);
 
-// Public ingestion endpoint (uses x-api-key, no bearer auth)
+// public ingestion endpoint (uses x-api-key, no bearer auth)
 router.post('/ingest', ingestLog);
 
 export default router;
