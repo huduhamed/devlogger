@@ -33,7 +33,7 @@ async function authorize(req, res, next) {
 			return res.status(401).json({ message: 'Unauthorized: user not found' });
 		}
 
-		// Token invalidation: if passwordChangedAt exists and token issued before it, reject
+		// token invalidation: if passwordChangedAt exists and token issued before it, reject
 		if (user.passwordChangedAt && decoded.iat) {
 			const changedAt = Math.floor(new Date(user.passwordChangedAt).getTime() / 1000);
 			if (decoded.iat < changedAt) {

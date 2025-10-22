@@ -25,7 +25,7 @@ const organizationSchema = new mongoose.Schema(
 			members: { type: Number, default: 5 },
 		},
 		usage: {
-			month: { type: String }, // format YYYY-MM
+			month: { type: String },
 			logCount: { type: Number, default: 0 },
 		},
 		apiKeys: [
@@ -42,4 +42,5 @@ const organizationSchema = new mongoose.Schema(
 );
 
 const Organization = mongoose.model('Organization', organizationSchema);
+
 export default Organization;

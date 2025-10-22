@@ -26,6 +26,7 @@ const logSchema = new mongoose.Schema(
 logSchema.index({ user: 1, createdAt: -1 });
 logSchema.index({ organization: 1, createdAt: -1 });
 logSchema.index({ organization: 1, user: 1, createdAt: -1 });
+
 // full text search (basic) on title & description
 logSchema.index({ title: 'text', description: 'text' });
 

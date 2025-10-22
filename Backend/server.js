@@ -26,19 +26,18 @@ app.use(helmet());
 // basic rate limiting (can adjust or scope per route later)
 const limiter = rateLimit({
 	windowMs: 15 * 60 * 1000, // 15 minutes
-	max: 100, // limit each IP
+	max: 100,
 	standardHeaders: true,
 	legacyHeaders: false,
 });
 app.use(limiter);
 
-// simple structured request logging (replace later with pino/winston)
+// simple structured request logging
 app.use((req, _res, next) => {
 	const start = Date.now();
 	const { method, url, requestId: rid } = req;
 	_res.on('finish', () => {
 		const ms = Date.now() - start;
-		// console.log(JSON.stringify({ level: 'info', msg: 'req', method, url, status: _res.statusCode, ms, requestId: rid }));
 	});
 	return next();
 });
@@ -63,7 +62,7 @@ app.use((req, res, next) => {
 app.use(cookieParser());
 app.use(urlencoded({ extended: false }));
 
-// Routes
+// routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/logs', logRoutes);

@@ -4,8 +4,8 @@ const apiKeySchema = new mongoose.Schema(
 	{
 		org: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', index: true, required: true },
 		name: { type: String, required: true },
-		keyId: { type: String, required: true, unique: true }, // public id part
-		keyHash: { type: String, required: true }, // hash of secret part
+		keyId: { type: String, required: true, unique: true },
+		keyHash: { type: String, required: true },
 		revoked: { type: Boolean, default: false, index: true },
 		lastUsedAt: { type: Date },
 	},

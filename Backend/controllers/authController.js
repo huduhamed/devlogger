@@ -2,36 +2,42 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 // internal imports
+import User from '../models/User.js';
+import Organization from '../models/Organization.js';
+import { JWT_EXPIRES_IN, JWT_SECRET } from '../config/env.js';
 import { verifyGoogleToken } from '../config/google.js';
 
-// Google Sign-In
+// google Sign-In
 export async function googleSignIn(req, res, next) {
 	try {
 		const { idToken } = req.body;
 		if (!idToken) {
 			return res.status(400).json({ message: 'Google ID token required' });
 		}
-		// Verify Google token and extract payload
+		// verify token and extract payload
 		let payload;
 		try {
 			payload = await verifyGoogleToken(idToken);
 		} catch (err) {
 			return res.status(401).json({ message: 'Invalid Google token' });
 		}
+		// extract payload
 		const { email, name, picture, sub: googleId } = payload;
 		if (!email) {
 			return res.status(400).json({ message: 'Google account must have an email' });
 		}
 		let user = await User.findOne({ email });
 		let isNewUser = false;
+
 		if (!user) {
-			// Create user and organization for first-time Google login
+			// create user and organization for first-time google login
 			user = await User.create({
 				name: name || 'Google User',
 				email,
 				password: googleId,
 				avatarUrl: picture || '',
 			});
+
 			// create organization
 			const orgBase = (name || 'google-user')
 				.trim()
@@ -39,6 +45,7 @@ export async function googleSignIn(req, res, next) {
 				.replace(/[^a-z0-9\s-]/g, '')
 				.replace(/\s+/g, '-');
 			let slugCandidate = orgBase || `org-${user._id.toString().slice(-6)}`;
+
 			let counter = 1;
 			while (await Organization.findOne({ slug: slugCandidate })) {
 				slugCandidate = `${orgBase}-${counter++}`;
@@ -53,9 +60,11 @@ export async function googleSignIn(req, res, next) {
 			await user.save();
 			isNewUser = true;
 		}
+
 		// issue JWT
 		const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 		let org = null;
+
 		if (isNewUser) {
 			org = await Organization.findById(user.organization);
 		}
@@ -70,11 +79,6 @@ export async function googleSignIn(req, res, next) {
 		return next(error);
 	}
 }
-
-// internal imports
-import User from '../models/User.js';
-import Organization from '../models/Organization.js';
-import { JWT_EXPIRES_IN, JWT_SECRET } from '../config/env.js';
 
 // register user
 export async function signUp(req, res, next) {
@@ -165,6 +169,6 @@ export async function signIn(req, res) {
 
 // sign out logic
 export async function signOut(req, res) {
-	// Stateless JWT logout: client just discards token. Placeholder for future blacklist logic.
+	// stateless JWT logout: client just discards token.
 	return res.status(200).json({ success: true, message: 'User successfully signed out' });
 }

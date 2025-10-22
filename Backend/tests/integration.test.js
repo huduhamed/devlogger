@@ -4,7 +4,6 @@ import request from 'supertest';
 
 // internal
 import app from '../server.js';
-import User from '../models/User.js';
 
 let mongo;
 

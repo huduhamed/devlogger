@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 
 /*
   Unit tests for the authorize middleware.
-  - We mock jsonwebtoken.verify and the User model.
+  - mock jsonwebtoken.verify and the User model.
   - The middleware does: read token -> jwt.verify -> User.findById(...).select('-password')
   - To match the chained select(...) call we mock findById to return an object with a select() that resolves.
 */
@@ -129,8 +129,8 @@ describe('authorize middleware (unit)', () => {
 		await authorize(req, res, next);
 
 		expect(User.findById).toHaveBeenCalledWith(tokenPayload.userId);
-		expect(req.user).toEqual(userObj); // middleware attaches the user to req
-		expect(next).toHaveBeenCalled(); // middleware allowed the request through
+		expect(req.user).toEqual(userObj);
+		expect(next).toHaveBeenCalled();
 		expect(res.status).not.toHaveBeenCalled();
 	});
 });
