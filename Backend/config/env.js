@@ -1,7 +1,13 @@
 import { config } from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// internal imports
-config({ path: './.env' });
+// Determine __dirname for ES modules and load .env relative to this file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// load the .env file located at Backend/.env regardless of process.cwd()
+config({ path: path.join(__dirname, '..', '.env') });
 
 export const {
 	PORT,
