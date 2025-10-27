@@ -33,7 +33,7 @@ export async function getAllLogs(req, res, next) {
 		const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
 		const skip = (page - 1) * limit;
 
-		const findChain = Log.find(query, projection)
+		const findChain = (projection ? Log.find(query, projection) : Log.find(query))
 			.sort(sort)
 			.skip(skip)
 			.limit(limit)
@@ -90,7 +90,10 @@ export async function getLogs(req, res, next) {
 		const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
 		const skip = (page - 1) * limit;
 
-		const findChain = Log.find(query, projection).sort(sort).skip(skip).limit(limit);
+		const findChain = (projection ? Log.find(query, projection) : Log.find(query))
+			.sort(sort)
+			.skip(skip)
+			.limit(limit);
 		const [logs, total] = await Promise.all([findChain, Log.countDocuments(query)]);
 
 		// return
