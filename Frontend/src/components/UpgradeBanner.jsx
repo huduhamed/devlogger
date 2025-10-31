@@ -14,6 +14,7 @@ export default function UpgradeBanner({ org, className = '' }) {
 	const usage = org?.usage?.logCount ?? 0;
 	const limit = org?.limits?.logsPerMonth ?? 0;
 	if (!limit) return null;
+
 	const pct = Math.min(100, Math.round((usage / limit) * 100));
 
 	const shouldShow = pct >= 80 || org.plan === 'free';

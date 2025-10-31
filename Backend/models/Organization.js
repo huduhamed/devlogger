@@ -21,7 +21,7 @@ const organizationSchema = new mongoose.Schema(
 			currentPeriodEnd: { type: Date },
 		},
 		limits: {
-			logsPerMonth: { type: Number, default: 10000 },
+			logsPerMonth: { type: Number, default: 100 },
 			members: { type: Number, default: 5 },
 		},
 		usage: {
