@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 // internal imports
 import API from '../services/api';
 import LogsContext from '../context/LogsContext';
+import OrgContext from '../context/OrgContext.jsx';
 import LogForm from '../components/LogForm.jsx';
 import Card, { CardBody } from '../components/ui/Card.jsx';
 
@@ -12,6 +13,7 @@ import Card, { CardBody } from '../components/ui/Card.jsx';
 function CreateLog() {
 	const navigate = useNavigate();
 	const { fetchLogs } = useContext(LogsContext);
+	const { refresh: refreshOrg } = useContext(OrgContext);
 
 	const handleSubmit = async (payload) => {
 		try {
@@ -22,9 +24,11 @@ function CreateLog() {
 			throw err;
 		}
 
-		// try to refresh list
+		// try to refresh list and org usage (non-blocking)
 		try {
 			await fetchLogs();
+
+			if (refreshOrg) await refreshOrg();
 		} catch (err) {
 			// non-blocking: inform but continue
 			console.warn('Post-create refresh failed:', err);

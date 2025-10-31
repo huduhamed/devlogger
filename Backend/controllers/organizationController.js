@@ -14,8 +14,16 @@ export async function createOrganization(req, res, next) {
 		if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 		const user = await User.findById(userId);
 		if (!user) return res.status(404).json({ message: 'User not found' });
+
+		// if user has an organization id stored, verify the organization actually exists.
 		if (user.organization) {
-			return res.status(400).json({ message: 'User already has an organization' });
+			const existingOrg = await Organization.findById(user.organization).select('_id');
+			if (existingOrg) {
+				return res.status(400).json({ message: 'User already has an organization' });
+			}
+			// stale reference: clear it and continue with creation
+			user.organization = undefined;
+			await user.save();
 		}
 		const { name } = req.body;
 		if (!name || typeof name !== 'string' || name.trim().length < 2) {
@@ -269,13 +277,12 @@ export async function updateOrganization(req, res, next) {
 	}
 }
 
-// public-style ingestion using x-api-key header
+// public-style ingestion
 export async function ingestLog(req, res, next) {
 	try {
 		const rawKey = req.header('x-api-key');
 		if (!rawKey) return res.status(401).json({ message: 'Missing API key' });
 
-		// expect dlog_<keyId>_<secret>
 		const parts = rawKey.split('_');
 		if (parts.length !== 3 || parts[0] !== 'dlog')
 			return res.status(401).json({ message: 'Invalid API key' });
