@@ -7,7 +7,6 @@ const AuthContext = createContext();
 
 // auth provider
 export function AuthProvider({ children }) {
-	// state hold both token & user
 	const [auth, setAuth] = useState(() => {
 		const token = localStorage.getItem('token');
 		const user = localStorage.getItem('user');
@@ -29,7 +28,6 @@ export function AuthProvider({ children }) {
 
 		setAuth({ token, user });
 
-		// udate Axios default header
 		API.defaults.headers.Authorization = `Bearer ${token}`;
 	};
 

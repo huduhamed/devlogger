@@ -1,5 +1,4 @@
 // google svg
-
 export default function GoogleIcon({ className = '' }) {
 	return (
 		<svg className={className} viewBox="0 0 48 48" width="24" height="24">

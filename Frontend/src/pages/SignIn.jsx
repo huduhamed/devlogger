@@ -30,6 +30,7 @@ function SignIn() {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		setLoading(true);
+
 		try {
 			const res = await API.post('/auth/sign-in', form);
 			const { token, user } = res.data;
@@ -47,11 +48,13 @@ function SignIn() {
 	const handleGoogleSignIn = () => {
 		setLoading(true);
 		const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
 		if (!window.google || !clientId) {
 			toast.error('Google API or Client ID not available');
 			setLoading(false);
 			return;
 		}
+
 		window.google.accounts.id.initialize({
 			client_id: clientId,
 			callback: async (response) => {

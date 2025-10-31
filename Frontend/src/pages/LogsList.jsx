@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import API from '../services/api';
 import AuthContext from '../context/AuthContext';
 import LogsContext from '../context/LogsContext.jsx';
-import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
+import Card, { CardBody } from '../components/ui/Card.jsx';
 import Input from '../components/ui/Input.jsx';
 import Select from '../components/ui/Select.jsx';
 import Button from '../components/ui/Button.jsx';

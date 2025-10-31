@@ -7,16 +7,14 @@ import Textarea from './ui/Textarea.jsx';
 import Select from './ui/Select.jsx';
 import Button from './ui/Button.jsx';
 
+// logform
 function LogForm({ onSubmit, initialData = null, onCancel }) {
-	// form state
 	const [form, setForm] = useState({
 		title: '',
 		description: '',
 		tags: '',
 		level: 'info',
 	});
-
-	// loading state for submit button
 	const [loading, setLoading] = useState(false);
 
 	// initialize form if editing
@@ -45,14 +43,12 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 				.map((t) => t.trim())
 				.filter(Boolean),
 		};
-
 		setLoading(true);
+
 		try {
 			if (!onSubmit) throw new Error('No submit handler provided');
-
 			await onSubmit(payload, initialData?._id);
 
-			// reset form after successful submit
 			setForm({ title: '', description: '', tags: '', level: 'info' });
 
 			// call cancel handler if editing

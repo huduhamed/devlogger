@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useContext } from 'react';
+import { useEffect, useState, useContext, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
 
 // internal imports
@@ -21,170 +20,201 @@ function OrganizationSettings() {
 	const [createdKey, setCreatedKey] = useState(null);
 
 	// fetch org
-	const fetchOrg = async () => {
+	const fetchOrg = useCallback(async () => {
 		try {
 			const res = await API.get('/organizations/me');
-			setOrg(res.data.data);
-		} catch {
-			toast.error('Failed to load organization');
+			setOrg(res.data?.data ?? null);
+		} catch (err) {
+			toast.error(err?.response?.data?.message || 'Failed to load organization');
 		}
-	};
+	}, []);
 
 	// fetch members
-	const fetchMembers = async () => {
+	const fetchMembers = useCallback(async () => {
 		try {
 			const res = await API.get('/organizations/members');
-			setMembers(res.data.data || []);
+			setMembers(res.data?.data ?? []);
 		} catch {
-			/* ignore */
+			// non-critical: ignore
 		}
-	};
+	}, []);
 
 	// fetch keys
-	const fetchApiKeys = async () => {
+	const fetchApiKeys = useCallback(async () => {
 		try {
 			const res = await API.get('/organizations/api-keys');
-			setApiKeys(res.data.data || []);
+			setApiKeys(res.data?.data ?? []);
 		} catch {
-			/* ignore */
+			// non-critical: ignore
 		}
-	};
+	}, []);
 
 	useEffect(() => {
+		let isMounted = true;
+
 		(async () => {
 			setLoading(true);
 			await Promise.all([fetchOrg(), fetchMembers(), fetchApiKeys()]);
-			setLoading(false);
+			if (isMounted) setLoading(false);
 		})();
-	}, []);
+
+		return () => {
+			isMounted = false;
+		};
+	}, [fetchOrg, fetchMembers, fetchApiKeys]);
 
 	// If returning from Stripe checkout, refresh org data
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
 		const sessionId = params.get('session_id');
-		if (sessionId) {
+		if (!sessionId) return;
+
+		// If returning from Stripe checkout, refresh org data
+		(async () => {
 			refreshOrg?.();
-			fetchOrg();
+			await fetchOrg();
 			toast.success('Subscription updated');
 
 			const url = new URL(window.location.href);
 			url.searchParams.delete('session_id');
 			window.history.replaceState({}, '', url.toString());
-		}
-	}, [refreshOrg]);
+		})();
+	}, [refreshOrg, fetchOrg]);
 
 	// adding member
-	const addMember = async (e) => {
-		e.preventDefault();
-		if (!newMemberEmail) return;
-		try {
-			await API.post('/organizations/members', { email: newMemberEmail });
-			setNewMemberEmail('');
-			fetchMembers();
-			toast.success('Member added');
-		} catch (err) {
-			toast.error(err.response?.data?.message || 'Failed');
-		}
-	};
+	const addMember = useCallback(
+		async (e) => {
+			e.preventDefault();
+			if (!newMemberEmail) return;
+			try {
+				await API.post('/organizations/members', { email: newMemberEmail });
+				setNewMemberEmail('');
+				fetchMembers();
+				toast.success('Member added');
+			} catch (err) {
+				toast.error(err?.response?.data?.message || 'Failed to add member');
+			}
+		},
+		[newMemberEmail, fetchMembers]
+	);
 
 	// removing a member
-	const removeMember = async (userId) => {
-		if (!window.confirm('Remove this member?')) return;
-		try {
-			await API.delete(`/organizations/members/${userId}`);
-			fetchMembers();
-			toast.success('Member removed');
-		} catch (err) {
-			toast.error(err.response?.data?.message || 'Failed');
-		}
-	};
+	const removeMember = useCallback(
+		async (userId) => {
+			if (!window.confirm('Remove this member?')) return;
+			try {
+				await API.delete(`/organizations/members/${userId}`);
+				fetchMembers();
+				toast.success('Member removed');
+			} catch (err) {
+				toast.error(err?.response?.data?.message || 'Failed to remove member');
+			}
+		},
+		[fetchMembers]
+	);
 
 	// creating a key
-	const createKey = async (e) => {
-		e.preventDefault();
-		if (!newKeyName) return;
-		try {
-			const res = await API.post('/organizations/api-keys', { name: newKeyName });
-			setCreatedKey(res.data.apiKey);
-			setNewKeyName('');
-			fetchApiKeys();
-			toast.success('API key created (copy now!)');
-		} catch (err) {
-			toast.error(err.response?.data?.message || 'Failed');
-		}
-	};
+	const createKey = useCallback(
+		async (e) => {
+			e.preventDefault();
+			if (!newKeyName) return;
+			try {
+				const res = await API.post('/organizations/api-keys', { name: newKeyName });
+				setCreatedKey(res.data?.apiKey ?? null);
+				setNewKeyName('');
+				fetchApiKeys();
+				toast.success('API key created (copy now!)');
+			} catch (err) {
+				toast.error(err?.response?.data?.message || 'Failed to create key');
+			}
+		},
+		[newKeyName, fetchApiKeys]
+	);
 
 	// revoke key
-	const revokeKey = async (keyId) => {
-		if (!window.confirm('Revoke this API key?')) return;
-		try {
-			await API.post(`/organizations/api-keys/${encodeURIComponent(keyId)}/revoke`);
-			fetchApiKeys();
-			toast.success('Key revoked');
-		} catch (err) {
-			toast.error(err.response?.data?.message || 'Failed');
-		}
-	};
+	const revokeKey = useCallback(
+		async (keyId) => {
+			if (!window.confirm('Revoke this API key?')) return;
+			try {
+				await API.post(`/organizations/api-keys/${encodeURIComponent(keyId)}/revoke`);
+				fetchApiKeys();
+				toast.success('Key revoked');
+			} catch (err) {
+				toast.error(err?.response?.data?.message || 'Failed to revoke key');
+			}
+		},
+		[fetchApiKeys]
+	);
 
 	// checkout
-	const startCheckout = async (plan) => {
+	const startCheckout = useCallback(async (plan) => {
 		try {
 			const res = await API.post('/billing/checkout', { plan });
-			if (res.data?.url) {
-				window.location.assign(res.data.url);
+			const url = res.data?.url;
+			if (url) {
+				window.location.assign(url);
 			} else {
 				toast.error('Failed to start checkout');
 			}
 		} catch (err) {
-			toast.error(err.response?.data?.message || 'Failed to start checkout');
+			toast.error(err?.response?.data?.message || 'Failed to start checkout');
 		}
-	};
+	}, []);
 
-	const openBillingPortal = async () => {
+	const openBillingPortal = useCallback(async () => {
 		try {
 			const res = await API.post('/billing/portal');
-			if (res.data?.url) {
-				window.location.assign(res.data.url);
+			const url = res.data?.url;
+			if (url) {
+				window.location.assign(url);
 			} else {
 				toast.error('Failed to open billing portal');
 			}
 		} catch (err) {
-			toast.error(err.response?.data?.message || 'Failed to open billing portal');
+			toast.error(err?.response?.data?.message || 'Failed to open billing portal');
 		}
-	};
+	}, []);
+
+	const copyCreatedKey = useCallback(async () => {
+		if (!createdKey) return;
+		try {
+			await navigator.clipboard.writeText(createdKey);
+			toast.success('Copied API key to clipboard');
+		} catch {
+			toast.error('Failed to copy');
+		}
+	}, [createdKey]);
+
+	const usagePct = useMemo(() => {
+		if (!org?.usage || !org?.limits) return 0;
+		const pct = org.limits.logsPerMonth ? (org.usage.logCount / org.limits.logsPerMonth) * 100 : 0;
+		return Math.min(100, Math.round(pct));
+	}, [org]);
+
+	// billing status
+	const billingStatus = useMemo(() => {
+		const status = org?.billing?.status;
+		if (!status) return null;
+		const statusEnd = org.billing?.currentPeriodEnd
+			? new Date(org.billing.currentPeriodEnd).toLocaleDateString()
+			: null;
+
+		switch (status) {
+			case 'active':
+				return `Active${statusEnd ? ` • renews ${statusEnd}` : ''}`;
+			case 'trialing':
+				return `Trialing${statusEnd ? ` • ends ${statusEnd}` : ''}`;
+			case 'past_due':
+				return `Past due${statusEnd ? ` • since ${statusEnd}` : ''}`;
+			case 'canceled':
+				return `Canceled${statusEnd ? ` • ended ${statusEnd}` : ''}`;
+			default:
+				return status;
+		}
+	}, [org]);
 
 	if (loading) return <div className="p-6">Loading organization...</div>;
 	if (!org) return <div className="p-6 text-red-500">Organization not found</div>;
-
-	const usagePct =
-		org.usage && org.limits
-			? Math.min(100, Math.round((org.usage.logCount / org.limits.logsPerMonth) * 100))
-			: 0;
-
-	const status = org.billing?.status;
-	const statusEnd = org.billing?.currentPeriodEnd
-		? new Date(org.billing.currentPeriodEnd).toLocaleDateString()
-		: null;
-
-	let billingStatus = null;
-	if (status) {
-		switch (status) {
-			case 'active':
-				billingStatus = `Active${statusEnd ? ` • renews ${statusEnd}` : ''}`;
-				break;
-			case 'trialing':
-				billingStatus = `Trialing${statusEnd ? ` • ends ${statusEnd}` : ''}`;
-				break;
-			case 'past_due':
-				billingStatus = `Past due${statusEnd ? ` • since ${statusEnd}` : ''}`;
-				break;
-			case 'canceled':
-				billingStatus = `Canceled${statusEnd ? ` • ended ${statusEnd}` : ''}`;
-				break;
-			default:
-				billingStatus = status;
-		}
-	}
 
 	return (
 		<div className="max-w-6xl mx-auto p-4 space-y-6">
@@ -338,8 +368,17 @@ function OrganizationSettings() {
 					</form>
 					{createdKey && (
 						<div className="p-3 bg-yellow-100 border border-yellow-300 rounded text-sm mb-4">
-							<p className="font-medium">New Key (copy now):</p>
-							<code className="break-all text-xs">{createdKey}</code>
+							<div className="flex items-start justify-between gap-4">
+								<div className="flex-1">
+									<p className="font-medium">New Key (copy now):</p>
+									<code className="break-all text-xs">{createdKey}</code>
+								</div>
+								<div className="shrink-0">
+									<Button size="sm" onClick={copyCreatedKey} variant="secondary">
+										Copy
+									</Button>
+								</div>
+							</div>
 						</div>
 					)}
 					<ul className="space-y-2">

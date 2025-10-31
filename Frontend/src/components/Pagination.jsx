@@ -5,6 +5,7 @@ import Button from './ui/Button.jsx';
 export default function Pagination({ page, pages, onPage }) {
 	if (!pages || pages <= 1) return null;
 	const go = (p) => () => onPage(Math.max(1, Math.min(pages, p)));
+
 	return (
 		<div className="flex flex-wrap gap-2 items-center">
 			<Button variant="outline" onClick={go(page - 1)} disabled={page === 1}>
