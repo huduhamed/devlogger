@@ -5,7 +5,6 @@ import { useContext } from 'react';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext.jsx';
 import Button from './ui/Button.jsx';
-// no org context usage in navbar to keep UI minimal
 
 // nav bar
 function Navbar() {
@@ -26,12 +25,9 @@ function Navbar() {
 				: 'text-gray-700 dark:text-gray-200 hover:bg-blue-100 dark:hover:bg-gray-800'
 		}`;
 
-	// We show a minimal navbar for guests (pricing, sign in links could be added later)
-
 	return (
 		<nav className="glass-navbar glass-navbar--primary sticky top-0 z-50">
 			<div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-				{/* Left side - app title (clickable logo) */}
 				<NavLink to="/" title="Home">
 					<h1
 						className="text-2xl font-extrabold brand-text cursor-pointer select-none flex items-center gap-2 tracking-tight drop-shadow-sm hover:scale-105 dark:hover:text-blue-100 transition-transform duration-200"
@@ -41,7 +37,6 @@ function Navbar() {
 					</h1>
 				</NavLink>
 
-				{/* Middle links */}
 				<div className="flex gap-4">
 					{auth?.user && (
 						<>

@@ -20,6 +20,7 @@ function OrganizationSettings() {
 	const [newKeyName, setNewKeyName] = useState('');
 	const [createdKey, setCreatedKey] = useState(null);
 
+	// fetch org
 	const fetchOrg = async () => {
 		try {
 			const res = await API.get('/organizations/me');
@@ -29,6 +30,7 @@ function OrganizationSettings() {
 		}
 	};
 
+	// fetch members
 	const fetchMembers = async () => {
 		try {
 			const res = await API.get('/organizations/members');
@@ -38,6 +40,7 @@ function OrganizationSettings() {
 		}
 	};
 
+	// fetch keys
 	const fetchApiKeys = async () => {
 		try {
 			const res = await API.get('/organizations/api-keys');
@@ -55,7 +58,7 @@ function OrganizationSettings() {
 		})();
 	}, []);
 
-	// If returning from Stripe Checkout, refresh org data
+	// If returning from Stripe checkout, refresh org data
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
 		const sessionId = params.get('session_id');
@@ -63,13 +66,14 @@ function OrganizationSettings() {
 			refreshOrg?.();
 			fetchOrg();
 			toast.success('Subscription updated');
-			// Clean URL
+
 			const url = new URL(window.location.href);
 			url.searchParams.delete('session_id');
 			window.history.replaceState({}, '', url.toString());
 		}
 	}, [refreshOrg]);
 
+	// adding member
 	const addMember = async (e) => {
 		e.preventDefault();
 		if (!newMemberEmail) return;
@@ -83,6 +87,7 @@ function OrganizationSettings() {
 		}
 	};
 
+	// removing a member
 	const removeMember = async (userId) => {
 		if (!window.confirm('Remove this member?')) return;
 		try {
@@ -94,6 +99,7 @@ function OrganizationSettings() {
 		}
 	};
 
+	// creating a key
 	const createKey = async (e) => {
 		e.preventDefault();
 		if (!newKeyName) return;
@@ -108,6 +114,7 @@ function OrganizationSettings() {
 		}
 	};
 
+	// revoke key
 	const revokeKey = async (keyId) => {
 		if (!window.confirm('Revoke this API key?')) return;
 		try {
@@ -119,6 +126,7 @@ function OrganizationSettings() {
 		}
 	};
 
+	// checkout
 	const startCheckout = async (plan) => {
 		try {
 			const res = await API.post('/billing/checkout', { plan });
@@ -157,6 +165,7 @@ function OrganizationSettings() {
 	const statusEnd = org.billing?.currentPeriodEnd
 		? new Date(org.billing.currentPeriodEnd).toLocaleDateString()
 		: null;
+
 	let billingStatus = null;
 	if (status) {
 		switch (status) {

@@ -3,6 +3,7 @@ import { createContext, useState, useEffect, useCallback } from 'react';
 // internal imports
 import API from '../services/api';
 
+// create context
 const LogsContext = createContext();
 
 // logs provider
@@ -56,7 +57,7 @@ export function LogsProvider({ children }) {
 		fetchLogs();
 	}, [fetchLogs]);
 
-	// Revalidate logs on window focus & periodic interval (only if not actively loading)
+	// revalidate logs on window focus & periodic interval
 	useEffect(() => {
 		const onFocus = () => {
 			if (!document.hidden && !loading) fetchLogs();
@@ -73,7 +74,7 @@ export function LogsProvider({ children }) {
 
 	const updateFilters = (f) => {
 		setFilters((prev) => ({ ...prev, ...f }));
-		setPage(1); // reset to first page when filters change
+		setPage(1);
 	};
 
 	const goToPage = (p) => {

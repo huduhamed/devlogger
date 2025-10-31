@@ -6,6 +6,7 @@ import API from '../services/api';
 import Button from './ui/Button.jsx';
 import { PLANS } from '../config/plans.js';
 
+// upgrade banner
 export default function UpgradeBanner({ org, className = '' }) {
 	const [loading, setLoading] = useState(false);
 	if (!org) return null;
@@ -25,14 +26,16 @@ export default function UpgradeBanner({ org, className = '' }) {
 			if (res.data?.url) window.location.assign(res.data.url);
 		} catch (err) {
 			toast.error(err.response?.data?.message || 'Failed to start checkout');
-			} finally {
+		} finally {
 			setLoading(false);
 		}
 	};
 
-			const nextPlan = org.plan === 'free' ? 'pro' : org.plan === 'pro' ? 'enterprise' : null;
-		const nextPlanName = nextPlan ? (PLANS[nextPlan]?.name || (nextPlan[0].toUpperCase() + nextPlan.slice(1))) : null;
-		const ctaText = nextPlan ? `Upgrade to ${nextPlanName}` : 'Manage Billing';
+	const nextPlan = org.plan === 'free' ? 'pro' : org.plan === 'pro' ? 'enterprise' : null;
+	const nextPlanName = nextPlan
+		? PLANS[nextPlan]?.name || nextPlan[0].toUpperCase() + nextPlan.slice(1)
+		: null;
+	const ctaText = nextPlan ? `Upgrade to ${nextPlanName}` : 'Manage Billing';
 
 	return (
 		<div
@@ -45,22 +48,22 @@ export default function UpgradeBanner({ org, className = '' }) {
 						{usage} / {limit} logs used this month
 					</div>
 				</div>
-						<div className="flex gap-2 items-center">
-							{nextPlan ? (
-								<>
-									{PLANS[nextPlan]?.priceMonthly ? (
-										<div className="text-sm text-gray-700">${PLANS[nextPlan].priceMonthly}/mo</div>
-									) : null}
-									<Button loading={loading} onClick={() => startCheckout(nextPlan)}>
-										{ctaText}
-									</Button>
-								</>
-							) : (
-								<a href="/organization">
-									<Button variant="outline">Manage Billing</Button>
-								</a>
-							)}
-						</div>
+				<div className="flex gap-2 items-center">
+					{nextPlan ? (
+						<>
+							{PLANS[nextPlan]?.priceMonthly ? (
+								<div className="text-sm text-gray-700">${PLANS[nextPlan].priceMonthly}/mo</div>
+							) : null}
+							<Button loading={loading} onClick={() => startCheckout(nextPlan)}>
+								{ctaText}
+							</Button>
+						</>
+					) : (
+						<a href="/organization">
+							<Button variant="outline">Manage Billing</Button>
+						</a>
+					)}
+				</div>
 			</div>
 		</div>
 	);

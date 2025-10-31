@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// API
 const API = axios.create({
 	baseURL: import.meta?.env?.VITE_API_URL || 'http://localhost:5500/api/v1/',
 	headers: { 'Content-Type': 'application/json' },
@@ -20,7 +21,7 @@ API.interceptors.request.use(
 
 export default API;
 
-// Normalize error messages (e.g., 401)
+// normalize error messages
 API.interceptors.response.use(
 	(res) => res,
 	(error) => {

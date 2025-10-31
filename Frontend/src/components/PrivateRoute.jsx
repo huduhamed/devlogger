@@ -17,7 +17,7 @@ function PrivateRoute() {
 		}
 	}, [auth?.token, org, refresh]);
 
-	// Route based on auth presence
+	// route based on auth presence
 	return auth?.token ? <Outlet /> : <Navigate to="/sign-in" replace />;
 }
 

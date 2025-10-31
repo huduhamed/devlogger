@@ -10,6 +10,7 @@ import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
 import GoogleIcon from '../components/ui/GoogleIcon.jsx';
 
+// sign-up
 function SignUp() {
 	const [form, setForm] = useState({ name: '', email: '', password: '' });
 	const { signin, auth } = useContext(AuthContext);
@@ -41,7 +42,7 @@ function SignUp() {
 		}
 	};
 
-	// google sign-Up handler
+	// Google sign-Up handler
 	const [loading, setLoading] = useState(false);
 	const handleGoogleSignUp = () => {
 		setLoading(true);

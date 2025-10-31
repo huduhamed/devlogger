@@ -3,13 +3,14 @@ import { createContext, useCallback, useEffect, useMemo, useRef, useState } from
 // internal imports
 import API from '../services/api';
 
+// org context
 const OrgContext = createContext();
 
 export function OrgProvider({ children }) {
 	const [org, setOrg] = useState(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(null);
-  const inflight = useRef(false);
+	const inflight = useRef(false);
 
 	const refresh = useCallback(async () => {
 		if (inflight.current) return;
@@ -32,7 +33,7 @@ export function OrgProvider({ children }) {
 		[org, loading, error, refresh]
 	);
 
-	// Auto refresh on window focus and periodic interval
+	// auto refresh on window focus and periodic interval
 	useEffect(() => {
 		let intervalId;
 		const onFocus = () => {
@@ -43,6 +44,7 @@ export function OrgProvider({ children }) {
 		intervalId = setInterval(() => {
 			refresh();
 		}, 60000);
+
 		// initial attempt if none loaded yet
 		if (!org) refresh();
 		return () => {

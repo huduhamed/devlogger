@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
 
 		setAuth({ token, user });
 
-		// Update Axios default header
+		// udate Axios default header
 		API.defaults.headers.Authorization = `Bearer ${token}`;
 	};
 
