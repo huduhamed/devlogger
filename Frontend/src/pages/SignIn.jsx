@@ -1,6 +1,7 @@
 import { useContext, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+
 // internal imoports
 import API from '../services/api';
 import AuthContext from '../context/AuthContext';
@@ -42,7 +43,7 @@ function SignIn() {
 		}
 	};
 
-	// Google Sign-In handler
+	// Google sign-in handler
 	const handleGoogleSignIn = () => {
 		setLoading(true);
 		const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;

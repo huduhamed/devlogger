@@ -10,6 +10,7 @@ import Button from '../components/ui/Button.jsx';
 import { toast } from 'react-toastify';
 import API from '../services/api';
 
+// settings comp
 export default function Settings() {
 	const { auth, setAuth } = useContext(AuthContext);
 	const { org, refresh: refreshOrg } = useContext(OrgContext);
@@ -21,6 +22,7 @@ export default function Settings() {
 		password: '',
 		avatarUrl: user?.avatarUrl || '',
 	});
+
 	const [orgForm, setOrgForm] = useState({ name: org?.name || '' });
 	const isOwner = org?.owner?._id && user?._id && org.owner._id === user._id;
 	const [loading, setLoading] = useState(false);
@@ -41,9 +43,10 @@ export default function Settings() {
 			if (profile.password) payload.password = profile.password;
 			if (profile.avatarUrl) payload.avatarUrl = profile.avatarUrl;
 			const res = await API.patch('/users/me', payload);
+
 			// update auth context user
 			const updated = res.data.data;
-			// always keep token in localStorage for API auth
+
 			const token = auth.token;
 			localStorage.setItem('user', JSON.stringify(updated));
 			if (token) localStorage.setItem('token', token);
@@ -51,7 +54,7 @@ export default function Settings() {
 			toast.success('Profile updated');
 			setProfile((p) => ({ ...p, password: '' }));
 		} catch (err) {
-			// Show full error details for troubleshooting
+			// show full error details for troubleshooting
 			let msg = 'Failed to update profile';
 			if (err.response) {
 				msg = `Error: ${err.response.status} - ${err.response.data?.message || err.message}`;
@@ -66,6 +69,7 @@ export default function Settings() {
 		}
 	};
 
+	// save org
 	const saveOrg = async (e) => {
 		e.preventDefault();
 		setOrgLoading(true);
@@ -81,6 +85,7 @@ export default function Settings() {
 		}
 	};
 
+	// delete acc
 	const deleteAccount = async () => {
 		if (!window.confirm('Delete your account? This cannot be undone.')) return;
 		try {
@@ -93,6 +98,7 @@ export default function Settings() {
 		}
 	};
 
+	// avatar
 	const handleAvatarFile = (e) => {
 		const file = e.target.files?.[0];
 		if (!file) return;

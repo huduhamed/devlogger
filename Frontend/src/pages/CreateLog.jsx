@@ -22,7 +22,7 @@ function CreateLog() {
 			throw err;
 		}
 
-		// try to refresh list, but don't block UI if it fails
+		// try to refresh list
 		try {
 			await fetchLogs();
 		} catch (err) {

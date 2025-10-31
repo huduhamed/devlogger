@@ -1,4 +1,4 @@
-import React from 'react';
+// google svg
 
 export default function GoogleIcon({ className = '' }) {
 	return (

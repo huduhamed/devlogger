@@ -9,6 +9,7 @@ import Button from '../components/ui/Button.jsx';
 import API from '../services/api';
 import AuthContext from '../context/AuthContext.jsx';
 
+// pricing comp
 export default function Pricing() {
 	const { auth } = useContext(AuthContext);
 	const navigate = useNavigate();
@@ -20,7 +21,7 @@ export default function Pricing() {
 		prices: { pro: true, enterprise: true },
 	});
 
-	// fetch billing config (will fail if unauthenticated but we only need it when logged in)
+	// fetch billing config
 	useEffect(() => {
 		if (!auth?.token) return;
 		(async () => {
@@ -36,13 +37,14 @@ export default function Pricing() {
 	}, [auth?.token]);
 
 	const startCheckout = async (plan) => {
-		// If not authenticated, redirect to sign in preserving desired plan
+		// If not authenticated, redirect to sign
 		if (!auth?.token) {
 			navigate(`/sign-in?next=${encodeURIComponent('/pricing?plan=' + plan)}`);
 			return;
 		}
 		setError(null);
 		setLoadingPlan(plan);
+
 		try {
 			const res = await API.post('/billing/checkout', { plan });
 			if (res.data?.url) {
