@@ -3,7 +3,7 @@ import { createContext, useState, useEffect, useCallback } from 'react';
 // internal imports
 import API from '../services/api';
 
-// create context
+//  logs context
 const LogsContext = createContext();
 
 // logs provider
@@ -21,6 +21,7 @@ export function LogsProvider({ children }) {
 	const fetchLogs = useCallback(
 		async (override = {}) => {
 			setLoading(true);
+
 			try {
 				const current = {
 					page,
@@ -63,6 +64,7 @@ export function LogsProvider({ children }) {
 			if (!document.hidden && !loading) fetchLogs();
 		};
 		window.addEventListener('focus', onFocus);
+
 		const intervalId = setInterval(() => {
 			if (!loading) fetchLogs();
 		}, 45000);

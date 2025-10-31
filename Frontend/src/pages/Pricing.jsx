@@ -37,7 +37,6 @@ export default function Pricing() {
 	}, [auth?.token]);
 
 	const startCheckout = async (plan) => {
-		// If not authenticated, redirect to sign
 		if (!auth?.token) {
 			navigate(`/sign-in?next=${encodeURIComponent('/pricing?plan=' + plan)}`);
 			return;
@@ -63,7 +62,7 @@ export default function Pricing() {
 		}
 	};
 
-	// if returning with ?plan=... after login, attempt checkout automatically
+	// if returning with ?plan=... after login, checkout automatically
 	useEffect(() => {
 		const params = new URLSearchParams(location.search);
 		const desired = params.get('plan');

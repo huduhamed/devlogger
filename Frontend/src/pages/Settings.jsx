@@ -54,14 +54,15 @@ export default function Settings() {
 			toast.success('Profile updated');
 			setProfile((p) => ({ ...p, password: '' }));
 		} catch (err) {
-			// show full error details for troubleshooting
 			let msg = 'Failed to update profile';
+
 			if (err.response) {
 				msg = `Error: ${err.response.status} - ${err.response.data?.message || err.message}`;
 				if (err.response.data?.error) msg += ` (${err.response.data.error})`;
 			} else if (err.message) {
 				msg = err.message;
 			}
+
 			toast.error(msg);
 			console.error('Avatar upload error:', err);
 		} finally {
@@ -73,6 +74,7 @@ export default function Settings() {
 	const saveOrg = async (e) => {
 		e.preventDefault();
 		setOrgLoading(true);
+
 		try {
 			const res = await API.patch('/organizations/me', { name: orgForm.name });
 			toast.success('Organization updated');
@@ -91,6 +93,7 @@ export default function Settings() {
 		try {
 			await API.delete(`/users/${user._id}`);
 			toast.success('Account deleted');
+
 			// simple full reload clears state
 			window.location.href = '/';
 		} catch (err) {
@@ -102,10 +105,12 @@ export default function Settings() {
 	const handleAvatarFile = (e) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
+
 		if (!file.type.startsWith('image/')) {
 			toast.error('Please select an image file');
 			return;
 		}
+
 		const reader = new FileReader();
 		reader.onload = (ev) => {
 			setProfile((p) => ({ ...p, avatarUrl: ev.target.result }));

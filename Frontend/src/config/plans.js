@@ -1,3 +1,4 @@
+// plans
 export const PLANS = {
 	free: {
 		id: 'free',
@@ -28,6 +29,7 @@ export const PLANS = {
 	},
 };
 
+// get plan
 export function getPlan(plan) {
 	return PLANS[plan] || PLANS.free;
 }

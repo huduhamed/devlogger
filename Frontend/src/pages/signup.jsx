@@ -16,7 +16,6 @@ function SignUp() {
 	const { signin, auth } = useContext(AuthContext);
 	const navigate = useNavigate();
 
-	// redirect if already logged in
 	useEffect(() => {
 		if (auth?.token) {
 			navigate('/dashboard', { replace: true });
@@ -29,6 +28,7 @@ function SignUp() {
 	// handle submit
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+
 		try {
 			const res = await API.post('/auth/sign-up', form);
 			const { token, user } = res.data;
@@ -44,14 +44,17 @@ function SignUp() {
 
 	// Google sign-Up handler
 	const [loading, setLoading] = useState(false);
+
 	const handleGoogleSignUp = () => {
 		setLoading(true);
 		const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
 		if (!window.google || !clientId) {
 			toast.error('Google API or Client ID not available');
 			setLoading(false);
 			return;
 		}
+
 		window.google.accounts.id.initialize({
 			client_id: clientId,
 			callback: async (response) => {
