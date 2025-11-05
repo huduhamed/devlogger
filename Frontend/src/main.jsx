@@ -11,6 +11,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { LogsProvider } from './context/LogsContext';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { OrgProvider } from './context/OrgContext.jsx';
+import { NotificationsProvider } from './context/NotificationsContext.jsx';
 import './index.css';
 
 // query client
@@ -34,17 +35,19 @@ root.render(
 			<Router>
 				<ThemeProvider>
 					<AuthProvider>
-						<OrgProvider>
-							<LogsProvider>
-								<App />
-								<ToastContainer
-									position="top-right"
-									autoClose={3000}
-									hideProgressBar
-									theme="colored"
-								/>
-							</LogsProvider>
-						</OrgProvider>
+						<NotificationsProvider>
+							<OrgProvider>
+								<LogsProvider>
+									<App />
+									<ToastContainer
+										position="top-right"
+										autoClose={3000}
+										hideProgressBar
+										theme="colored"
+									/>
+								</LogsProvider>
+							</OrgProvider>
+						</NotificationsProvider>
 					</AuthProvider>
 				</ThemeProvider>
 			</Router>

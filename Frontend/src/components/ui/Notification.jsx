@@ -1,22 +1,18 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
+
+// internal imports
+import NotificationsContext from '../../context/NotificationsContext.jsx';
 
 // notification bell comp
 function Notification() {
 	const [open, setOpen] = useState(false);
-	const [notifications, setNotifications] = useState([]);
-	const [unread, setUnread] = useState(0);
 	const ref = useRef(null);
-
-	useEffect(() => {
-		// placeholder mock notifications; replace with real data later
-		const mock = [
-			{ id: 1, text: 'New log created in Project Alpha', time: '2m' },
-			{ id: 2, text: 'Organization settings updated', time: '1h' },
-			{ id: 3, text: 'Billing invoice ready', time: '1d' },
-		];
-		setNotifications(mock);
-		setUnread(mock.length);
-	}, []);
+	const {
+		notifications = [],
+		unread = 0,
+		loading = false,
+		markAllRead,
+	} = useContext(NotificationsContext);
 
 	useEffect(() => {
 		function onClick(e) {
@@ -32,10 +28,9 @@ function Notification() {
 
 	const toggle = (e) => {
 		e.stopPropagation();
-
-		setOpen((s) => !s);
-		// marking unread as 0 for now when opening
-		if (!open) setUnread(0);
+		const willOpen = !open;
+		setOpen(willOpen);
+		if (willOpen) markAllRead();
 	};
 
 	return (
@@ -75,7 +70,9 @@ function Notification() {
 						Notifications
 					</div>
 					<div className="max-h-64 overflow-auto">
-						{notifications.length === 0 ? (
+						{loading ? (
+							<div className="p-4 text-sm text-gray-500">Loading...</div>
+						) : notifications.length === 0 ? (
 							<div className="p-4 text-sm text-gray-500">No notifications</div>
 						) : (
 							notifications.map((n) => (
