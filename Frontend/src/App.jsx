@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 // internal imports
 import PrivateRoute from './components/PrivateRoute.jsx';
-import { Dashboard, SignIn, SignUp, Navbar, LogsList, Pricing } from './index';
+import { Dashboard, SignIn, SignUp, Navbar, LogsList, Pricing, Notifications } from './index';
 import Settings from './pages/Settings.jsx';
 import OrganizationSettings from './pages/OrganizationSettings.jsx';
 import CreateLog from './pages/CreateLog.jsx';
@@ -23,6 +23,7 @@ function App() {
 					{/* private routes */}
 					<Route element={<PrivateRoute />}>
 						<Route path="/dashboard" element={<Dashboard />} />
+						<Route path="/notifications" element={<Notifications />} />
 						<Route path="/create-log" element={<CreateLog />} />
 						<Route path="/logs" element={<LogsList />} />
 						<Route path="/organization" element={<OrganizationSettings />} />

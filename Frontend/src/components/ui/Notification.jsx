@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // internal imports
 import NotificationsContext from '../../context/NotificationsContext.jsx';
@@ -32,6 +33,8 @@ function Notification() {
 		setOpen(willOpen);
 		if (willOpen) markAllRead();
 	};
+
+	const navigate = useNavigate();
 
 	return (
 		<div className="relative" ref={ref}>
@@ -77,17 +80,34 @@ function Notification() {
 						) : (
 							notifications.map((n) => (
 								<div
-									key={n.id}
-									className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+									key={n._id || n.id}
+									className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-start"
+									onClick={() => {
+										// mark read optimistically and navigate to notifications page
+										markAllRead();
+										navigate('/notifications');
+									}}
 								>
-									<div className="text-sm text-gray-800 dark:text-gray-100">{n.text}</div>
-									<div className="text-xs text-gray-500 dark:text-gray-400">{n.time}</div>
+									<div>
+										<div className="text-sm text-gray-800 dark:text-gray-100">{n.text}</div>
+										<div className="text-xs text-gray-500 dark:text-gray-400">
+											{n.time || new Date(n.createdAt).toLocaleString()}
+										</div>
+									</div>
+									<div className="ml-3">
+										{!n.read && <span className="text-xs text-blue-600">New</span>}
+									</div>
 								</div>
 							))
 						)}
 					</div>
 					<div className="p-2 border-t border-gray-100 dark:border-gray-700 text-center">
-						<button className="text-sm text-blue-600 dark:text-blue-400">View all</button>
+						<button
+							className="text-sm text-blue-600 dark:text-blue-400"
+							onClick={() => navigate('/notifications')}
+						>
+							View all
+						</button>
 					</div>
 				</div>
 			)}
