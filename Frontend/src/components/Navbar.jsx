@@ -5,6 +5,7 @@ import { useContext } from 'react';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext.jsx';
 import Button from './ui/Button.jsx';
+import Notification from './ui/Notification.jsx';
 
 // nav bar
 function Navbar() {
@@ -63,6 +64,7 @@ function Navbar() {
 					</Button>
 					{auth?.user ? (
 						<div className="flex items-center gap-3">
+							<Notification />
 							<NavLink to="/settings" className={linkClasses} title="Settings">
 								⚙️
 							</NavLink>
