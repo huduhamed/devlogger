@@ -1,9 +1,12 @@
 import express, { urlencoded } from 'express';
+import http from 'http';
+import { Server as IOServer } from 'socket.io';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import helmet from 'helmet';
 import requestId from './middleware/requestId.js';
 import rateLimit from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
 
 // internal imports
 import authRouter from './routes/authRoutes.js';
@@ -12,12 +15,57 @@ import logRoutes from './routes/logRoutes.js';
 import organizationRoutes from './routes/organizationRoutes.js';
 import { PORT, FRONTEND_URL } from './config/env.js';
 import billingRoutes from './routes/billingRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 import { stripeWebhook } from './controllers/billingController.js';
 import errorHandler from './middleware/errorHandler.js';
 import connectToDB from './database/mongodb.js';
+import User from './models/User.js';
+import { JWT_SECRET } from './config/env.js';
 
 const app = express();
 app.use(cors({ origin: FRONTEND_URL || 'http://localhost:5173', credentials: true }));
+
+// create an HTTP server to attach socket.io
+const httpServer = http.createServer(app);
+
+// initialize socket.io
+const io = new IOServer(httpServer, {
+	cors: {
+		origin: FRONTEND_URL || 'http://localhost:5173',
+		methods: ['GET', 'POST'],
+		credentials: true,
+	},
+});
+
+// make io available via app (controllers can access via req.app.get('io'))
+app.set('io', io);
+
+io.on('connection', async (socket) => {
+	try {
+		const token = socket.handshake.auth?.token;
+		if (!token) {
+			// allow unauthenticated sockets but do not join user/org rooms
+			return;
+		}
+
+		const decoded = jwt.verify(token, JWT_SECRET);
+		const userId = decoded.userId || decoded.id || decoded._id;
+		if (!userId) return;
+
+		const user = await User.findById(userId).select('-password');
+		if (!user) return;
+
+		// join rooms for user and org
+		socket.join(`user:${user._id.toString()}`);
+		if (user.organization) socket.join(`org:${user.organization.toString()}`);
+
+		socket.on('disconnect', () => {
+			// no-op for now
+		});
+	} catch (e) {
+		// ignore errors - do not crash the server for bad socket auth
+	}
+});
 
 // security + tracing middlewares
 app.use(requestId);
@@ -68,6 +116,7 @@ app.use('/api/v1/users', userRouter);
 app.use('/api/v1/logs', logRoutes);
 app.use('/api/v1/organizations', organizationRoutes);
 app.use('/api/v1/billing', billingRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 
 // Stripe webhook endpoint (must be after body parsing setup)
 app.post('/api/v1/billing/webhook', stripeWebhook);
@@ -81,7 +130,7 @@ app.use(errorHandler);
 
 // Only start listening and connect to DB when NOT testing
 if (process.env.NODE_ENV !== 'test') {
-	app.listen(PORT, async () => {
+	httpServer.listen(PORT, async () => {
 		console.log(`Server running on  http://localhost:${PORT}`);
 		// connect to db
 		await connectToDB();

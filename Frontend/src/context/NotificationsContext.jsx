@@ -1,4 +1,5 @@
 import { useState, createContext, useEffect, useContext } from 'react';
+import { io as ioClient } from 'socket.io-client';
 
 // internal imports
 import API from '../services/api';
@@ -58,7 +59,9 @@ export function NotificationsProvider({ children }) {
 	};
 
 	const markRead = async (id) => {
-		setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+		setNotifications((prev) =>
+			prev.map((n) => (n._id === id || n.id === id ? { ...n, read: true } : n))
+		);
 		setUnread((u) => Math.max(0, u - 1));
 
 		try {
@@ -75,16 +78,52 @@ export function NotificationsProvider({ children }) {
 		setUnread((u) => u + (notification.read ? 0 : 1));
 	};
 
+	// fetch when a user signs in; clear when signed out and start polling
 	useEffect(() => {
-		// fetch when a user signs in; clear when signed out
+		let intervalId;
 		if (auth?.user) {
+			// initial fetch
 			fetchNotifications();
+			// poll every 30s
+			intervalId = setInterval(fetchNotifications, 30 * 1000);
 		} else {
 			setNotifications([]);
 			setUnread(0);
 		}
+
+		// clean up
+		return () => {
+			if (intervalId) clearInterval(intervalId);
+		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [auth?.user]);
+
+	// socket.io real-time connection: connect when authenticated
+	useEffect(() => {
+		let socket;
+		if (auth?.token) {
+			const url =
+				import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || window.location.origin;
+			socket = ioClient(url, { auth: { token: auth.token } });
+
+			socket.on('connect', () => {
+				// connected
+			});
+
+			socket.on('notification', (n) => {
+				if (n) addNotification(n);
+			});
+
+			socket.on('connect_error', () => {
+				// ignore for now
+			});
+		}
+
+		return () => {
+			if (socket) socket.disconnect();
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [auth?.token]);
 
 	return (
 		<NotificationsContext.Provider
