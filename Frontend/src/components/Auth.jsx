@@ -1,8 +1,6 @@
-import { useEffect, useRef, useContext } from 'react';
-import ThemeContext from '../context/ThemeContext';
+import { useEffect, useRef } from 'react';
 
 export default function GoogleAuthButton({ onSuccess, onFailure }) {
-	const { theme } = useContext(ThemeContext);
 	const btnRef = useRef(null);
 	const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -10,11 +8,10 @@ export default function GoogleAuthButton({ onSuccess, onFailure }) {
 		let mounted = true;
 
 		if (!clientId) {
-				onFailure && onFailure(new Error('Missing VITE_GOOGLE_CLIENT_ID'));
-				return () => (mounted = false);
-			}
+			onFailure && onFailure(new Error('Missing VITE_GOOGLE_CLIENT_ID'));
+			return () => (mounted = false);
+		}
 
-		// If the GSI script is already present, initialize immediately
 		const initGsi = () => {
 			if (!window.google?.accounts?.id) return false;
 
@@ -22,7 +19,6 @@ export default function GoogleAuthButton({ onSuccess, onFailure }) {
 				window.google.accounts.id.initialize({
 					client_id: clientId,
 					callback: (response) => {
-						// response.credential is the ID token (JWT)
 						if (response?.credential) {
 							onSuccess && onSuccess({ tokenId: response.credential });
 						} else {
@@ -33,17 +29,14 @@ export default function GoogleAuthButton({ onSuccess, onFailure }) {
 				});
 
 				if (btnRef.current) {
-					// choose GSI theme based on app theme
-					const btnTheme = theme === 'light' ? 'filled_blue' : 'filled_black';
-					// render Google's official button into the container
+					// render Google's official button into the container (outline theme)
 					window.google.accounts.id.renderButton(btnRef.current, {
-						theme: btnTheme,
+						theme: 'outline',
 						size: 'large',
 						width: '100%',
 					});
 				}
 
-				// success
 				return true;
 			} catch (err) {
 				return false;
@@ -52,7 +45,6 @@ export default function GoogleAuthButton({ onSuccess, onFailure }) {
 
 		if (initGsi()) return () => (mounted = false);
 
-		// load GSI script
 		const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
 		if (existing) {
 			existing.addEventListener('load', initGsi, { once: true });
@@ -69,7 +61,7 @@ export default function GoogleAuthButton({ onSuccess, onFailure }) {
 		}
 
 		return () => (mounted = false);
-	}, [clientId, onSuccess, onFailure, theme]);
+	}, [clientId, onSuccess, onFailure]);
 
 	return (
 		<div>
