@@ -37,14 +37,13 @@ const io = new IOServer(httpServer, {
 	},
 });
 
-// make io available via app (controllers can access via req.app.get('io'))
+// make io available via app
 app.set('io', io);
 
 io.on('connection', async (socket) => {
 	try {
 		const token = socket.handshake.auth?.token;
 		if (!token) {
-			// allow unauthenticated sockets but do not join user/org rooms
 			return;
 		}
 
@@ -63,17 +62,23 @@ io.on('connection', async (socket) => {
 			// no-op for now
 		});
 	} catch (e) {
-		// ignore errors - do not crash the server for bad socket auth
+		// ignore errors
 	}
 });
 
 // security + tracing middlewares
 app.use(requestId);
-app.use(helmet());
+// configure helmet
+app.use(
+	helmet({
+		crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+		crossOriginEmbedderPolicy: false,
+	})
+);
 
-// basic rate limiting (can adjust or scope per route later)
+// basic rate limiting
 const limiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
+	windowMs: 15 * 60 * 1000,
 	max: 100,
 	standardHeaders: true,
 	legacyHeaders: false,
@@ -90,10 +95,9 @@ app.use((req, _res, next) => {
 	return next();
 });
 
-// Stripe webhook needs raw body; use a conditional parser
+// Stripe webhook
 app.use((req, res, next) => {
 	if (req.originalUrl === '/api/v1/billing/webhook') {
-		// capture raw body for stripe signature verification
 		let data = '';
 		req.setEncoding('utf8');
 		req.on('data', (chunk) => {
@@ -118,14 +122,14 @@ app.use('/api/v1/organizations', organizationRoutes);
 app.use('/api/v1/billing', billingRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 
-// Stripe webhook endpoint (must be after body parsing setup)
+// Stripe webhook endpoint
 app.post('/api/v1/billing/webhook', stripeWebhook);
 
 app.get('/', (req, res) => {
 	res.send('welcome onboard buddy!');
 });
 
-// Error handler (after all routes)
+// Error handler
 app.use(errorHandler);
 
 // Only start listening and connect to DB when NOT testing
