@@ -8,7 +8,7 @@ import AuthContext from '../context/AuthContext';
 import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
 import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
-import GoogleIcon from '../components/ui/GoogleIcon.jsx';
+import GoogleAuthButton from '../components/Auth.jsx';
 
 // sign-up
 function SignUp() {
@@ -45,38 +45,25 @@ function SignUp() {
 	// Google sign-Up handler
 	const [loading, setLoading] = useState(false);
 
-	const handleGoogleSignUp = () => {
+	const handleGoogleSuccess = async (googleData) => {
 		setLoading(true);
-		const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
-		if (!window.google || !clientId) {
-			toast.error('Google API or Client ID not available');
+		try {
+			const idToken = googleData.tokenId;
+			if (!idToken) throw new Error('No token received from Google');
+			const res = await API.post('/auth/google', { idToken });
+			const { token, user } = res.data;
+			if (!token || !user) throw new Error('Invalid response from API');
+			signin(token, user);
+			navigate('/dashboard', { replace: true });
+		} catch (error) {
+			toast.error('Google Sign-Up failed: ' + (error.response?.data?.message || error.message));
+		} finally {
 			setLoading(false);
-			return;
 		}
+	};
 
-		window.google.accounts.id.initialize({
-			client_id: clientId,
-			callback: async (response) => {
-				if (!response.credential) {
-					toast.error('Google Sign-Up failed: No credential');
-					setLoading(false);
-					return;
-				}
-				try {
-					const res = await API.post('/auth/google', { idToken: response.credential });
-					const { token, user } = res.data;
-					if (!token || !user) throw new Error('Invalid response from API');
-					signin(token, user);
-					navigate('/dashboard', { replace: true });
-				} catch (error) {
-					toast.error('Google Sign-Up failed: ' + (error.response?.data?.message || error.message));
-				} finally {
-					setLoading(false);
-				}
-			},
-		});
-		window.google.accounts.id.prompt();
+	const handleGoogleFailure = () => {
+		toast.error('Google Sign-Up failed');
 	};
 
 	return (
@@ -117,15 +104,7 @@ function SignUp() {
 						<span className="mx-2 text-xs text-gray-500">or</span>
 						<div className="flex-grow border-t border-gray-200 dark:border-gray-700" />
 					</div>
-					<Button
-						className="w-full flex items-center justify-center gap-2"
-						type="button"
-						variant="outline"
-						onClick={handleGoogleSignUp}
-						loading={loading}
-					>
-						<GoogleIcon className="w-5 h-5" /> Sign up with Google
-					</Button>
+					<GoogleAuthButton onSuccess={handleGoogleSuccess} onFailure={handleGoogleFailure} loading={loading} />
 					<div className="text-center text-sm mt-4">
 						Already have an account?{' '}
 						<Link to="/sign-in" className="text-blue-600 hover:underline">
