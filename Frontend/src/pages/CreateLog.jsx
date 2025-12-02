@@ -38,7 +38,7 @@ function CreateLog() {
 	};
 
 	return (
-		<div className="max-w-3xl mx-auto">
+		<div className="max-w-3xl mx-auto px-4 py-6">
 			<Card>
 				<CardBody>
 					<LogForm onSubmit={handleSubmit} />

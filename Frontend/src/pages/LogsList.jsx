@@ -67,10 +67,10 @@ function LogsList() {
 						</div>
 					)}
 				</div>
-				<Card className="md:min-w-[520px]">
+				<Card className="w-full">
 					<CardBody>
-						<form onSubmit={applyFilters} className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
-							<div className="md:col-span-2">
+						<form onSubmit={applyFilters} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-2 text-sm">
+							<div className="sm:col-span-2 md:col-span-2">
 								<Input
 									placeholder="Search..."
 									value={filters.q}
@@ -98,7 +98,7 @@ function LogsList() {
 								<option value={50}>50</option>
 								<option value={100}>100</option>
 							</Select>
-							<Button className="col-span-2 md:col-span-1" type="submit">
+							<Button className="col-span-1 sm:col-span-2 md:col-span-1" type="submit">
 								Apply
 							</Button>
 						</form>
@@ -131,7 +131,7 @@ function LogsList() {
 						<li key={log._id}>
 							<Card>
 								<CardBody>
-									<div className="flex justify-between items-start gap-4">
+									<div className="flex flex-col sm:flex-row sm:justify-between items-start gap-4">
 										<div>
 											<h3 className="text-lg font-semibold flex items-center gap-2">
 												{log.title}
@@ -151,7 +151,7 @@ function LogsList() {
 											)}
 										</div>
 										{auth?.user?._id === log.user?._id && (
-											<div className="flex gap-2 ml-4 shrink-0">
+											<div className="flex gap-2 mt-3 sm:mt-0 sm:ml-4">
 												<Button onClick={() => setEditing(log)} variant="primary">
 													Edit
 												</Button>

@@ -22,7 +22,7 @@ export default function EditLogModal({ open, onClose, initial }) {
 			}`}
 		>
 			<div className="absolute inset-0 bg-black/50" onClick={close} />
-			<div className="relative w-full max-w-xl">
+			<div className="relative w-full max-w-full sm:max-w-xl max-h-[90vh] overflow-auto mx-2">
 				<Card>
 					<CardHeader title="Edit Log" />
 					<CardBody>

@@ -6,6 +6,23 @@ body {
 	@apply bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 antialiased;
 }
 
+/* Utility: visually hidden (screen-reader only) */
+.sr-only {
+	position: absolute !important;
+	height: 1px; width: 1px;
+	overflow: hidden;
+	clip: rect(1px, 1px, 1px, 1px);
+	white-space: nowrap;
+}
+
+/* Skip link for keyboard users */
+.skip-link {
+	@apply fixed left-4 top-4 z-[60] bg-white text-blue-700 px-3 py-2 rounded-md shadow-md ring-2 ring-transparent focus:ring-blue-300 transition-transform -translate-y-12;
+}
+.skip-link:focus {
+	transform: translateY(0);
+}
+
 /* Brand color variables (defaults to primary) */
 :root {
 	--brand-color: #2563eb; /* blue-600 */
@@ -18,6 +35,16 @@ body {
 }
 .dark .brand-text {
 	color: var(--brand-color-dark);
+}
+
+/* Responsive branding */
+@media (max-width: 768px) {
+	.brand-text { font-size: 1.125rem; }
+	.glass-navbar { padding-left: 0.75rem; padding-right: 0.75rem; }
+}
+
+@media (min-width: 768px) {
+	.brand-text { font-size: 1.25rem; }
 }
 
 /* Accessible focus styles using brand color */
@@ -51,6 +78,20 @@ body {
 	transition: background-color 160ms ease, box-shadow 160ms ease;
 
 	border-bottom-width: 1px;
+}
+
+/* Mobile nav link appearance inside the collapsible panel */
+.mobile-nav-link {
+	@apply text-gray-800 dark:text-gray-100 px-3 py-2 rounded-md hover:bg-blue-50 dark:hover:bg-gray-800;
+}
+
+/* Make interactive elements slightly larger and easier to tap on small screens */
+button, a, .btn {
+	-webkit-tap-highlight-color: rgba(0,0,0,0);
+}
+
+@media (max-width: 640px) {
+	button, a, .btn { padding: 10px 12px; }
 }
 
 /* Variant outline colors that match button variants */

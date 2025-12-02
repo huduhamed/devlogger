@@ -1,5 +1,5 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useContext } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { useContext, useState, useEffect } from 'react';
 
 // internal imports
 import AuthContext from '../context/AuthContext';
@@ -12,12 +12,19 @@ function Navbar() {
 	const { auth, logout } = useContext(AuthContext);
 	const { theme, toggle } = useContext(ThemeContext);
 	const navigate = useNavigate();
+	const location = useLocation();
+	const [open, setOpen] = useState(false);
 
 	// handle log out
 	const handleLogout = () => {
 		logout();
 		navigate('/');
 	};
+
+	useEffect(() => {
+		// close mobile menu on navigation
+		setOpen(false);
+	}, [location.pathname]);
 
 	const linkClasses = ({ isActive }) =>
 		`px-4 py-2 rounded-lg transition-colors duration-200 ${
@@ -28,17 +35,19 @@ function Navbar() {
 
 	return (
 		<nav className="glass-navbar glass-navbar--primary sticky top-0 z-50">
-			<div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-				<NavLink to="/" title="Home">
+			<div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+				{/* Brand */}
+				<NavLink to="/" title="Home" className="flex items-center gap-2">
 					<h1
-						className="text-2xl font-extrabold brand-text cursor-pointer select-none flex items-center gap-2 tracking-tight drop-shadow-sm hover:scale-105 dark:hover:text-blue-100 transition-transform duration-200"
+						className="text-2xl font-extrabold brand-text cursor-pointer select-none tracking-tight drop-shadow-sm dark:hover:text-blue-100 transition-transform duration-200"
 						style={{ letterSpacing: '-1px' }}
 					>
-						<span className="inline-block brand-text">DevLogger</span>
+						<span className="inline-block brand-text">Dev</span>
 					</h1>
 				</NavLink>
 
-				<div className="flex gap-4">
+				{/* Desktop nav links */}
+				<div className="hidden md:flex md:items-center md:gap-4">
 					{auth?.user && (
 						<>
 							<NavLink to="/dashboard" className={linkClasses}>
@@ -57,9 +66,9 @@ function Navbar() {
 					)}
 				</div>
 
-				{/* Right side - user profile & logout */}
-				<div className="flex items-center gap-3">
-					<Button variant="ghost" onClick={toggle} title="Toggle theme" className="mr-1">
+				{/* Right side - desktop actions */}
+				<div className="hidden md:flex md:items-center md:gap-3">
+					<Button variant="ghost" onClick={toggle} title="Toggle theme" className="mr-1 focus-brand">
 						{theme === 'dark' ? '🌙' : '☀️'}
 					</Button>
 					{auth?.user ? (
@@ -108,6 +117,70 @@ function Navbar() {
 								</Button>
 							</NavLink>
 						</div>
+					)}
+				</div>
+
+				{/* Mobile: Hamburger */}
+				<div className="md:hidden flex items-center">
+					<Button
+						variant="ghost"
+						onClick={() => setOpen((v) => !v)}
+						aria-controls="mobile-menu"
+						aria-expanded={open}
+						aria-label={open ? 'Close menu' : 'Open menu'}
+						className="p-2"
+					>
+						{open ? '✕' : '☰'}
+					</Button>
+				</div>
+			</div>
+
+			{/* Mobile menu panel */}
+			<div
+				id="mobile-menu"
+				className={`md:hidden px-4 pb-4 transition-[max-height,opacity] ease-out duration-200 overflow-hidden ${
+					open ? 'max-h-[900px] opacity-100' : 'max-h-0 opacity-0'
+				}`}
+			>
+				<div className="flex flex-col gap-2">
+					{auth?.user ? (
+						<>
+							<NavLink to="/dashboard" className={({isActive})=>`${linkClasses({isActive})} block`}>
+								Dashboard
+							</NavLink>
+							<NavLink to="/create-log" className={({isActive})=>`${linkClasses({isActive})} block`}>
+								Create Log
+							</NavLink>
+							<NavLink to="/logs" className={({isActive})=>`${linkClasses({isActive})} block`}>
+								View Logs
+							</NavLink>
+							<NavLink to="/organization" className={({isActive})=>`${linkClasses({isActive})} block`}>
+								Organization
+							</NavLink>
+							<div className="flex items-center gap-2 mt-2">
+								<Button variant="ghost" onClick={toggle} className="focus-brand">
+									{theme === 'dark' ? '🌙' : '☀️'}
+								</Button>
+								<NavLink to="/settings" className={linkClasses} title="Settings">
+									⚙️
+								</NavLink>
+								<Button variant="danger" onClick={handleLogout} className="ml-auto">
+									Logout
+								</Button>
+							</div>
+						</>
+					) : (
+						<>
+							<NavLink to="/pricing" className={({isActive})=>`${linkClasses({isActive})} block`}>
+								Pricing
+							</NavLink>
+							<NavLink to="/sign-up" className={({isActive})=>`${linkClasses({isActive})} block`}>
+								Sign Up
+							</NavLink>
+							<NavLink to="/sign-in" className={({isActive})=>`${linkClasses({isActive})} block`}>
+								Sign In
+							</NavLink>
+						</>
 					)}
 				</div>
 			</div>
