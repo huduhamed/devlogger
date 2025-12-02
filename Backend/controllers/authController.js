@@ -80,66 +80,7 @@ export async function googleSignIn(req, res, next) {
 	}
 }
 
-// development-only: allow test sign-in without verifying Google token
-export async function googleTestSignIn(req, res, next) {
-	try {
-		const { email, name, picture } = req.body;
-		if (!email) return res.status(400).json({ message: 'email required for test sign-in' });
-
-		let user = await User.findOne({ email });
-		let isNewUser = false;
-
-		if (!user) {
-			// create user and organization for first-time google login
-			const fakeId = `test-${email}`;
-			user = await User.create({
-				name: name || 'Test Google User',
-				email,
-				password: fakeId,
-				avatarUrl: picture || '',
-			});
-
-			// create organization
-			const orgBase = (name || 'test-google-user')
-				.trim()
-				.toLowerCase()
-				.replace(/[^a-z0-9\s-]/g, '')
-				.replace(/\s+/g, '-');
-			let slugCandidate = orgBase || `org-${user._id.toString().slice(-6)}`;
-
-			let counter = 1;
-			while (await Organization.findOne({ slug: slugCandidate })) {
-				slugCandidate = `${orgBase}-${counter++}`;
-			}
-			const organization = await Organization.create({
-				name: `${name || 'Test Google User'}'s Org`,
-				slug: slugCandidate,
-				owner: user._id,
-				members: [{ user: user._id, role: 'owner' }],
-			});
-			user.organization = organization._id;
-			await user.save();
-			isNewUser = true;
-		}
-
-		// issue JWT
-		const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-		let org = null;
-
-		if (isNewUser) {
-			org = await Organization.findById(user.organization);
-		}
-		return res.status(200).json({
-			success: true,
-			message: isNewUser ? 'Test Google user created and signed in' : 'Test Google user signed in',
-			token,
-			user,
-			organization: org,
-		});
-	} catch (error) {
-		return next(error);
-	}
-}
+// (dev-only googleTestSignIn removed) Use real Google ID tokens via /api/v1/auth/google
 
 // register user
 export async function signUp(req, res, next) {

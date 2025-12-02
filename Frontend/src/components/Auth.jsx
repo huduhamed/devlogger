@@ -29,7 +29,7 @@ export default function GoogleAuthButton({ onSuccess, onFailure }) {
 				});
 
 				if (btnRef.current) {
-					// render Google's official button into the container (outline theme)
+					// render Google's official button into the container
 					window.google.accounts.id.renderButton(btnRef.current, {
 						theme: 'outline',
 						size: 'large',

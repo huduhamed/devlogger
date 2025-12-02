@@ -1,4 +1,4 @@
-// role / authorization
+// role or authorization
 export function requireRole(role) {
 	return function (req, res, next) {
 		if (!req.user) return res.status(401).json({ message: 'Unauthorized' });

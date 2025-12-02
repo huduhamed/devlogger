@@ -4,12 +4,12 @@ import { Server as IOServer } from 'socket.io';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import helmet from 'helmet';
-import requestId from './middleware/requestId.js';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 
 // internal imports
 import authRouter from './routes/authRoutes.js';
+import requestId from './middleware/requestId.js';
 import userRouter from './routes/userRoute.js';
 import logRoutes from './routes/logRoutes.js';
 import organizationRoutes from './routes/organizationRoutes.js';
@@ -95,7 +95,7 @@ app.use((req, _res, next) => {
 	return next();
 });
 
-// Stripe webhook
+// stripe webhook
 app.use((req, res, next) => {
 	if (req.originalUrl === '/api/v1/billing/webhook') {
 		let data = '';
