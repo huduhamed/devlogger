@@ -93,12 +93,12 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 					placeholder="ui, api, auth"
 					label="Tags (comma separated)"
 				/>
-				<div className="flex justify-between items-center">
-					<Button type="submit" loading={loading}>
+				<div className="flex flex-col sm:flex-row sm:items-center gap-2">
+					<Button type="submit" loading={loading} className="w-full sm:w-auto">
 						{initialData ? 'Update Log' : 'Add Log'}
 					</Button>
 					{initialData && onCancel && (
-						<Button type="button" variant="outline" onClick={onCancel}>
+						<Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
 							Cancel
 						</Button>
 					)}

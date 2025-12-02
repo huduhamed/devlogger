@@ -217,7 +217,7 @@ function OrganizationSettings() {
 	if (!org) return <div className="p-6 text-red-500">Organization not found</div>;
 
 	return (
-		<div className="max-w-6xl mx-auto p-4 space-y-6">
+		<div className="max-w-3xl sm:max-w-6xl mx-auto px-4 p-4 space-y-6">
 			<Card>
 				<CardHeader title="Organization" subtitle="Overview of your plan and usage" />
 				<CardBody>
@@ -243,17 +243,27 @@ function OrganizationSettings() {
 									style={{ width: usagePct + '%' }}
 								/>
 							</div>
-							<div className="mt-4 flex flex-wrap gap-2">
+							<div className="mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2">
 								{org.plan === 'free' && (
 									<>
-										<Button onClick={() => startCheckout('pro')}>Upgrade to Pro</Button>
-										<Button variant="secondary" onClick={() => startCheckout('enterprise')}>
+										<Button onClick={() => startCheckout('pro')} className="w-full sm:w-auto">
+											Upgrade to Pro
+										</Button>
+										<Button
+											variant="secondary"
+											onClick={() => startCheckout('enterprise')}
+											className="w-full sm:w-auto"
+										>
 											Upgrade to Enterprise
 										</Button>
 									</>
 								)}
 								{(org.billing?.customerId || orgCtx?.billing?.customerId) && (
-									<Button variant="outline" onClick={openBillingPortal}>
+									<Button
+										variant="outline"
+										onClick={openBillingPortal}
+										className="w-full sm:w-auto"
+									>
 										Manage Billing
 									</Button>
 								)}
@@ -278,6 +288,7 @@ function OrganizationSettings() {
 											size="sm"
 											onClick={() => startCheckout('pro')}
 											disabled={org.plan === 'pro'}
+											className="w-full sm:w-auto"
 										>
 											{org.plan === 'pro' ? 'Current Plan' : 'Choose Pro'}
 										</Button>
@@ -300,6 +311,7 @@ function OrganizationSettings() {
 											variant="secondary"
 											onClick={() => startCheckout('enterprise')}
 											disabled={org.plan === 'enterprise'}
+											className="w-full sm:w-auto"
 										>
 											{org.plan === 'enterprise' ? 'Current Plan' : 'Choose Enterprise'}
 										</Button>
@@ -314,23 +326,25 @@ function OrganizationSettings() {
 			<Card>
 				<CardHeader title="Members" />
 				<CardBody>
-					<form onSubmit={addMember} className="flex gap-2 mb-4 flex-wrap">
-						<div className="flex-1 min-w-[220px]">
+					<form onSubmit={addMember} className="flex flex-col sm:flex-row gap-2 mb-4">
+						<div className="flex-1 min-w-0">
 							<Input
 								value={newMemberEmail}
 								onChange={(e) => setNewMemberEmail(e.target.value)}
 								placeholder="user@example.com"
 							/>
 						</div>
-						<Button type="submit">Add Member</Button>
+						<Button type="submit" className="w-full sm:w-auto">
+							Add Member
+						</Button>
 					</form>
 					<ul className="space-y-2">
 						{members.map((m) => (
 							<li
 								key={m.user._id}
-								className="flex justify-between items-center border rounded p-2 bg-white dark:bg-gray-900"
+								className="flex flex-col sm:flex-row justify-between items-start sm:items-center border rounded p-2 bg-white dark:bg-gray-900 gap-2"
 							>
-								<div>
+								<div className="flex-1">
 									<span className="font-medium">{m.user.name}</span>{' '}
 									<span className="text-xs text-gray-500">{m.user.email}</span>{' '}
 									<span className="ml-2 text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800">
@@ -340,7 +354,7 @@ function OrganizationSettings() {
 								{m.role !== 'owner' && (
 									<button
 										onClick={() => removeMember(m.user._id)}
-										className="text-red-600 text-sm hover:underline"
+										className="text-red-600 text-sm hover:underline self-end sm:self-auto"
 									>
 										Remove
 									</button>
@@ -354,27 +368,32 @@ function OrganizationSettings() {
 			<Card>
 				<CardHeader title="API Keys" />
 				<CardBody>
-					<form onSubmit={createKey} className="flex gap-2 mb-4 flex-wrap">
-						<div className="flex-1 min-w-[200px]">
+					<form onSubmit={createKey} className="flex flex-col sm:flex-row gap-2 mb-4">
+						<div className="flex-1 min-w-0">
 							<Input
 								value={newKeyName}
 								onChange={(e) => setNewKeyName(e.target.value)}
 								placeholder="Key Name"
 							/>
 						</div>
-						<Button type="submit" variant="secondary">
+						<Button type="submit" variant="secondary" className="w-full sm:w-auto">
 							Create Key
 						</Button>
 					</form>
 					{createdKey && (
 						<div className="p-3 bg-yellow-100 border border-yellow-300 rounded text-sm mb-4">
-							<div className="flex items-start justify-between gap-4">
+							<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 								<div className="flex-1">
 									<p className="font-medium">New Key (copy now):</p>
 									<code className="break-all text-xs">{createdKey}</code>
 								</div>
-								<div className="shrink-0">
-									<Button size="sm" onClick={copyCreatedKey} variant="secondary">
+								<div className="shrink-0 w-full sm:w-auto">
+									<Button
+										size="sm"
+										onClick={copyCreatedKey}
+										variant="secondary"
+										className="w-full sm:w-auto"
+									>
 										Copy
 									</Button>
 								</div>
@@ -385,7 +404,7 @@ function OrganizationSettings() {
 						{apiKeys.map((k) => (
 							<li
 								key={k.keyId || k.name}
-								className="flex justify-between items-center border rounded p-2 bg-white dark:bg-gray-900"
+								className="flex flex-col sm:flex-row justify-between items-start sm:items-center border rounded p-2 bg-white dark:bg-gray-900 gap-2"
 							>
 								<div>
 									<span className="font-medium">{k.name}</span>
@@ -402,7 +421,7 @@ function OrganizationSettings() {
 								{!k.revoked && (
 									<button
 										onClick={() => revokeKey(k.keyId)}
-										className="text-red-600 text-sm hover:underline"
+										className="text-red-600 text-sm hover:underline self-end sm:self-auto"
 									>
 										Revoke
 									</button>

@@ -119,7 +119,7 @@ export default function Settings() {
 	};
 
 	return (
-		<div className="max-w-5xl mx-auto space-y-6">
+		<div className="max-w-3xl sm:max-w-5xl mx-auto px-4 space-y-6">
 			<div className="flex items-center flex-wrap gap-3 mb-2">
 				<span className="text-2xl font-bold">Settings</span>
 				<span className="text-gray-500">Manage your profile & organization</span>
@@ -133,12 +133,12 @@ export default function Settings() {
 				)}
 			</div>
 
-			<div className="grid md:grid-cols-2 gap-6">
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<Card>
 					<CardHeader title="Profile" subtitle="Personal information & security" />
 					<CardBody>
 						<form onSubmit={saveProfile} className="space-y-4">
-							<div className="flex items-center gap-4">
+							<div className="flex flex-col sm:flex-row sm:items-center gap-4">
 								<div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
 									{profile.avatarUrl ? (
 										<img
@@ -191,7 +191,7 @@ export default function Settings() {
 								placeholder="https://..."
 							/>
 							<div className="flex justify-end">
-								<Button type="submit" loading={loading}>
+								<Button type="submit" loading={loading} className="w-full sm:w-auto">
 									Save Profile
 								</Button>
 							</div>
@@ -227,7 +227,7 @@ export default function Settings() {
 									required
 								/>
 								<div className="flex justify-end">
-									<Button type="submit" loading={orgLoading}>
+									<Button type="submit" loading={orgLoading} className="w-full sm:w-auto">
 										Create Organization
 									</Button>
 								</div>
@@ -247,7 +247,7 @@ export default function Settings() {
 								/>
 								<p className="text-xs text-gray-500">Slug auto-updates from the name.</p>
 								<div className="flex justify-end">
-									<Button type="submit" loading={orgLoading}>
+									<Button type="submit" loading={orgLoading} className="w-full sm:w-auto">
 										Save Organization
 									</Button>
 								</div>
