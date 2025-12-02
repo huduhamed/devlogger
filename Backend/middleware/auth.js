@@ -21,7 +21,6 @@ async function authorize(req, res, next) {
 			return res.status(401).json({ message: 'Unauthorized: token missing' });
 		}
 
-		// else verify
 		const decoded = jwt.verify(token, JWT_SECRET);
 		const userId = decoded.userId || decoded.id || decoded._id;
 		if (!userId) {

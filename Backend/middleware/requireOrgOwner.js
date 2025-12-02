@@ -1,3 +1,4 @@
+// internal imports
 import Organization from '../models/Organization.js';
 
 // ensures requester is the owner or optionally admin of the org

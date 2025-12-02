@@ -1,12 +1,5 @@
 import { jest } from '@jest/globals';
 
-/*
-  Unit tests for the authorize middleware.
-  - mock jsonwebtoken.verify and the User model.
-  - The middleware does: read token -> jwt.verify -> User.findById(...).select('-password')
-  - To match the chained select(...) call we mock findById to return an object with a select() that resolves.
-*/
-
 let authorize; // middleware under test
 let jwt; // mocked jsonwebtoken
 let User; // mocked User model
@@ -21,7 +14,6 @@ const makeRes = () => {
 
 describe('authorize middleware (unit)', () => {
 	beforeAll(async () => {
-		// Register ESM-safe mocks BEFORE importing the modules under test.
 		// We declare verify as a jest.fn so tests can control its behaviour.
 		await jest.unstable_mockModule('jsonwebtoken', () => ({
 			__esModule: true,

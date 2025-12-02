@@ -21,6 +21,7 @@ const router = Router();
 
 // organization creation (if user has none)
 router.post('/', authorize, createOrganization);
+
 // authenticated org-level operations
 router.get('/me', authorize, getOrganization);
 router.get('/members', authorize, listMembers);

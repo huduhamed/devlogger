@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-// organization schema
+// org schema
 const organizationSchema = new mongoose.Schema(
 	{
 		name: { type: String, required: true, trim: true },
