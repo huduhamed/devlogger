@@ -9,7 +9,8 @@ body {
 /* Utility: visually hidden (screen-reader only) */
 .sr-only {
 	position: absolute !important;
-	height: 1px; width: 1px;
+	height: 1px;
+	width: 1px;
 	overflow: hidden;
 	clip: rect(1px, 1px, 1px, 1px);
 	white-space: nowrap;
@@ -39,12 +40,19 @@ body {
 
 /* Responsive branding */
 @media (max-width: 768px) {
-	.brand-text { font-size: 1.125rem; }
-	.glass-navbar { padding-left: 0.75rem; padding-right: 0.75rem; }
+	.brand-text {
+		font-size: 1.125rem;
+	}
+	.glass-navbar {
+		padding-left: 0.75rem;
+		padding-right: 0.75rem;
+	}
 }
 
 @media (min-width: 768px) {
-	.brand-text { font-size: 1.25rem; }
+	.brand-text {
+		font-size: 1.25rem;
+	}
 }
 
 /* Accessible focus styles using brand color */
@@ -86,12 +94,18 @@ body {
 }
 
 /* Make interactive elements slightly larger and easier to tap on small screens */
-button, a, .btn {
-	-webkit-tap-highlight-color: rgba(0,0,0,0);
+button,
+a,
+.btn {
+	-webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
 
 @media (max-width: 640px) {
-	button, a, .btn { padding: 10px 12px; }
+	button,
+	a,
+	.btn {
+		padding: 10px 12px;
+	}
 }
 
 /* Variant outline colors that match button variants */
@@ -107,3 +121,9 @@ button, a, .btn {
 .glass-navbar--muted {
 	--nav-outline: rgba(107, 114, 128, 0.1);
 } /* gray-500 */
+
+/* Safety: prevent accidental horizontal overflow caused by wide children */
+html,
+body {
+	overflow-x: hidden;
+}
