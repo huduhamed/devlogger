@@ -27,7 +27,7 @@ function Navbar() {
 	}, [location.pathname]);
 
 	const linkClasses = ({ isActive }) =>
-		`px-4 py-2 rounded-lg transition-colors duration-200 ${
+		`px-3 md:px-4 py-2 rounded-lg transition-colors duration-200 ${
 			isActive
 				? 'bg-blue-600 text-white shadow-md'
 				: 'text-gray-700 dark:text-gray-200 hover:bg-blue-100 dark:hover:bg-gray-800'
@@ -35,9 +35,9 @@ function Navbar() {
 
 	return (
 		<nav className="glass-navbar glass-navbar--primary sticky top-0 z-50">
-			<div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+			<div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between min-w-0 w-full">
 				{/* Brand */}
-				<NavLink to="/" title="Home" className="flex items-center gap-2">
+				<NavLink to="/" title="Home" className="flex items-center gap-2 flex-shrink-0">
 					<h1
 						className="text-2xl font-extrabold brand-text cursor-pointer select-none tracking-tight drop-shadow-sm dark:hover:text-blue-100 transition-transform duration-200"
 						style={{ letterSpacing: '-1px' }}
@@ -47,17 +47,17 @@ function Navbar() {
 				</NavLink>
 
 				{/* Desktop nav links */}
-				<div className="hidden md:flex md:items-center md:gap-4">
+				<div className="hidden md:flex md:items-center md:gap-4 min-w-0">
 					{auth?.user && (
 						<>
 							<NavLink to="/dashboard" className={linkClasses}>
 								Dashboard
 							</NavLink>
 							<NavLink to="/create-log" className={linkClasses}>
-								Create Log
+								Create
 							</NavLink>
 							<NavLink to="/logs" className={linkClasses}>
-								View Logs
+								Logs
 							</NavLink>
 							<NavLink to="/organization" className={linkClasses}>
 								Organization
@@ -67,18 +67,23 @@ function Navbar() {
 				</div>
 
 				{/* Right side - desktop actions */}
-				<div className="hidden md:flex md:items-center md:gap-3">
-					<Button variant="ghost" onClick={toggle} title="Toggle theme" className="mr-1 focus-brand">
+				<div className="hidden md:flex md:items-center md:gap-3 min-w-0">
+					<Button
+						variant="ghost"
+						onClick={toggle}
+						title="Toggle theme"
+						className="mr-1 focus-brand"
+					>
 						{theme === 'dark' ? '🌙' : '☀️'}
 					</Button>
 					{auth?.user ? (
-						<div className="flex items-center gap-3">
+						<div className="flex items-center gap-3 min-w-0">
 							<Notification />
 							<NavLink to="/settings" className={linkClasses} title="Settings">
 								⚙️
 							</NavLink>
-							<NavLink to="/settings" title="Profile Settings">
-								<div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold overflow-hidden cursor-pointer">
+							<NavLink to="/settings" title="Profile Settings" className="flex-shrink-0">
+								<div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold overflow-hidden cursor-pointer flex-shrink-0">
 									{auth.user?.avatarUrl ? (
 										<img
 											src={auth.user.avatarUrl}
@@ -90,7 +95,9 @@ function Navbar() {
 									)}
 								</div>
 							</NavLink>
-							<span className="capitalize font-medium mr-2">{auth.user?.name}</span>
+							<span className="capitalize font-medium mr-2 hidden lg:inline truncate max-w-[7rem]">
+								{auth.user?.name}
+							</span>
 							<Button variant="danger" onClick={handleLogout}>
 								Logout
 							</Button>
@@ -121,7 +128,7 @@ function Navbar() {
 				</div>
 
 				{/* Mobile: Hamburger */}
-				<div className="md:hidden flex items-center">
+				<div className="md:hidden border border-white flex items-center">
 					<Button
 						variant="ghost"
 						onClick={() => setOpen((v) => !v)}
@@ -145,16 +152,28 @@ function Navbar() {
 				<div className="flex flex-col gap-2">
 					{auth?.user ? (
 						<>
-							<NavLink to="/dashboard" className={({isActive})=>`${linkClasses({isActive})} block`}>
+							<NavLink
+								to="/dashboard"
+								className={({ isActive }) => `${linkClasses({ isActive })} block`}
+							>
 								Dashboard
 							</NavLink>
-							<NavLink to="/create-log" className={({isActive})=>`${linkClasses({isActive})} block`}>
-								Create Log
+							<NavLink
+								to="/create-log"
+								className={({ isActive }) => `${linkClasses({ isActive })} block`}
+							>
+								Create
 							</NavLink>
-							<NavLink to="/logs" className={({isActive})=>`${linkClasses({isActive})} block`}>
-								View Logs
+							<NavLink
+								to="/logs"
+								className={({ isActive }) => `${linkClasses({ isActive })} block`}
+							>
+								Logs
 							</NavLink>
-							<NavLink to="/organization" className={({isActive})=>`${linkClasses({isActive})} block`}>
+							<NavLink
+								to="/organization"
+								className={({ isActive }) => `${linkClasses({ isActive })} block`}
+							>
 								Organization
 							</NavLink>
 							<div className="flex items-center gap-2 mt-2">
@@ -171,13 +190,22 @@ function Navbar() {
 						</>
 					) : (
 						<>
-							<NavLink to="/pricing" className={({isActive})=>`${linkClasses({isActive})} block`}>
+							<NavLink
+								to="/pricing"
+								className={({ isActive }) => `${linkClasses({ isActive })} block`}
+							>
 								Pricing
 							</NavLink>
-							<NavLink to="/sign-up" className={({isActive})=>`${linkClasses({isActive})} block`}>
+							<NavLink
+								to="/sign-up"
+								className={({ isActive }) => `${linkClasses({ isActive })} block`}
+							>
 								Sign Up
 							</NavLink>
-							<NavLink to="/sign-in" className={({isActive})=>`${linkClasses({isActive})} block`}>
+							<NavLink
+								to="/sign-in"
+								className={({ isActive }) => `${linkClasses({ isActive })} block`}
+							>
 								Sign In
 							</NavLink>
 						</>
