@@ -5,7 +5,7 @@ import LogForm from './LogForm.jsx';
 import Card, { CardBody, CardHeader } from './ui/Card.jsx';
 
 // edit modal
-export default function EditLogModal({ open, onClose, initial }) {
+function EditLogModal({ open, onClose, initial }) {
 	const [visible, setVisible] = useState(open);
 
 	if (!open) return null;
@@ -33,3 +33,5 @@ export default function EditLogModal({ open, onClose, initial }) {
 		</div>
 	);
 }
+
+export default EditLogModal;

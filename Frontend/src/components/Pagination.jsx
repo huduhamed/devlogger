@@ -2,7 +2,7 @@
 import Button from './ui/Button.jsx';
 
 // pagination
-export default function Pagination({ page, pages, onPage }) {
+function Pagination({ page, pages, onPage }) {
 	if (!pages || pages <= 1) return null;
 	const go = (p) => () => onPage(Math.max(1, Math.min(pages, p)));
 
@@ -22,3 +22,5 @@ export default function Pagination({ page, pages, onPage }) {
 		</div>
 	);
 }
+
+export default Pagination;

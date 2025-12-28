@@ -15,14 +15,14 @@ function Navbar() {
 	const location = useLocation();
 	const [open, setOpen] = useState(false);
 
-	// handle log out
+	// handle logout
 	const handleLogout = () => {
 		logout();
 		navigate('/');
 	};
 
 	useEffect(() => {
-		// close mobile menu on navigation
+		// close hamburger menu on navigation
 		setOpen(false);
 	}, [location.pathname]);
 
@@ -55,7 +55,7 @@ function Navbar() {
 							className="text-2xl font-extrabold brand-text cursor-pointer select-none tracking-tight drop-shadow-sm dark:hover:text-blue-100 transition-transform duration-200"
 							style={{ letterSpacing: '-1px' }}
 						>
-							<span className="inline-block brand-text">Dev</span>
+							<span className="inline-block brand-text">Dev-track</span>
 						</h1>
 					</NavLink>
 
