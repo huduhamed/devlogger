@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function GoogleAuthButton({ onSuccess, onFailure }) {
+function GoogleAuthButton({ onSuccess, onFailure }) {
 	const btnRef = useRef(null);
 	const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -8,7 +8,7 @@ export default function GoogleAuthButton({ onSuccess, onFailure }) {
 		let mounted = true;
 
 		if (!clientId) {
-			onFailure && onFailure(new Error('Missing VITE_GOOGLE_CLIENT_ID'));
+			onFailure && onFailure(new Error('client ID'));
 			return () => (mounted = false);
 		}
 
@@ -29,7 +29,6 @@ export default function GoogleAuthButton({ onSuccess, onFailure }) {
 				});
 
 				if (btnRef.current) {
-					// render Google's official button into the container
 					window.google.accounts.id.renderButton(btnRef.current, {
 						theme: 'outline',
 						size: 'large',
@@ -69,3 +68,5 @@ export default function GoogleAuthButton({ onSuccess, onFailure }) {
 		</div>
 	);
 }
+
+export default GoogleAuthButton;
