@@ -140,7 +140,3 @@ Pull requests welcome. Please open an issue first for major changes. Add/extend 
 ## License
 
 ISC – Use freely with attribution.
-
----
-
-This document will evolve as SaaS features are implemented.

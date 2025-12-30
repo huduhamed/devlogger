@@ -55,7 +55,7 @@ function Navbar() {
 							className="text-2xl font-extrabold brand-text cursor-pointer select-none tracking-tight drop-shadow-sm dark:hover:text-blue-100 transition-transform duration-200"
 							style={{ letterSpacing: '-1px' }}
 						>
-							<span className="inline-block brand-text">Dev-track</span>
+							<span className="inline-block brand-text">Dev</span>
 						</h1>
 					</NavLink>
 
