@@ -48,8 +48,8 @@ export default function Settings() {
 			const updated = res.data.data;
 
 			const token = auth.token;
-			localStorage.setItem('user', JSON.stringify(updated));
-			if (token) localStorage.setItem('token', token);
+			sessionStorage.setItem('user', JSON.stringify(updated));
+			if (token) sessionStorage.setItem('token', token);
 			setAuth({ token, user: updated });
 			toast.success('Profile updated');
 			setProfile((p) => ({ ...p, password: '' }));
