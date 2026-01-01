@@ -27,6 +27,12 @@ logSchema.index({ user: 1, createdAt: -1 });
 logSchema.index({ organization: 1, createdAt: -1 });
 logSchema.index({ organization: 1, user: 1, createdAt: -1 });
 
+// indexes for filtering
+logSchema.index({ level: 1 });
+logSchema.index({ tags: 1 });
+logSchema.index({ organization: 1, level: 1 });
+logSchema.index({ organization: 1, tags: 1 });
+
 // full text search (basic) on title & description
 logSchema.index({ title: 'text', description: 'text' });
 

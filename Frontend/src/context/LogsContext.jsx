@@ -67,7 +67,7 @@ export function LogsProvider({ children }) {
 
 		const intervalId = setInterval(() => {
 			if (!loading) fetchLogs();
-		}, 45000);
+		}, 120000);
 		return () => {
 			window.removeEventListener('focus', onFocus);
 			clearInterval(intervalId);
