@@ -37,7 +37,8 @@ export async function getAllLogs(req, res, next) {
 			.sort(sort)
 			.skip(skip)
 			.limit(limit)
-			.populate('user', 'name email');
+			.populate('user', 'name email')
+			.lean();
 		const [logs, total] = await Promise.all([findChain, Log.countDocuments(query)]);
 
 		return res.status(200).json({
@@ -93,7 +94,8 @@ export async function getLogs(req, res, next) {
 		const findChain = (projection ? Log.find(query, projection) : Log.find(query))
 			.sort(sort)
 			.skip(skip)
-			.limit(limit);
+			.limit(limit)
+			.lean();
 		const [logs, total] = await Promise.all([findChain, Log.countDocuments(query)]);
 
 		// return

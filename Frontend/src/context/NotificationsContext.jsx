@@ -84,8 +84,8 @@ export function NotificationsProvider({ children }) {
 		if (auth?.user) {
 			// initial fetch
 			fetchNotifications();
-			// poll every 30s
-			intervalId = setInterval(fetchNotifications, 30 * 1000);
+			// poll every 2 minutes (reduced from 30s)
+			intervalId = setInterval(fetchNotifications, 120 * 1000);
 		} else {
 			setNotifications([]);
 			setUnread(0);

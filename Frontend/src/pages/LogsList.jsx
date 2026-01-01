@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useRef } from 'react';
 import { toast } from 'react-toastify';
 
 // internal imports
@@ -36,6 +36,16 @@ function LogsList() {
 	} = useContext(LogsContext);
 
 	const [editing, setEditing] = useState(null);
+	const debounceTimer = useRef(null);
+
+	// debounce search input (only fetch after user stops typing for 500ms)
+	const handleSearchChange = (value) => {
+		updateFilters({ q: value });
+		clearTimeout(debounceTimer.current);
+		debounceTimer.current = setTimeout(() => {
+			fetchLogs({ page: 1 });
+		}, 500);
+	};
 
 	// handle delete
 	const handleDelete = async (id) => {
@@ -52,6 +62,7 @@ function LogsList() {
 	// filter
 	const applyFilters = (e) => {
 		e.preventDefault();
+		clearTimeout(debounceTimer.current);
 		fetchLogs({ page: 1 });
 	};
 
@@ -69,17 +80,24 @@ function LogsList() {
 				</div>
 				<Card className="w-full">
 					<CardBody>
-						<form onSubmit={applyFilters} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-2 text-sm">
+						<form
+							onSubmit={applyFilters}
+							className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-2 text-sm"
+						>
 							<div className="sm:col-span-2 md:col-span-2">
 								<Input
 									placeholder="Search..."
 									value={filters.q}
-									onChange={(e) => updateFilters({ q: e.target.value })}
+									onChange={(e) => handleSearchChange(e.target.value)}
 								/>
 							</div>
 							<Select
 								value={filters.level}
-								onChange={(e) => updateFilters({ level: e.target.value })}
+								onChange={(e) => {
+									updateFilters({ level: e.target.value });
+									clearTimeout(debounceTimer.current);
+									debounceTimer.current = setTimeout(() => fetchLogs({ page: 1 }), 300);
+								}}
 							>
 								<option value="">Level</option>
 								<option value="debug">Debug</option>
@@ -90,7 +108,11 @@ function LogsList() {
 							<Input
 								placeholder="Tag"
 								value={filters.tag}
-								onChange={(e) => updateFilters({ tag: e.target.value })}
+								onChange={(e) => {
+									updateFilters({ tag: e.target.value });
+									clearTimeout(debounceTimer.current);
+									debounceTimer.current = setTimeout(() => fetchLogs({ page: 1 }), 300);
+								}}
 							/>
 							<Select value={limit} onChange={(e) => setLimit(parseInt(e.target.value, 10))}>
 								<option value={10}>10</option>
