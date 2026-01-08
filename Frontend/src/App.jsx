@@ -7,6 +7,7 @@ import Settings from './pages/Settings.jsx';
 import OrganizationSettings from './pages/OrganizationSettings.jsx';
 import CreateLog from './pages/CreateLog.jsx';
 import Home from './pages/Home.jsx';
+import CheckoutSuccess from './pages/CheckoutSuccess.jsx';
 
 function App() {
 	return (
@@ -32,8 +33,7 @@ function App() {
 
 					{/* pricing */}
 					<Route path="/pricing" element={<Pricing />} />
-
-					{/* redirect unknown paths */}
+				<Route path="/checkout-success" element={<CheckoutSuccess />} />
 					<Route path="*" element={<Navigate to="/" replace />} />
 				</Routes>
 			</div>

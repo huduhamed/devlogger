@@ -61,8 +61,8 @@ export async function createCheckoutSession(req, res, next) {
 			mode: 'subscription',
 			customer: customerId,
 			line_items: [{ price: priceId, quantity: 1 }],
-			success_url: `${FRONTEND_URL}/organization?session_id={CHECKOUT_SESSION_ID}`,
-			cancel_url: `${FRONTEND_URL}/organization`,
+			success_url: `${FRONTEND_URL}/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
+			cancel_url: `${FRONTEND_URL}/pricing`,
 			metadata: { orgId: org._id.toString(), plan },
 		});
 
@@ -153,5 +153,31 @@ export async function stripeWebhook(req, res) {
 	} catch (err) {
 		console.error('Stripe webhook error', err);
 		res.status(500).end();
+	}
+}
+
+// verify checkout session
+export async function verifyCheckoutSession(req, res, next) {
+	try {
+		if (!stripe) return res.status(500).json({ message: 'Stripe not configured' });
+
+		const { sessionId } = req.body;
+		if (!sessionId) return res.status(400).json({ message: 'Session ID required' });
+
+		const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+		if (!session) return res.status(404).json({ message: 'Session not found' });
+
+		// check if payment was successful
+		const isSuccessful = session.payment_status === 'paid';
+
+		return res.status(200).json({
+			success: isSuccessful,
+			status: session.status,
+			paymentStatus: session.payment_status,
+			subscriptionId: session.subscription,
+		});
+	} catch (err) {
+		next(err);
 	}
 }
