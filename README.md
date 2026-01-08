@@ -81,8 +81,8 @@ Response pagination structure:
    2. Set backend env vars (see `Backend/.env.example`):
       - `STRIPE_SECRET_KEY`
       - `STRIPE_WEBHOOK_SECRET` (from Stripe CLI or Dashboard webhook endpoint)
-      - `STRIPE_PRICE_PRO_MONTHLY`
-      - `STRIPE_PRICE_ENTERPRISE_MONTHLY`
+      - `PRODUCT_PRICE_PRO`
+      - `PRODUCT_PRICE_ENTERPRISE`
       - `FRONTEND_URL` (e.g., `http://localhost:5173` for dev)
    3. Start backend and frontend.
    4. In a separate terminal, run Stripe CLI to forward webhooks:

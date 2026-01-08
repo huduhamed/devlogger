@@ -13,7 +13,7 @@ import requestId from './middleware/requestId.js';
 import userRouter from './routes/userRoute.js';
 import logRoutes from './routes/logRoutes.js';
 import organizationRoutes from './routes/organizationRoutes.js';
-import { PORT, FRONTEND_URL } from './config/env.js';
+import { PORT, FRONTEND_URL, STRIPE_SECRET_KEY } from './config/env.js';
 import billingRoutes from './routes/billingRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import { stripeWebhook } from './controllers/billingController.js';
