@@ -7,14 +7,16 @@ import {
 	createPortalSession,
 	stripeWebhook,
 	getBillingConfig,
+	verifyCheckoutSession,
 } from '../controllers/billingController.js';
 
 const router = Router();
 
-// stripe webhook requires raw body
-router.post('/webhook', (req, res, next) => next());
+// stripe webhook
+router.post('/webhook', stripeWebhook);
 
 router.post('/checkout', authorize, createCheckoutSession);
+router.post('/verify-session', authorize, verifyCheckoutSession);
 router.post('/portal', authorize, createPortalSession);
 router.get('/config', authorize, getBillingConfig);
 
