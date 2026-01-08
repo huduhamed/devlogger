@@ -6,8 +6,8 @@ import {
 	FRONTEND_URL,
 	STRIPE_SECRET_KEY,
 	STRIPE_WEBHOOK_SECRET,
-	STRIPE_PRICE_PRO_MONTHLY,
-	STRIPE_PRICE_ENTERPRISE_MONTHLY,
+	PRODUCT_PRICE_PRO,
+	PRODUCT_PRICE_ENTERPRISE,
 } from '../config/env.js';
 
 const stripe = STRIPE_SECRET_KEY
@@ -16,14 +16,12 @@ const stripe = STRIPE_SECRET_KEY
 
 // billing
 export function getBillingConfig(_req, res) {
-	const configured = Boolean(
-		STRIPE_SECRET_KEY && STRIPE_PRICE_PRO_MONTHLY && STRIPE_PRICE_ENTERPRISE_MONTHLY
-	);
+	const configured = Boolean(STRIPE_SECRET_KEY && PRODUCT_PRICE_PRO && PRODUCT_PRICE_ENTERPRISE);
 	res.json({
 		configured,
 		prices: {
-			pro: Boolean(STRIPE_PRICE_PRO_MONTHLY),
-			enterprise: Boolean(STRIPE_PRICE_ENTERPRISE_MONTHLY),
+			pro: Boolean(PRODUCT_PRICE_PRO),
+			enterprise: Boolean(PRODUCT_PRICE_ENTERPRISE),
 		},
 		frontendUrl: FRONTEND_URL || 'http://localhost:5173',
 	});
@@ -33,25 +31,29 @@ export function getBillingConfig(_req, res) {
 export async function createCheckoutSession(req, res, next) {
 	try {
 		if (!stripe) return res.status(500).json({ message: 'Stripe not configured' });
+
 		const orgId = req.user?.organization;
 		const org = await Organization.findById(orgId);
+
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
 
 		const { plan } = req.body; // 'pro' | 'enterprise'
-		const priceId =
-			plan === 'enterprise' ? STRIPE_PRICE_ENTERPRISE_MONTHLY : STRIPE_PRICE_PRO_MONTHLY;
+		const priceId = plan === 'enterprise' ? PRODUCT_PRICE_ENTERPRISE : PRODUCT_PRICE_PRO;
 		if (!priceId)
 			return res.status(400).json({ message: 'Price not configured for selected plan' });
 
 		// Ensure customer
 		let customerId = org.billing?.customerId;
+
 		if (!customerId) {
 			const customer = await stripe.customers.create({
 				name: org.name,
 				metadata: { orgId: org._id.toString(), slug: org.slug },
 			});
+
 			customerId = customer.id;
 			org.billing = { ...(org.billing || {}), customerId };
+
 			await org.save();
 		}
 
@@ -59,10 +61,8 @@ export async function createCheckoutSession(req, res, next) {
 			mode: 'subscription',
 			customer: customerId,
 			line_items: [{ price: priceId, quantity: 1 }],
-			success_url: `${
-				FRONTEND_URL || 'http://localhost:5173'
-			}/organization?session_id={CHECKOUT_SESSION_ID}`,
-			cancel_url: `${FRONTEND_URL || 'http://localhost:5173'}/organization`,
+			success_url: `${FRONTEND_URL}/organization?session_id={CHECKOUT_SESSION_ID}`,
+			cancel_url: `${FRONTEND_URL}/organization`,
 			metadata: { orgId: org._id.toString(), plan },
 		});
 
@@ -75,15 +75,18 @@ export async function createCheckoutSession(req, res, next) {
 export async function createPortalSession(req, res, next) {
 	try {
 		if (!stripe) return res.status(500).json({ message: 'Stripe not configured' });
+
 		const orgId = req.user?.organization;
 		const org = await Organization.findById(orgId);
+
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
 		if (!org.billing?.customerId) return res.status(400).json({ message: 'No customer to manage' });
 
 		const portal = await stripe.billingPortal.sessions.create({
 			customer: org.billing.customerId,
-			return_url: `${FRONTEND_URL || 'http://localhost:5173'}/organization`,
+			return_url: `${FRONTEND_URL}/organization`,
 		});
+
 		return res.status(200).json({ url: portal.url });
 	} catch (err) {
 		next(err);
@@ -93,8 +96,10 @@ export async function createPortalSession(req, res, next) {
 export async function stripeWebhook(req, res) {
 	try {
 		if (!stripe) return res.status(500).json({ message: 'Stripe not configured' });
+
 		const sig = req.headers['stripe-signature'];
 		let event;
+
 		try {
 			event = stripe.webhooks.constructEvent(req.rawBody, sig, STRIPE_WEBHOOK_SECRET);
 		} catch (err) {
@@ -107,6 +112,7 @@ export async function stripeWebhook(req, res) {
 				const orgId = session.metadata?.orgId;
 				const plan = session.metadata?.plan;
 				const subscriptionId = session.subscription;
+
 				if (orgId && subscriptionId) {
 					await Organization.findByIdAndUpdate(orgId, {
 						plan: plan === 'enterprise' ? 'enterprise' : 'pro',
@@ -118,12 +124,15 @@ export async function stripeWebhook(req, res) {
 			}
 			case 'customer.subscription.updated':
 			case 'customer.subscription.created':
+
 			case 'customer.subscription.deleted': {
 				const sub = event.data.object;
 				const customerId = sub.customer;
 				const status = sub.status;
+
 				const currentPeriodEnd = new Date(sub.current_period_end * 1000);
 				const org = await Organization.findOne({ 'billing.customerId': customerId });
+
 				if (org) {
 					await Organization.updateOne(
 						{ _id: org._id },
