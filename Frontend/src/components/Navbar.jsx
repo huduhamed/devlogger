@@ -182,17 +182,50 @@ function Navbar() {
 					open ? 'translate-y-0' : '-translate-y-full'
 				}`}
 			>
-				<div className="flex justify-end p-4 border-b border-gray-200 dark:border-gray-700">
-					<Button
-						variant="ghost"
-						onClick={() => setOpen(false)}
-						aria-label="Close menu"
-						className="text-2xl p-1"
-					>
-						✕
-					</Button>
-				</div>
-				<div className="pt-8 px-4 pb-8">
+				{/* Top action bar - close, theme toggle, settings, logout */}
+				{auth?.user && (
+					<div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+						<Button
+							variant="ghost"
+							onClick={() => setOpen(false)}
+							aria-label="Close menu"
+							className="text-2xl p-1"
+						>
+							✕
+						</Button>
+						<div className="flex items-center gap-2">
+							<Button
+								variant="ghost"
+								onClick={toggle}
+								title="Toggle theme"
+								className="focus-brand text-lg"
+							>
+								{theme === 'dark' ? '🌙' : '☀️'}
+							</Button>
+							<NavLink to="/settings" className="p-2 hover:bg-blue-100 dark:hover:bg-gray-800 rounded-lg transition-colors" title="Settings">
+								⚙️
+							</NavLink>
+							<Button variant="danger" onClick={handleLogout} size="sm">
+								Logout
+							</Button>
+						</div>
+					</div>
+				)}
+				{!auth?.user && (
+					<div className="flex justify-end p-4 border-b border-gray-200 dark:border-gray-700">
+						<Button
+							variant="ghost"
+							onClick={() => setOpen(false)}
+							aria-label="Close menu"
+							className="text-2xl p-1"
+						>
+							✕
+						</Button>
+					</div>
+				)}
+
+				{/* Navigation links */}
+				<div className="pt-6 px-4 pb-8">
 					<div className="flex flex-col gap-3">
 						{auth?.user ? (
 							<>
@@ -220,18 +253,6 @@ function Navbar() {
 								>
 									Organization
 								</NavLink>
-								<hr className="my-2" />
-								<div className="flex items-center gap-2">
-									<Button variant="ghost" onClick={toggle} className="focus-brand">
-										{theme === 'dark' ? '🌙' : '☀️'}
-									</Button>
-									<NavLink to="/settings" className={linkClasses} title="Settings">
-										⚙️
-									</NavLink>
-									<Button variant="danger" onClick={handleLogout} className="ml-auto">
-										Logout
-									</Button>
-								</div>
 							</>
 						) : (
 							<>
