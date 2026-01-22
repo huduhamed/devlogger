@@ -252,7 +252,7 @@ function OrganizationSettings() {
 										<Button
 											variant="secondary"
 											onClick={() => startCheckout('enterprise')}
-											className="w-full sm:w-auto"
+											className="w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-200"
 										>
 											Upgrade to Enterprise
 										</Button>
@@ -311,7 +311,7 @@ function OrganizationSettings() {
 											variant="secondary"
 											onClick={() => startCheckout('enterprise')}
 											disabled={org.plan === 'enterprise'}
-											className="w-full sm:w-auto"
+											className="w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-200"
 										>
 											{org.plan === 'enterprise' ? 'Current Plan' : 'Choose Enterprise'}
 										</Button>
@@ -376,7 +376,11 @@ function OrganizationSettings() {
 								placeholder="Key Name"
 							/>
 						</div>
-						<Button type="submit" variant="secondary" className="w-full sm:w-auto">
+						<Button
+							type="submit"
+							variant="secondary"
+							className="w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-200"
+						>
 							Create Key
 						</Button>
 					</form>
