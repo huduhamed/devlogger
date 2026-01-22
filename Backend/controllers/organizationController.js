@@ -42,11 +42,19 @@ export async function createOrganization(req, res, next) {
 			slugCandidate = `${orgBase}-${counter++}`;
 		}
 
+		// apply plan defaults for limits/usage
+		const planCfg = getPlanConfig('free');
+
 		const organization = await Organization.create({
 			name,
 			slug: slugCandidate,
 			owner: user._id,
 			members: [{ user: user._id, role: 'owner' }],
+			limits: {
+				logsPerMonth: planCfg.logsPerMonth,
+				members: planCfg.members,
+			},
+			usage: { month: currentMonthKey(), logCount: 0 },
 		});
 		user.organization = organization._id;
 		await user.save();
@@ -236,6 +244,12 @@ export async function upgradePlan(req, res, next) {
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
 
 		org.plan = plan;
+
+		// update plan limits to match selected plan
+		const planCfg = getPlanConfig(plan);
+		org.limits = org.limits || {};
+		org.limits.logsPerMonth = planCfg.logsPerMonth;
+		org.limits.members = planCfg.members;
 		await org.save();
 
 		return res.status(200).json({ success: true, message: 'Plan updated', plan });
