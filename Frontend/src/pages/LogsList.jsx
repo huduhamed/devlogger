@@ -14,7 +14,6 @@ import Spinner from '../components/ui/Spinner.jsx';
 import Pagination from '../components/Pagination.jsx';
 import EditLogModal from '../components/EditLogModal.jsx';
 import OrgContext from '../context/OrgContext.jsx';
-import UpgradeBanner from '../components/UpgradeBanner.jsx';
 
 // log list
 function LogsList() {
@@ -71,12 +70,7 @@ function LogsList() {
 			<div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
 				<div>
 					<h2 className="text-2xl font-bold">Logs</h2>
-					<p className="text-sm text-gray-600">Browse and filter your application logs</p>
-					{org && (
-						<div className="mt-3">
-							<UpgradeBanner org={org} />
-						</div>
-					)}
+					<p className="text-sm text-gray-600">Filter your logs</p>
 				</div>
 				<Card className="w-full">
 					<CardBody>
