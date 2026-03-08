@@ -56,7 +56,7 @@ export default function Home() {
 			</div>
 			<div className="mt-10 text-sm text-gray-500 dark:text-gray-400">
 				<span>
-					DevLogger helps teams build a culture of transparency, learning, and continuous
+					DevLogger helps teams build a culture of transparency, learning and continuous
 					improvement.
 				</span>
 			</div>

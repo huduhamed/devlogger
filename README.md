@@ -1,5 +1,7 @@
 # DevLogger (Multi‑Tenant SaaS Logging Platform)
 
+![App's home page](/Frontend/public/home.png)
+
 DevLogger is evolving from a personal logging dashboard into a multi‑tenant SaaS platform. Each new user automatically receives an Organization (tenant) and all logs are scoped by organization for strong data isolation. The stack is:
 
 - Backend: Node.js / Express 5, Mongoose 8, JWT auth, Zod validation, role & org aware access
@@ -20,7 +22,7 @@ DevLogger is evolving from a personal logging dashboard into a multi‑tenant Sa
 
 ## API Highlights
 
-Base URL (default local): `http://localhost:5500/api/v1`
+Base URL: `http://localhost:5500/api/v1`
 
 Auth:
 POST `/auth/sign-up` → creates user + organization
@@ -40,26 +42,14 @@ GET `/logs` → scoped to caller's organization, supports query params:
   PUT `/logs/:id`
   DELETE `/logs/:id`
 
-Response pagination structure:
-
-```json
-{
-	"success": true,
-	"data": [
-		/* logs */
-	],
-	"pagination": { "page": 1, "limit": 20, "total": 42, "pages": 3 }
-}
-```
-
 ## Environment Setup
 
 1. Copy `.env.example` → `.env` (backend root) and adjust values.
-2. (Frontend) Create `Frontend/.env.local` with `VITE_API_URL=http://localhost:5500/api/v1/`.
+2. Create `Frontend/.env.local` with `VITE_API_URL=http://localhost:5500/api/v1/`.
 3. Install dependencies:
    ```bash
-   cd Backend && npm install
-   cd ../Frontend && npm install
+   cd backend && npm install
+   cd frontend && npm install
    ```
 4. Run backend:
    ```bash
@@ -76,7 +66,6 @@ Response pagination structure:
    ### Stripe Billing Setup
 
    To enable plan checkout and the billing portal:
-
    1. Create products and prices in Stripe (Dashboard → Products). Copy the monthly price IDs for Pro and Enterprise.
    2. Set backend env vars (see `Backend/.env.example`):
       - `STRIPE_SECRET_KEY`
@@ -100,9 +89,9 @@ On sign-up:
 - User created
 - Organization created with slug (unique, slugified) and user set as `owner`
 - User document updated with `organization` reference
-- Future: invites, membership roles beyond owner, org switching, billing plans
+- Todo: invites, membership roles beyond owner, org switching, billing plans
 
-## Security & Hardening
+## Security
 
 - JWT bearer tokens only (stateless)
 - Password hashing (bcrypt)
@@ -110,19 +99,6 @@ On sign-up:
 - Basic IP rate limiting (15m window)
 - Central error serialization (avoids leaking stack traces in production)
 - Input validation (zod) for auth + logs
-
-## Roadmap (Planned Enhancements)
-
-| Area           | Next Steps                                                                 |
-| -------------- | -------------------------------------------------------------------------- |
-| Org Management | Invite members, accept tokens, role escalation (admin/member)              |
-| Billing        | Usage metering (log count per month), plan enforcement, Stripe integration |
-| Search         | Compound indexes, optional text index for full-text search                 |
-| Observability  | Structured logging of API performance, metrics export                      |
-| API Keys       | Per-organization API keys for server-to-server log ingestion               |
-| UI             | Organization switcher, log detail view, editing inline                     |
-| Alerts         | Threshold-based notifications (error spike, volume surge)                  |
-| Export         | CSV/JSON export & webhooks                                                 |
 
 ## Development Scripts
 
