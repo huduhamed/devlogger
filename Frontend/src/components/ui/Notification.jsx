@@ -41,7 +41,7 @@ function Notification() {
 			<button
 				onClick={toggle}
 				title="Notifications"
-				className="relative p-2 rounded-md hover:bg-blue-100 dark:hover:bg-gray-800 transition"
+				className="relative p-2 rounded-md hover:bg-slate-100 dark:hover:bg-gray-800 transition"
 			>
 				{/* bell icon */}
 				<svg
@@ -68,20 +68,20 @@ function Notification() {
 
 			{/* dropdown */}
 			{open && (
-				<div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden z-50">
-					<div className="p-3 border-b border-gray-100 dark:border-gray-700 font-semibold">
+				<div className="absolute right-0 mt-2 w-72 bg-stone-50 dark:bg-gray-800 border border-stone-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden z-50">
+					<div className="p-3 border-b border-stone-200 dark:border-gray-700 font-semibold">
 						Notifications
 					</div>
 					<div className="max-h-64 overflow-auto">
 						{loading ? (
-							<div className="p-4 text-sm text-gray-500">Loading...</div>
+							<div className="p-4 text-sm text-slate-500">Loading...</div>
 						) : notifications.length === 0 ? (
-							<div className="p-4 text-sm text-gray-500">No notifications</div>
+							<div className="p-4 text-sm text-slate-500">No notifications</div>
 						) : (
 							notifications.map((n) => (
 								<div
 									key={n._id || n.id}
-									className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-start"
+									className="p-3 hover:bg-stone-100 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-start"
 									onClick={() => {
 										// mark read optimistically and navigate to notifications page
 										markAllRead();
@@ -89,8 +89,8 @@ function Notification() {
 									}}
 								>
 									<div>
-										<div className="text-sm text-gray-800 dark:text-gray-100">{n.text}</div>
-										<div className="text-xs text-gray-500 dark:text-gray-400">
+										<div className="text-sm text-slate-800 dark:text-gray-100">{n.text}</div>
+										<div className="text-xs text-slate-500 dark:text-gray-400">
 											{n.time || new Date(n.createdAt).toLocaleString()}
 										</div>
 									</div>
@@ -101,7 +101,7 @@ function Notification() {
 							))
 						)}
 					</div>
-					<div className="p-2 border-t border-gray-100 dark:border-gray-700 text-center">
+					<div className="p-2 border-t border-stone-200 dark:border-gray-700 text-center">
 						<button
 							className="text-sm text-blue-600 dark:text-blue-400"
 							onClick={() => navigate('/notifications')}

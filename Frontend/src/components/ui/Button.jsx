@@ -12,11 +12,12 @@ const sizeMap = {
 
 const variantMap = {
 	primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
-	secondary: 'bg-gray-900 text-white hover:bg-black focus:ring-gray-700',
+	secondary: 'bg-slate-700 text-white hover:bg-slate-800 focus:ring-slate-600',
 	outline:
-		'border border-gray-300 hover:bg-gray-50 text-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-800 focus:ring-gray-400',
+		'border border-stone-300 bg-stone-50 hover:bg-stone-100 text-slate-800 dark:text-gray-100 dark:border-gray-700 dark:bg-transparent dark:hover:bg-gray-800 focus:ring-slate-400',
 	danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-	ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-100',
+	ghost:
+		'bg-transparent hover:bg-stone-200/70 dark:hover:bg-gray-800 text-slate-800 dark:text-gray-100',
 };
 
 function joinClasses(...parts) {
@@ -52,7 +53,7 @@ const Button = forwardRef(function Button(
 		disabled: disabledProp = false,
 		...props
 	},
-	ref
+	ref,
 ) {
 	const disabled = loading || disabledProp;
 
