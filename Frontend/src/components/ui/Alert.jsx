@@ -2,10 +2,10 @@ import { memo } from 'react';
 
 // variants
 const VARIANTS = {
-	info: 'bg-blue-50 text-blue-800 border-blue-200',
-	success: 'bg-green-50 text-green-800 border-green-200',
-	warning: 'bg-yellow-50 text-yellow-800 border-yellow-200',
-	error: 'bg-red-50 text-red-800 border-red-200',
+	info: 'bg-sky-50/80 text-sky-900 border-sky-100',
+	success: 'bg-emerald-50/80 text-emerald-900 border-emerald-100',
+	warning: 'bg-amber-50/80 text-amber-900 border-amber-100',
+	error: 'bg-rose-50/80 text-rose-900 border-rose-100',
 };
 
 // alert comp

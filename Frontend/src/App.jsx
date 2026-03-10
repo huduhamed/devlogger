@@ -11,7 +11,7 @@ import CheckoutSuccess from './pages/CheckoutSuccess.jsx';
 
 function App() {
 	return (
-		<div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+		<div className="min-h-screen flex flex-col bg-stone-100 dark:bg-gray-950 text-slate-900 dark:text-gray-100">
 			<Navbar />
 
 			<div className="flex-1 p-6">

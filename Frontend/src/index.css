@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-	@apply bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 antialiased;
+	@apply bg-stone-100 dark:bg-gray-950 text-slate-900 dark:text-gray-100 antialiased;
 }
 
 /* Utility: visually hidden (screen-reader only) */
@@ -18,7 +18,7 @@ body {
 
 /* Skip link for keyboard users */
 .skip-link {
-	@apply fixed left-4 top-4 z-[60] bg-white text-blue-700 px-3 py-2 rounded-md shadow-md ring-2 ring-transparent focus:ring-blue-300 transition-transform -translate-y-12;
+	@apply fixed left-4 top-4 z-[60] bg-stone-50 text-blue-800 px-3 py-2 rounded-md shadow-md ring-2 ring-transparent focus:ring-blue-300 transition-transform -translate-y-12;
 }
 .skip-link:focus {
 	transform: translateY(0);
@@ -64,33 +64,40 @@ body {
 
 /* Glassmorphism / liquid navbar */
 .glass-navbar {
-	@apply bg-white/40 dark:bg-gray-900/40 backdrop-blur-md supports-[backdrop-filter]:bg-white/30 border-b dark:border-gray-700/50 shadow-lg;
+	@apply bg-stone-100/80 dark:bg-gray-900/40 backdrop-blur-md supports-[backdrop-filter]:bg-stone-100/65 border-b dark:border-gray-700/50 shadow-lg;
 
 	/* stronger visible border on light backgrounds */
-	border-color: rgba(15, 23, 42, 0.06); /* subtle but defined slate stroke */
+	border-color: rgba(71, 85, 105, 0.1); /* softer slate stroke */
 
-	background-image: radial-gradient(600px 200px at 10% 10%, rgba(99, 102, 241, 0.06), transparent),
-		radial-gradient(400px 120px at 90% 90%, rgba(14, 165, 233, 0.04), transparent);
+	background-image:
+		radial-gradient(600px 200px at 10% 10%, rgba(59, 130, 246, 0.05), transparent),
+		radial-gradient(400px 120px at 90% 90%, rgba(148, 163, 184, 0.08), transparent);
 
 	/* stronger outline: subtle inner ring + clear border to make navbar stand out */
-	box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.6), 0 8px 22px rgba(2, 6, 23, 0.06);
+	box-shadow:
+		inset 0 -1px 0 rgba(255, 255, 255, 0.35),
+		0 8px 22px rgba(51, 65, 85, 0.06);
 
 	/* color variable used for the outer stroke (defaults to subtle slate) */
 	--nav-outline: rgba(2, 6, 23, 0.04);
 
 	/* extra outer stroke in light mode to help the navbar read against very light backgrounds */
 	@media (prefers-color-scheme: light) {
-		box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.6), 0 8px 22px rgba(2, 6, 23, 0.06),
+		box-shadow:
+			inset 0 -1px 0 rgba(255, 255, 255, 0.6),
+			0 8px 22px rgba(2, 6, 23, 0.06),
 			0 0 0 1px var(--nav-outline);
 	}
-	transition: background-color 160ms ease, box-shadow 160ms ease;
+	transition:
+		background-color 160ms ease,
+		box-shadow 160ms ease;
 
 	border-bottom-width: 1px;
 }
 
 /* Mobile nav link appearance inside the collapsible panel */
 .mobile-nav-link {
-	@apply text-gray-800 dark:text-gray-100 px-3 py-2 rounded-md hover:bg-blue-50 dark:hover:bg-gray-800;
+	@apply text-slate-800 dark:text-gray-100 px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-gray-800;
 }
 
 /* Make interactive elements slightly larger and easier to tap on small screens */
