@@ -14,10 +14,10 @@ export function useOrgQuery() {
 	const query = useQuery({
 		queryKey: ['org', 'me'],
 		queryFn: fetchOrg,
-		staleTime: 5 * 60 * 1000,
+		staleTime: 10 * 60 * 1000,
 		cacheTime: 30 * 60 * 1000,
-		refetchOnWindowFocus: true,
-		refetchOnReconnect: true,
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
 		retry: 1,
 	});
 

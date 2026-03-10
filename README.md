@@ -13,6 +13,8 @@ DevLogger is evolving from a personal logging dashboard into a multi‑tenant Sa
 - Authentication (JWT) with password hashing (bcrypt)
 - Automatic Organization creation on sign-up (owner + member record)
 - Organization-scoped log storage (user + organization refs)
+- Stripe subscription checkout for Pro and Enterprise plans
+- Stripe customer portal for self-serve billing management
 - Log levels: debug, info, warn, error
 - Tagging & free-form metadata
 - Pagination & filtering (level, tag, text search `q`)
@@ -28,6 +30,13 @@ Auth:
 POST `/auth/sign-up` → creates user + organization
 POST `/auth/sign-in`
 POST `/auth/sign-out` (stateless acknowledgment)
+
+Billing:
+GET `/billing/config`
+POST `/billing/checkout`
+POST `/billing/verify-session`
+POST `/billing/portal`
+POST `/billing/webhook`
 
 Logs:
 GET `/logs` → scoped to caller's organization, supports query params:
@@ -63,24 +72,73 @@ GET `/logs` → scoped to caller's organization, supports query params:
    npm run dev
    ```
 
-   ### Stripe Billing Setup
+## Stripe Billing
 
-   To enable plan checkout and the billing portal:
-   1. Create products and prices in Stripe (Dashboard → Products). Copy the monthly price IDs for Pro and Enterprise.
-   2. Set backend env vars (see `Backend/.env.example`):
-      - `STRIPE_SECRET_KEY`
-      - `STRIPE_WEBHOOK_SECRET` (from Stripe CLI or Dashboard webhook endpoint)
-      - `PRODUCT_PRICE_PRO`
-      - `PRODUCT_PRICE_ENTERPRISE`
-      - `FRONTEND_URL` (e.g., `http://localhost:5173` for dev)
-   3. Start backend and frontend.
-   4. In a separate terminal, run Stripe CLI to forward webhooks:
+DevLogger uses Stripe Checkout for paid subscriptions and Stripe Billing Portal for managing an existing subscription.
 
-   ```bash
-   stripe listen --forward-to localhost:5500/api/v1/billing/webhook
-   ```
+### What the app expects
 
-   5. Visit `/pricing` in the app, click a paid plan, and complete checkout. You’ll return to `/organization` and should see your plan and billing status update.
+- Backend creates Stripe Checkout sessions for `pro` and `enterprise`
+- Stripe webhooks update the organization billing state
+- Successful checkout also verifies the session and syncs plan data back to MongoDB
+- Organization plan changes update billing metadata and plan limits together
+
+### Stripe dashboard setup
+
+1. Turn on Stripe `Test mode`.
+2. Create two products in Stripe:
+   - `DevLogger Pro`
+   - `DevLogger Enterprise`
+3. Create one recurring monthly price for each product.
+4. Copy the `price_...` IDs for those recurring prices.
+5. Enable the Stripe Customer Portal if you want `Manage Billing` to work.
+
+### Required backend env vars
+
+Set these in `Backend/.env`.
+
+```env
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+PRODUCT_PRICE_PRO=price_...
+PRODUCT_PRICE_ENTERPRISE=price_...
+FRONTEND_URL=http://localhost:5173
+PORT=5500
+```
+
+### Local webhook forwarding
+
+The Stripe webhook endpoint is:
+
+```text
+http://localhost:5500/api/v1/billing/webhook
+```
+
+Run Stripe CLI in a separate terminal:
+
+```bash
+stripe listen --forward-to http://localhost:5500/api/v1/billing/webhook
+```
+
+Stripe CLI will print a webhook signing secret. Copy that `whsec_...` value into `STRIPE_WEBHOOK_SECRET` in `Backend/.env`.
+
+### Stripe events used by the app
+
+The billing flow handles these webhook events:
+
+- `checkout.session.completed`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+
+### Billing behavior in this repo
+
+- Stripe customer IDs are stored on the organization document
+- Subscription status and current period end are stored under `organization.billing`
+- Plan changes sync both:
+  - `organization.plan`
+  - `organization.limits`
+- Billing portal returns users to `/organization`
 
 ## Multi-Tenancy Model
 

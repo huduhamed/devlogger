@@ -42,7 +42,7 @@ function LogsList() {
 		updateFilters({ q: value });
 		clearTimeout(debounceTimer.current);
 		debounceTimer.current = setTimeout(() => {
-			fetchLogs({ page: 1 });
+			fetchLogs({ page: 1, q: value });
 		}, 500);
 	};
 
@@ -62,7 +62,7 @@ function LogsList() {
 	const applyFilters = (e) => {
 		e.preventDefault();
 		clearTimeout(debounceTimer.current);
-		fetchLogs({ page: 1 });
+		fetchLogs({ page: 1, ...filters });
 	};
 
 	return (
@@ -88,9 +88,10 @@ function LogsList() {
 							<Select
 								value={filters.level}
 								onChange={(e) => {
-									updateFilters({ level: e.target.value });
+									const level = e.target.value;
+									updateFilters({ level });
 									clearTimeout(debounceTimer.current);
-									debounceTimer.current = setTimeout(() => fetchLogs({ page: 1 }), 300);
+									debounceTimer.current = setTimeout(() => fetchLogs({ page: 1, level }), 300);
 								}}
 							>
 								<option value="">Level</option>
@@ -103,12 +104,20 @@ function LogsList() {
 								placeholder="Tag"
 								value={filters.tag}
 								onChange={(e) => {
-									updateFilters({ tag: e.target.value });
+									const tag = e.target.value;
+									updateFilters({ tag });
 									clearTimeout(debounceTimer.current);
-									debounceTimer.current = setTimeout(() => fetchLogs({ page: 1 }), 300);
+									debounceTimer.current = setTimeout(() => fetchLogs({ page: 1, tag }), 300);
 								}}
 							/>
-							<Select value={limit} onChange={(e) => setLimit(parseInt(e.target.value, 10))}>
+							<Select
+								value={limit}
+								onChange={(e) => {
+									const nextLimit = parseInt(e.target.value, 10);
+									setLimit(nextLimit);
+									fetchLogs({ page: 1, limit: nextLimit });
+								}}
+							>
 								<option value={10}>10</option>
 								<option value={20}>20</option>
 								<option value={50}>50</option>
@@ -139,10 +148,10 @@ function LogsList() {
 						log.level === 'error'
 							? 'red'
 							: log.level === 'warn'
-							? 'yellow'
-							: log.level === 'debug'
-							? 'gray'
-							: 'blue';
+								? 'yellow'
+								: log.level === 'debug'
+									? 'gray'
+									: 'blue';
 					return (
 						<li key={log._id}>
 							<Card>

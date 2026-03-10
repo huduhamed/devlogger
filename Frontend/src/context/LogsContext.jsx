@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useState, useEffect, useCallback, useRef } from 'react';
 
 // internal imports
 import API from '../services/api';
@@ -16,43 +16,53 @@ export function LogsProvider({ children }) {
 	const [total, setTotal] = useState(0);
 	const [pages, setPages] = useState(1);
 	const [filters, setFilters] = useState({ level: '', tag: '', q: '' });
+	const stateRef = useRef({ page: 1, limit: 20, filters: { level: '', tag: '', q: '' } });
+	const requestIdRef = useRef(0);
+
+	useEffect(() => {
+		stateRef.current = { page, limit, filters };
+	}, [page, limit, filters]);
 
 	// fetch logs
-	const fetchLogs = useCallback(
-		async (override = {}) => {
-			setLoading(true);
+	const fetchLogs = useCallback(async (override = {}) => {
+		setLoading(true);
+		setError(null);
+		const requestId = ++requestIdRef.current;
 
-			try {
-				const current = {
-					page,
-					limit,
-					...filters,
-					...override,
-				};
-				const params = new URLSearchParams();
-				if (current.page) params.set('page', current.page);
-				if (current.limit) params.set('limit', current.limit);
-				if (current.level) params.set('level', current.level);
-				if (current.tag) params.set('tag', current.tag);
-				if (current.q) params.set('q', current.q);
+		try {
+			const current = {
+				page: stateRef.current.page,
+				limit: stateRef.current.limit,
+				...stateRef.current.filters,
+				...override,
+			};
+			const params = new URLSearchParams();
+			if (current.page) params.set('page', current.page);
+			if (current.limit) params.set('limit', current.limit);
+			if (current.level) params.set('level', current.level);
+			if (current.tag) params.set('tag', current.tag);
+			if (current.q) params.set('q', current.q);
 
-				const res = await API.get(`/logs?${params.toString()}`);
-				setLogs(res.data.data || []);
-				if (res.data.pagination) {
-					setPage(res.data.pagination.page);
-					setLimit(res.data.pagination.limit);
-					setTotal(res.data.pagination.total);
-					setPages(res.data.pagination.pages);
-				}
-			} catch (err) {
-				const msg = err.response?.data?.message || err.message || 'Failed to fetch logs';
-				setError(msg);
-			} finally {
+			const res = await API.get(`/logs?${params.toString()}`);
+			if (requestId !== requestIdRef.current) return;
+
+			setLogs(res.data.data || []);
+			if (res.data.pagination) {
+				setPage(res.data.pagination.page);
+				setLimit(res.data.pagination.limit);
+				setTotal(res.data.pagination.total);
+				setPages(res.data.pagination.pages);
+			}
+		} catch (err) {
+			if (requestId !== requestIdRef.current) return;
+			const msg = err.response?.data?.message || err.message || 'Failed to fetch logs';
+			setError(msg);
+		} finally {
+			if (requestId === requestIdRef.current) {
 				setLoading(false);
 			}
-		},
-		[page, limit, filters]
-	);
+		}
+	}, []);
 
 	useEffect(() => {
 		fetchLogs();
