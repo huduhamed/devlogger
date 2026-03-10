@@ -73,7 +73,7 @@ app.use(
 	helmet({
 		crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
 		crossOriginEmbedderPolicy: false,
-	})
+	}),
 );
 
 // basic rate limiting
@@ -95,22 +95,10 @@ app.use((req, _res, next) => {
 	return next();
 });
 
-// stripe webhook
-app.use((req, res, next) => {
-	if (req.originalUrl === '/api/v1/billing/webhook') {
-		let data = '';
-		req.setEncoding('utf8');
-		req.on('data', (chunk) => {
-			data += chunk;
-		});
-		req.on('end', () => {
-			req.rawBody = data;
-			next();
-		});
-	} else {
-		express.json({ limit: '200kb' })(req, res, next);
-	}
-});
+// Stripe webhook must receive the raw request body for signature verification.
+app.post('/api/v1/billing/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
+
+app.use(express.json({ limit: '200kb' }));
 app.use(cookieParser());
 app.use(urlencoded({ extended: false }));
 
@@ -121,9 +109,6 @@ app.use('/api/v1/logs', logRoutes);
 app.use('/api/v1/organizations', organizationRoutes);
 app.use('/api/v1/billing', billingRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
-
-// Stripe webhook endpoint
-app.post('/api/v1/billing/webhook', stripeWebhook);
 
 app.get('/', (req, res) => {
 	res.send('welcome onboard buddy!');

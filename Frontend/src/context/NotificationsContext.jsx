@@ -5,6 +5,32 @@ import { io as ioClient } from 'socket.io-client';
 import API from '../services/api';
 import AuthContext from './AuthContext.jsx';
 
+function toOrigin(value) {
+	if (!value) return null;
+
+	try {
+		return new URL(value, window.location.origin).origin;
+	} catch {
+		return null;
+	}
+}
+
+function getSocketServerUrl() {
+	const apiOrigin = toOrigin(import.meta.env.VITE_API_URL);
+	const configuredSocketOrigin = toOrigin(import.meta.env.VITE_SOCKET_URL);
+
+	if (
+		configuredSocketOrigin &&
+		apiOrigin &&
+		configuredSocketOrigin === window.location.origin &&
+		apiOrigin !== window.location.origin
+	) {
+		return apiOrigin;
+	}
+
+	return configuredSocketOrigin || apiOrigin || window.location.origin;
+}
+
 // create context
 const NotificationsContext = createContext();
 
@@ -60,7 +86,7 @@ export function NotificationsProvider({ children }) {
 
 	const markRead = async (id) => {
 		setNotifications((prev) =>
-			prev.map((n) => (n._id === id || n.id === id ? { ...n, read: true } : n))
+			prev.map((n) => (n._id === id || n.id === id ? { ...n, read: true } : n)),
 		);
 		setUnread((u) => Math.max(0, u - 1));
 
@@ -102,8 +128,7 @@ export function NotificationsProvider({ children }) {
 	useEffect(() => {
 		let socket;
 		if (auth?.token) {
-			const url =
-				import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || window.location.origin;
+			const url = getSocketServerUrl();
 			socket = ioClient(url, { auth: { token: auth.token } });
 
 			socket.on('connect', () => {

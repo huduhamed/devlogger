@@ -92,7 +92,8 @@ export async function getOrganization(req, res, next) {
 		const org = await Organization.findById(orgId)
 			.select('-apiKeys')
 			.populate('owner', 'name email')
-			.populate('members.user', 'name email');
+			.populate('members.user', 'name email')
+			.lean();
 
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
 
@@ -106,7 +107,7 @@ export async function getOrganization(req, res, next) {
 export async function listMembers(req, res, next) {
 	try {
 		const orgId = req.user?.organization;
-		const org = await Organization.findById(orgId).populate('members.user', 'name email');
+		const org = await Organization.findById(orgId).populate('members.user', 'name email').lean();
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
 
 		return res.status(200).json({ success: true, data: org.members });
@@ -204,7 +205,7 @@ export async function listApiKeys(req, res, next) {
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
 
 		const keys = await ApiKey.find({ org: org._id }).select(
-			'name keyId createdAt lastUsedAt revoked'
+			'name keyId createdAt lastUsedAt revoked',
 		);
 
 		return res.status(200).json({ success: true, data: keys });
