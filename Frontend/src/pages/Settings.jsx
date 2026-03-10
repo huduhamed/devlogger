@@ -1,4 +1,5 @@
 import { useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // internal imports
 import AuthContext from '../context/AuthContext.jsx';
@@ -12,8 +13,9 @@ import API from '../services/api';
 
 // settings comp
 export default function Settings() {
-	const { auth, setAuth } = useContext(AuthContext);
+	const { auth, setAuth, logout } = useContext(AuthContext);
 	const { org, refresh: refreshOrg } = useContext(OrgContext);
+	const navigate = useNavigate();
 	const user = auth?.user;
 
 	const [profile, setProfile] = useState({
@@ -27,10 +29,25 @@ export default function Settings() {
 	const isOwner = org?.owner?._id && user?._id && org.owner._id === user._id;
 	const [loading, setLoading] = useState(false);
 	const [orgLoading, setOrgLoading] = useState(false);
+	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
 
 	useEffect(() => {
 		setOrgForm({ name: org?.name || '' });
 	}, [org?.name]);
+
+	useEffect(() => {
+		if (!deleteModalOpen) return;
+
+		const onKeyDown = (event) => {
+			if (event.key === 'Escape' && !deleteLoading) {
+				setDeleteModalOpen(false);
+			}
+		};
+
+		window.addEventListener('keydown', onKeyDown);
+		return () => window.removeEventListener('keydown', onKeyDown);
+	}, [deleteModalOpen, deleteLoading]);
 
 	const onProfileChange = (e) => setProfile((p) => ({ ...p, [e.target.name]: e.target.value }));
 	const onOrgChange = (e) => setOrgForm((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -89,15 +106,18 @@ export default function Settings() {
 
 	// delete acc
 	const deleteAccount = async () => {
-		if (!window.confirm('Delete your account? This cannot be undone.')) return;
+		setDeleteLoading(true);
+
 		try {
 			await API.delete(`/users/${user._id}`);
+			logout();
 			toast.success('Account deleted');
-
-			// simple full reload clears state
-			window.location.href = '/';
+			navigate('/', { replace: true });
 		} catch (err) {
 			toast.error(err.response?.data?.message || 'Failed to delete account');
+		} finally {
+			setDeleteLoading(false);
+			setDeleteModalOpen(false);
 		}
 	};
 
@@ -278,12 +298,52 @@ export default function Settings() {
 							<strong>Delete Account:</strong> This permanently removes your user and cannot be
 							undone.
 						</div>
-						<Button variant="danger" onClick={deleteAccount}>
+						<Button variant="danger" onClick={() => setDeleteModalOpen(true)}>
 							Delete Account
 						</Button>
 					</div>
 				</CardBody>
 			</Card>
+
+			{deleteModalOpen && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+					<div
+						className="absolute inset-0 bg-black/50"
+						onClick={() => {
+							if (!deleteLoading) setDeleteModalOpen(false);
+						}}
+					/>
+					<div className="relative w-full max-w-md">
+						<Card className="border-red-200 dark:border-red-800 shadow-xl">
+							<CardHeader
+								title="Delete Account"
+								subtitle="This action is permanent and cannot be undone."
+							/>
+							<CardBody className="space-y-4">
+								<div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+									<p>
+										Your account will be permanently deleted and you will not be able to access it
+										again.
+									</p>
+									<p>Your organization and its related data will also be removed.</p>
+								</div>
+								<div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+									<Button
+										variant="outline"
+										onClick={() => setDeleteModalOpen(false)}
+										disabled={deleteLoading}
+									>
+										Cancel
+									</Button>
+									<Button variant="danger" onClick={deleteAccount} loading={deleteLoading}>
+										Yes, Delete My Account
+									</Button>
+								</div>
+							</CardBody>
+						</Card>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
