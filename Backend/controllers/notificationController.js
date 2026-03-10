@@ -13,10 +13,7 @@ export async function getNotifications(req, res, next) {
 		};
 
 		// limit to 50 recent notifications, use lean() for performance
-		const notifications = await Notification.find(filter)
-			.sort({ createdAt: -1 })
-			.limit(50)
-			.lean();
+		const notifications = await Notification.find(filter).sort({ createdAt: -1 }).limit(50).lean();
 
 		const unread = await Notification.countDocuments({ ...filter, read: false });
 

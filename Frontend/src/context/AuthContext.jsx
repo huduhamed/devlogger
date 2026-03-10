@@ -45,6 +45,7 @@ export function AuthProvider({ children }) {
 		sessionStorage.removeItem('token');
 		sessionStorage.removeItem('user');
 		sessionStorage.removeItem('lastActivity');
+		sessionStorage.removeItem('lastHiddenAt');
 
 		setAuth({ token: null, user: null });
 
@@ -58,8 +59,6 @@ export function AuthProvider({ children }) {
 			idleTimerRef.current = null;
 		}
 	};
-
-	const getTimeSinceLastActivity = () => Date.now() - (lastActivityRef.current || Date.now());
 
 	const handleIdleTimeout = () => {
 		logout();

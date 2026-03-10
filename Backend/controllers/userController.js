@@ -1,7 +1,44 @@
 import bcrypt from 'bcryptjs';
 
 // internal imports
+import ApiKey from '../models/ApiKey.js';
+import Log from '../models/Log.js';
+import Notification from '../models/Notification.js';
+import Organization from '../models/Organization.js';
 import User from '../models/User.js';
+
+// cleanup after account deletion
+async function cleanupUserRelations(user) {
+	if (!user) return;
+
+	const userId = user._id;
+	const organizationId = user.organization || null;
+
+	await Promise.all([Log.deleteMany({ user: userId }), Notification.deleteMany({ user: userId })]);
+
+	if (!organizationId) return;
+
+	const organization = await Organization.findById(organizationId).select('owner members');
+	if (!organization) return;
+
+	if (organization.owner.toString() === userId.toString()) {
+		const memberIds = organization.members
+			.map((member) => member.user?.toString())
+			.filter(Boolean)
+			.filter((memberId) => memberId !== userId.toString());
+
+		await Promise.all([
+			ApiKey.deleteMany({ org: organization._id }),
+			Log.deleteMany({ organization: organization._id }),
+			Notification.deleteMany({ organization: organization._id }),
+			User.updateMany({ _id: { $in: memberIds } }, { $unset: { organization: 1 } }),
+			Organization.deleteOne({ _id: organization._id }),
+		]);
+		return;
+	}
+
+	await Organization.updateOne({ _id: organization._id }, { $pull: { members: { user: userId } } });
+}
 
 // fetch all users from db
 export async function getUsers(req, res, next) {
@@ -103,7 +140,7 @@ export async function updateUser(req, res, next) {
 // delete user
 export async function deleteUser(req, res, next) {
 	try {
-		const user = await User.findByIdAndDelete(req.params.id);
+		const user = await User.findById(req.params.id);
 
 		if (!user) {
 			const err = new Error('cannot find user');
@@ -111,6 +148,9 @@ export async function deleteUser(req, res, next) {
 
 			return next(err);
 		}
+
+		await cleanupUserRelations(user);
+		await User.deleteOne({ _id: user._id });
 		res.status(200).json({ success: true, message: 'user deleted successfully' });
 	} catch (error) {
 		const err = new Error('failed to delete user');
