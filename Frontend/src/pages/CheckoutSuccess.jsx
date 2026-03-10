@@ -8,6 +8,7 @@ import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
 import Button from '../components/ui/Button.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
 import OrgContext from '../context/OrgContext.jsx';
+import AuthContext from '../context/AuthContext.jsx';
 
 export default function CheckoutSuccess() {
 	const navigate = useNavigate();
@@ -16,8 +17,10 @@ export default function CheckoutSuccess() {
 	const [status, setStatus] = useState('processing');
 	const [error, setError] = useState(null);
 	const { refresh: refreshOrg } = useContext(OrgContext);
+	const { auth } = useContext(AuthContext);
 
 	const sessionId = searchParams.get('session_id');
+	const firstName = auth?.user?.name?.trim()?.split(/\s+/)?.[0] || 'there';
 
 	useEffect(() => {
 		if (!sessionId) {
@@ -62,16 +65,33 @@ export default function CheckoutSuccess() {
 	return (
 		<div className="max-w-2xl mx-auto">
 			{status === 'success' && (
-				<Card>
-					<CardHeader title="✓ Payment Successful" subtitle="Your subscription is now active" />
-					<CardBody>
-						<p className="text-gray-700 dark:text-gray-300 mb-6">
-							Thank you for upgrading! Your subscription is now active and you can start using all
-							premium features immediately.
+				<Card className="overflow-hidden border-blue-200 dark:border-blue-900/70 shadow-lg">
+					<div className="border-b border-blue-200 bg-blue-50 px-6 py-8 text-blue-950 dark:border-blue-900/70 dark:bg-blue-950/40 dark:text-blue-50">
+						<p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700 dark:text-blue-200/85">
+							Subscription Confirmed
 						</p>
-						<Button onClick={() => navigate('/organization')} variant="primary">
-							Go to Organization Settings
-						</Button>
+						<h1 className="mt-2 text-3xl font-bold leading-tight">Thank you {firstName}.</h1>
+						<p className="mt-3 max-w-xl text-sm text-blue-900/80 dark:text-blue-100/85 sm:text-base">
+							We appreciate your subscription and the trust you are placing in our products. Your
+							plan is active now and we are glad to have you building with us.
+						</p>
+					</div>
+					<CardBody className="space-y-6 px-6 py-6">
+						<div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-800 dark:border-gray-800 dark:bg-gray-900/70 dark:text-gray-100">
+							<p className="font-semibold">What happens next</p>
+							<p className="mt-1">
+								Your organization settings will reflect the active plan, and you can manage billing
+								at any time from your organization page.
+							</p>
+						</div>
+						<div className="flex flex-col gap-3 sm:flex-row">
+							<Button onClick={() => navigate('/organization')} variant="primary">
+								Go to Organization Settings
+							</Button>
+							<Button onClick={() => navigate('/dashboard')} variant="outline">
+								Open Dashboard
+							</Button>
+						</div>
 					</CardBody>
 				</Card>
 			)}
