@@ -5,7 +5,16 @@ import bcrypt from 'bcryptjs';
 import Organization from '../models/Organization.js';
 import User from '../models/User.js';
 import ApiKey from '../models/ApiKey.js';
+import OrganizationInvite from '../models/OrganizationInvite.js';
 import { getPlanConfig } from '../config/plans.js';
+import {
+	buildInviteUrl,
+	createInviteToken,
+	getInviteExpiryDate,
+	hashInviteToken,
+} from '../utils/organizationInvites.js';
+import { sendOrganizationInviteEmail } from '../utils/sendOrganizationInviteEmail.js';
+import { createMemberAddedNotifications } from '../utils/organizationMembership.js';
 
 // create organization for user if none exists
 export async function createOrganization(req, res, next) {
@@ -120,34 +129,121 @@ export async function listMembers(req, res, next) {
 export async function addMember(req, res, next) {
 	try {
 		const { email, role = 'member' } = req.body;
-		if (!email) return res.status(400).json({ message: 'Email required' });
+		const normalizedEmail = email?.trim()?.toLowerCase();
+		if (!normalizedEmail) return res.status(400).json({ message: 'Email required' });
+		if (!['admin', 'member'].includes(role)) {
+			return res.status(400).json({ message: 'Invalid member role' });
+		}
 
 		const orgId = req.user?.organization;
 		const org = await Organization.findById(orgId);
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
 
-		// enforce per-plan API key limits (count non-revoked keys)
 		const planCfg = getPlanConfig(org.plan);
-		const activeKeyCount = await ApiKey.countDocuments({ org: org._id, revoked: false });
-		if (activeKeyCount >= (planCfg.apiKeys || 0)) {
-			return res.status(403).json({ message: 'API key limit reached for current plan' });
+		const memberLimit = org.limits?.members ?? planCfg.members;
+		const now = new Date();
+		const existingInvite = await OrganizationInvite.findOne({
+			organization: org._id,
+			email: normalizedEmail,
+			status: 'pending',
+			expiresAt: { $gt: now },
+		});
+		const pendingInviteFilter = {
+			organization: org._id,
+			status: 'pending',
+			expiresAt: { $gt: now },
+		};
+		if (existingInvite?._id) {
+			pendingInviteFilter._id = { $ne: existingInvite._id };
 		}
+		const pendingInviteCount = await OrganizationInvite.countDocuments(pendingInviteFilter);
 
-		if (org.members.length >= org.limits.members)
+		if (org.members.length + pendingInviteCount >= memberLimit)
 			return res.status(403).json({ message: 'Member limit reached for current plan' });
 
-		const user = await User.findOne({ email });
-		if (!user) return res.status(404).json({ message: 'User not found' });
+		const user = await User.findOne({ email: normalizedEmail });
+		if (!user) {
+			const rawToken = createInviteToken();
+			const tokenHash = hashInviteToken(rawToken);
+			const expiresAt = getInviteExpiryDate();
+
+			const invite =
+				existingInvite ||
+				(await OrganizationInvite.create({
+					organization: org._id,
+					invitedBy: req.user._id,
+					email: normalizedEmail,
+					role,
+					tokenHash,
+					expiresAt,
+				}));
+
+			if (existingInvite) {
+				existingInvite.invitedBy = req.user._id;
+				existingInvite.role = role;
+				existingInvite.tokenHash = tokenHash;
+				existingInvite.expiresAt = expiresAt;
+				existingInvite.status = 'pending';
+				await existingInvite.save();
+			}
+
+			const inviteUrl = buildInviteUrl({ token: rawToken, email: normalizedEmail });
+			const delivery = await sendOrganizationInviteEmail({
+				to: normalizedEmail,
+				organizationName: org.name,
+				inviterName: req.user?.name || req.user?.email || 'A teammate',
+				inviteUrl,
+			});
+
+			return res.status(201).json({
+				success: true,
+				message: delivery.delivered
+					? 'Invitation sent'
+					: 'Invitation created. Configure SMTP to deliver email automatically.',
+				data: {
+					email: normalizedEmail,
+					role,
+					expiresAt: invite.expiresAt,
+					emailDelivered: delivery.delivered,
+					invitationUrl: delivery.inviteUrl,
+				},
+			});
+		}
 		if (org.members.some((m) => m.user.toString() === user._id.toString())) {
 			return res.status(409).json({ message: 'User already a member' });
 		}
+		// if user has organization already
+		if (user.organization && user.organization.toString() !== org._id.toString()) {
+			const existingOrg = await Organization.findById(user.organization).select('_id');
+			if (existingOrg) {
+				return res.status(409).json({ message: 'User already belongs to another organization' });
+			}
+		}
 
 		org.members.push({ user: user._id, role });
-		await org.save();
+		user.organization = org._id;
 
-		return res
-			.status(201)
-			.json({ success: true, message: 'Member added', data: { user: user._id, role } });
+		await Promise.all([org.save(), user.save()]);
+		await OrganizationInvite.updateMany(
+			{ organization: org._id, email: normalizedEmail, status: 'pending' },
+			{ $set: { status: 'accepted', acceptedAt: new Date(), acceptedBy: user._id } },
+		);
+		await createMemberAddedNotifications({
+			app: req.app,
+			organization: org,
+			actor: req.user,
+			addedUser: user,
+			existingMembers: org.members.slice(0, -1),
+		});
+
+		return res.status(201).json({
+			success: true,
+			message: 'Member added',
+			data: {
+				user: { _id: user._id, name: user.name, email: user.email },
+				role,
+			},
+		});
 	} catch (err) {
 		next(err);
 	}

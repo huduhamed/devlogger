@@ -11,7 +11,8 @@ DevLogger is evolving from a personal logging dashboard into a multi‑tenant Sa
 ## Features
 
 - Authentication (JWT) with password hashing (bcrypt)
-- Automatic Organization creation on sign-up (owner + member record)
+- Automatic Organization creation on sign-up for standalone users
+- Email invitations that route invited users straight to sign-up
 - Organization-scoped log storage (user + organization refs)
 - Stripe subscription checkout for Pro and Enterprise plans
 - Stripe customer portal for self-serve billing management
@@ -27,9 +28,10 @@ DevLogger is evolving from a personal logging dashboard into a multi‑tenant Sa
 Base URL: `http://localhost:5500/api/v1`
 
 Auth:
-POST `/auth/sign-up` → creates user + organization
+POST `/auth/sign-up` → creates user + organization, or joins an invited organization when `inviteToken` is present
 POST `/auth/sign-in`
 POST `/auth/sign-out` (stateless acknowledgment)
+GET `/auth/invitations/:token` → resolves invite details for the sign-up page
 
 Billing:
 GET `/billing/config`
@@ -103,6 +105,12 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 PRODUCT_PRICE_PRO=price_...
 PRODUCT_PRICE_ENTERPRISE=price_...
 FRONTEND_URL=http://localhost:5173
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-user
+SMTP_PASS=your-password
+SMTP_FROM=no-reply@yourdomain.com
+SMTP_SECURE=false
 PORT=5500
 ```
 
@@ -147,7 +155,7 @@ On sign-up:
 - User created
 - Organization created with slug (unique, slugified) and user set as `owner`
 - User document updated with `organization` reference
-- Todo: invites, membership roles beyond owner, org switching, billing plans
+- Membership invites now support email-first onboarding; org switching is still pending
 
 ## Security
 

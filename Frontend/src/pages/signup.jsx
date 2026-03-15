@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 //internal imports
@@ -13,8 +13,13 @@ import GoogleAuthButton from '../components/Auth.jsx';
 // sign-up
 function SignUp() {
 	const [form, setForm] = useState({ name: '', email: '', password: '' });
+	const [invite, setInvite] = useState(null);
+	const [inviteLoading, setInviteLoading] = useState(false);
 	const { signin, auth } = useContext(AuthContext);
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
+	const inviteToken = searchParams.get('inviteToken') || '';
+	const inviteEmail = searchParams.get('email') || '';
 
 	useEffect(() => {
 		if (auth?.token) {
@@ -22,15 +27,58 @@ function SignUp() {
 		}
 	}, [auth, navigate]);
 
+	useEffect(() => {
+		let ignore = false;
+
+		if (inviteEmail) {
+			setForm((prev) => ({ ...prev, email: inviteEmail }));
+		}
+
+		if (!inviteToken) {
+			setInvite(null);
+			return () => {
+				ignore = true;
+			};
+		}
+
+		(async () => {
+			setInviteLoading(true);
+			try {
+				const res = await API.get(`/auth/invitations/${encodeURIComponent(inviteToken)}`);
+				if (ignore) return;
+				const inviteData = res.data?.data || null;
+				setInvite(inviteData);
+				if (inviteData?.email) {
+					setForm((prev) => ({ ...prev, email: inviteData.email }));
+				}
+			} catch (err) {
+				if (ignore) return;
+				setInvite(null);
+				toast.error(err.response?.data?.message || 'Invitation is invalid or expired');
+			} finally {
+				if (!ignore) setInviteLoading(false);
+			}
+		})();
+
+		return () => {
+			ignore = true;
+		};
+	}, [inviteEmail, inviteToken]);
+
 	// handle form change
 	const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
 	// handle submit
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+		if (inviteToken && !invite) {
+			toast.error('This invitation is invalid or has expired.');
+			return;
+		}
 
 		try {
-			const res = await API.post('/auth/sign-up', form);
+			const payload = inviteToken && invite ? { ...form, inviteToken } : form;
+			const res = await API.post('/auth/sign-up', payload);
 			const { token, user } = res.data;
 
 			if (!token || !user) throw new Error('Invalid response from API');
@@ -48,9 +96,11 @@ function SignUp() {
 	const handleGoogleSuccess = async (googleData) => {
 		setLoading(true);
 		try {
+			if (inviteToken && !invite) throw new Error('This invitation is invalid or has expired.');
 			const idToken = googleData.tokenId;
 			if (!idToken) throw new Error('No token received from Google');
-			const res = await API.post('/auth/google', { idToken });
+			const payload = inviteToken && invite ? { idToken, inviteToken } : { idToken };
+			const res = await API.post('/auth/google', payload);
 			const { token, user } = res.data;
 			if (!token || !user) throw new Error('Invalid response from API');
 			signin(token, user);
@@ -69,11 +119,26 @@ function SignUp() {
 	return (
 		<div className="min-h-[80vh] flex items-center justify-center px-4">
 			<Card className="w-full max-w-md">
-				<CardHeader title="Create your account" subtitle="Start logging and monitoring events" />
+				<CardHeader
+					title={invite ? `Join ${invite.organization?.name}` : 'Create your account'}
+					subtitle={
+						invite
+							? `You've been invited${invite.inviter?.name ? ` by ${invite.inviter.name}` : ''}.`
+							: 'Start logging and monitoring events'
+					}
+				/>
 				<CardBody>
+					{inviteLoading && <div className="mb-4 text-sm text-gray-500">Loading invitation...</div>}
+					{invite && (
+						<div className="mb-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+							You’re accepting an invitation to join <strong>{invite.organization?.name}</strong>
+							as <strong>{invite.role}</strong>.
+						</div>
+					)}
 					<form onSubmit={handleSubmit} className="space-y-4">
 						<Input
 							name="name"
+							value={form.name}
 							onChange={handleChange}
 							placeholder="Jane Doe"
 							label="Full name"
@@ -82,20 +147,23 @@ function SignUp() {
 						<Input
 							name="email"
 							type="email"
+							value={form.email}
 							onChange={handleChange}
 							placeholder="you@example.com"
 							label="Email"
+							disabled={Boolean(invite?.email)}
 							required
 						/>
 						<Input
 							name="password"
 							type="password"
+							value={form.password}
 							onChange={handleChange}
 							placeholder="••••••••"
 							label="Password"
 							required
 						/>
-						<Button type="submit" className="w-full">
+						<Button type="submit" className="w-full" loading={inviteLoading}>
 							Sign Up
 						</Button>
 					</form>
@@ -104,7 +172,11 @@ function SignUp() {
 						<span className="mx-2 text-xs text-gray-500">or</span>
 						<div className="flex-grow border-t border-gray-200 dark:border-gray-700" />
 					</div>
-					<GoogleAuthButton onSuccess={handleGoogleSuccess} onFailure={handleGoogleFailure} loading={loading} />
+					<GoogleAuthButton
+						onSuccess={handleGoogleSuccess}
+						onFailure={handleGoogleFailure}
+						loading={loading || inviteLoading}
+					/>
 					<div className="text-center text-sm mt-4">
 						Already have an account?{' '}
 						<Link to="/sign-in" className="text-blue-600 hover:underline">
