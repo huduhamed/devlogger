@@ -87,15 +87,29 @@ function OrganizationSettings() {
 			e.preventDefault();
 			if (!newMemberEmail) return;
 			try {
-				await API.post('/organizations/members', { email: newMemberEmail });
+				const res = await API.post('/organizations/members', { email: newMemberEmail });
 				setNewMemberEmail('');
-				fetchMembers();
-				toast.success('Member added');
+				if (res.data?.data?.user) {
+					fetchMembers();
+				}
+
+				if (res.data?.data?.invitationUrl && res.data?.data?.emailDelivered === false) {
+					try {
+						await navigator.clipboard.writeText(res.data.data.invitationUrl);
+						toast.info('SMTP is not configured, so the invite link was copied to your clipboard.');
+					} catch {
+						toast.info(
+							'SMTP is not configured yet. Use the invite link returned by the API response.',
+						);
+					}
+				}
+
+				toast.success(res.data?.message || 'Invitation sent');
 			} catch (err) {
 				toast.error(err?.response?.data?.message || 'Failed to add member');
 			}
 		},
-		[newMemberEmail, fetchMembers]
+		[newMemberEmail, fetchMembers],
 	);
 
 	// removing a member
@@ -110,7 +124,7 @@ function OrganizationSettings() {
 				toast.error(err?.response?.data?.message || 'Failed to remove member');
 			}
 		},
-		[fetchMembers]
+		[fetchMembers],
 	);
 
 	// creating a key
@@ -128,7 +142,7 @@ function OrganizationSettings() {
 				toast.error(err?.response?.data?.message || 'Failed to create key');
 			}
 		},
-		[newKeyName, fetchApiKeys]
+		[newKeyName, fetchApiKeys],
 	);
 
 	// revoke key
@@ -143,7 +157,7 @@ function OrganizationSettings() {
 				toast.error(err?.response?.data?.message || 'Failed to revoke key');
 			}
 		},
-		[fetchApiKeys]
+		[fetchApiKeys],
 	);
 
 	// checkout
@@ -324,7 +338,10 @@ function OrganizationSettings() {
 			</Card>
 
 			<Card>
-				<CardHeader title="Members" />
+				<CardHeader
+					title="Members"
+					subtitle="Invite teammates by email or add users who already exist."
+				/>
 				<CardBody>
 					<form onSubmit={addMember} className="flex flex-col sm:flex-row gap-2 mb-4">
 						<div className="flex-1 min-w-0">
@@ -335,7 +352,7 @@ function OrganizationSettings() {
 							/>
 						</div>
 						<Button type="submit" className="w-full sm:w-auto">
-							Add Member
+							Invite Member
 						</Button>
 					</form>
 					<ul className="space-y-2">

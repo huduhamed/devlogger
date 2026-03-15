@@ -73,14 +73,14 @@ export default function CheckoutSuccess() {
 						<h1 className="mt-2 text-3xl font-bold leading-tight">Thank you {firstName}.</h1>
 						<p className="mt-3 max-w-xl text-sm text-blue-900/80 dark:text-blue-100/85 sm:text-base">
 							We appreciate your subscription and the trust you are placing in our products. Your
-							plan is active now and we are glad to have you building with us.
+							plan is active now and we are glad to have you onboard with us.
 						</p>
 					</div>
 					<CardBody className="space-y-6 px-6 py-6">
 						<div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-800 dark:border-gray-800 dark:bg-gray-900/70 dark:text-gray-100">
-							<p className="font-semibold">What happens next</p>
+							<p className="font-semibold">What happens next!</p>
 							<p className="mt-1">
-								Your organization settings will reflect the active plan, and you can manage billing
+								Your organization settings will reflect the active plan and you can manage billing
 								at any time from your organization page.
 							</p>
 						</div>
