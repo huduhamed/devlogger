@@ -213,11 +213,12 @@ export async function googleSignIn(req, res, next) {
 		}
 		return res.status(200).json({
 			success: true,
-			message: invite || wasPendingInvite
-				? 'Invitation accepted and Google user signed in'
-				: isNewUser
-					? 'Google user created and signed in'
-					: 'Google user signed in',
+			message:
+				invite || wasPendingInvite
+					? 'Invitation accepted and Google user signed in'
+					: isNewUser
+						? 'Google user created and signed in'
+						: 'Google user signed in',
 			token,
 			user,
 			organization: org,
@@ -283,9 +284,10 @@ export async function signUp(req, res, next) {
 
 		return res.status(201).json({
 			success: true,
-			message: invite || wasPendingInvite
-				? 'Invitation accepted and account created successfully'
-				: 'new user & organization created successfully',
+			message:
+				invite || wasPendingInvite
+					? 'Invitation accepted and account created successfully'
+					: 'new user & organization created successfully',
 			token,
 			user: newUser,
 			organization,
