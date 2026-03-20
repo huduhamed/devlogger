@@ -57,6 +57,30 @@ async function findValidInvitation(rawInviteToken) {
 	return invite;
 }
 
+// find all pending invitations by email
+async function findPendingInvitationsByEmail(email) {
+	const normalizedEmail = email?.trim()?.toLowerCase();
+	if (!normalizedEmail) return [];
+
+	const invites = await OrganizationInvite.find({
+		email: normalizedEmail,
+		status: 'pending',
+	});
+
+	// filter out expired invites and mark them as expired
+	const validInvites = [];
+	for (const invite of invites) {
+		if (isInviteExpired(invite)) {
+			invite.status = 'expired';
+			await invite.save();
+		} else {
+			validInvites.push(invite);
+		}
+	}
+
+	return validInvites;
+}
+
 async function attachUserToInvitation({ app, invite, user }) {
 	const organization = await Organization.findById(invite.organization);
 	if (!organization) {
@@ -101,6 +125,18 @@ async function attachUserToInvitation({ app, invite, user }) {
 	return { organization };
 }
 
+// attach user to all pending invitations by email
+async function attachUserToPendingInvitations({ app, user, email }) {
+	const pendingInvites = await findPendingInvitationsByEmail(email);
+	if (pendingInvites.length === 0) return null;
+
+	// add user to first pending invite's organization
+	const firstInvite = pendingInvites[0];
+	const attachResult = await attachUserToInvitation({ app, invite: firstInvite, user });
+
+	return attachResult.error ? null : attachResult.organization;
+}
+
 function respondInviteError(res, error) {
 	return res.status(error.status).json({ message: error.message });
 }
@@ -122,6 +158,7 @@ export async function googleSignIn(req, res, next) {
 		// extract payload
 		const normalizedEmail = payload.email?.trim()?.toLowerCase();
 		const { name, picture, sub: googleId } = payload;
+
 		const invite = await findValidInvitation(inviteToken);
 		if (inviteToken && !invite) {
 			return res.status(400).json({ message: 'Invitation is invalid or has expired' });
@@ -140,6 +177,7 @@ export async function googleSignIn(req, res, next) {
 		let user = await User.findOne({ email });
 		let isNewUser = false;
 		let org = null;
+		let wasPendingInvite = false;
 
 		if (!user) {
 			user = await User.create({
@@ -156,7 +194,15 @@ export async function googleSignIn(req, res, next) {
 			if (attachResult.error) return respondInviteError(res, attachResult.error);
 			org = attachResult.organization;
 		} else if (isNewUser) {
-			org = await createOwnedOrganization({ user, name: name || 'Google User' });
+			// check for pending invitations by email
+			const pendingOrg = await attachUserToPendingInvitations({ app: req.app, user, email });
+			if (pendingOrg) {
+				org = pendingOrg;
+				wasPendingInvite = true;
+			} else {
+				// only create personal org if no pending invitations
+				org = await createOwnedOrganization({ user, name: name || 'Google User' });
+			}
 		}
 
 		// issue JWT
@@ -167,7 +213,7 @@ export async function googleSignIn(req, res, next) {
 		}
 		return res.status(200).json({
 			success: true,
-			message: invite
+			message: invite || wasPendingInvite
 				? 'Invitation accepted and Google user signed in'
 				: isNewUser
 					? 'Google user created and signed in'
@@ -208,6 +254,7 @@ export async function signUp(req, res, next) {
 		const hashed = await bcrypt.hash(password, 10);
 		let newUser = await User.create({ name, email: normalizedEmail, password: hashed });
 		let organization;
+		let wasPendingInvite = false;
 
 		if (invite) {
 			const attachResult = await attachUserToInvitation({ app: req.app, invite, user: newUser });
@@ -217,14 +264,26 @@ export async function signUp(req, res, next) {
 			}
 			organization = attachResult.organization;
 		} else {
-			organization = await createOwnedOrganization({ user: newUser, name });
+			// check for pending invitations by email
+			const pendingOrg = await attachUserToPendingInvitations({
+				app: req.app,
+				user: newUser,
+				email: normalizedEmail,
+			});
+			if (pendingOrg) {
+				organization = pendingOrg;
+				wasPendingInvite = true;
+			} else {
+				// only create personal org if no pending invitations
+				organization = await createOwnedOrganization({ user: newUser, name });
+			}
 		}
 
 		const token = jwt.sign({ userId: newUser._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
 		return res.status(201).json({
 			success: true,
-			message: invite
+			message: invite || wasPendingInvite
 				? 'Invitation accepted and account created successfully'
 				: 'new user & organization created successfully',
 			token,

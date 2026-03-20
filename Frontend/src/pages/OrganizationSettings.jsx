@@ -7,10 +7,12 @@ import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
 import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
 import OrgContext from '../context/OrgContext.jsx';
+import AuthContext from '../context/AuthContext.jsx';
 import { PLANS } from '../config/plans.js';
 
 function OrganizationSettings() {
 	const { refresh: refreshOrg, org: orgCtx } = useContext(OrgContext);
+	const { auth } = useContext(AuthContext);
 	const [org, setOrg] = useState(null);
 	const [members, setMembers] = useState([]);
 	const [apiKeys, setApiKeys] = useState([]);
@@ -18,6 +20,13 @@ function OrganizationSettings() {
 	const [newMemberEmail, setNewMemberEmail] = useState('');
 	const [newKeyName, setNewKeyName] = useState('');
 	const [createdKey, setCreatedKey] = useState(null);
+
+	// Check if current user is organization owner
+	const isOwner = useMemo(() => {
+		if (!auth?.user?._id || !members.length) return false;
+		const currentUserMember = members.find((m) => m.user._id === auth.user._id);
+		return currentUserMember?.role === 'owner';
+	}, [auth?.user?._id, members]);
 
 	// fetch org
 	const fetchOrg = useCallback(async () => {
@@ -349,9 +358,10 @@ function OrganizationSettings() {
 								value={newMemberEmail}
 								onChange={(e) => setNewMemberEmail(e.target.value)}
 								placeholder="user@example.com"
+								disabled={!isOwner}
 							/>
 						</div>
-						<Button type="submit" className="w-full sm:w-auto">
+						<Button type="submit" className="w-full sm:w-auto" disabled={!isOwner}>
 							Invite Member
 						</Button>
 					</form>
@@ -368,7 +378,7 @@ function OrganizationSettings() {
 										{m.role}
 									</span>
 								</div>
-								{m.role !== 'owner' && (
+								{m.role !== 'owner' && isOwner && (
 									<button
 										onClick={() => removeMember(m.user._id)}
 										className="text-red-600 text-sm hover:underline self-end sm:self-auto"

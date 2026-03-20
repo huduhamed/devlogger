@@ -34,7 +34,9 @@
 		"mongoose": "^8.18.0",
 		"morgan": "^1.10.1",
 		"nodemailer": "^8.0.2",
+		"resend": "^4.1.2",
 		"react-google-login": "^5.2.2",
+		"resend": "^6.9.4",
 		"socket.io": "^4.8.1",
 		"stripe": "^16.0.0",
 		"zod": "^3.23.8"
