@@ -16,7 +16,7 @@ const authRouter = Router();
 // sign-up endpoints path => /api/v1/auth/sign-up
 authRouter.post('/sign-up', validate(signUpSchema), signUp);
 
-// public invitation lookup
+// public invitation lookup => /api/v1/auth/invitations/:
 authRouter.get('/invitations/:token', getInvitationDetails);
 
 // signin endpoints path => /api/v1/auth/sign-in

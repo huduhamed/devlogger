@@ -105,12 +105,8 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 PRODUCT_PRICE_PRO=price_...
 PRODUCT_PRICE_ENTERPRISE=price_...
 FRONTEND_URL=http://localhost:5173
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=your-user
-SMTP_PASS=your-password
-SMTP_FROM=no-reply@yourdomain.com
-SMTP_SECURE=false
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=DevLogger <onboarding@resend.dev>
 PORT=5500
 ```
 

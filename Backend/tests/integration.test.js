@@ -100,4 +100,50 @@ describe('Integration: auth + logs', () => {
 			]),
 		);
 	});
+
+	test('invited user sign-up without using invite link still joins organization', async () => {
+		// Create new owner
+		const ownerRes = await request(app)
+			.post('/api/v1/auth/sign-up')
+			.send({ name: 'Charlie', email: 'charlie@example.com', password: 'pass1234' })
+			.expect(201);
+
+		const ownerToken = ownerRes.body.token;
+		const ownerOrgId = ownerRes.body.organization._id;
+
+		// Send invite to david@example.com
+		await request(app)
+			.post('/api/v1/organizations/members')
+			.set('Authorization', `Bearer ${ownerToken}`)
+			.send({ email: 'david@example.com' })
+			.expect(201);
+
+		// David signs up WITHOUT using the invite link
+		const davidSignupRes = await request(app)
+			.post('/api/v1/auth/sign-up')
+			.send({
+				name: 'David',
+				email: 'david@example.com',
+				password: 'pass1234',
+				// NO inviteToken provided
+			})
+			.expect(201);
+
+		// David should be in Charlie's organization (not his own)
+		expect(davidSignupRes.body.organization._id.toString()).toBe(ownerOrgId.toString());
+		expect(davidSignupRes.body.organization.name).toBe("Charlie's Org");
+		expect(davidSignupRes.body.message).toMatch(/Invitation/);
+
+		// Verify David is listed as member
+		const membersRes = await request(app)
+			.get('/api/v1/organizations/members')
+			.set('Authorization', `Bearer ${ownerToken}`)
+			.expect(200);
+
+		expect(membersRes.body.data).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ user: expect.objectContaining({ email: 'david@example.com' }) }),
+			]),
+		);
+	});
 });
