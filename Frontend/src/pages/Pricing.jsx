@@ -29,7 +29,7 @@ export default function Pricing() {
 				const res = await API.get('/billing/config');
 				setConfig(res.data || { configured: false, prices: { pro: false, enterprise: false } });
 				if (!res.data?.configured)
-					setError('Stripe is not fully configured. Please set STRIPE keys and price IDs.');
+					setError('An error occured. Please try again in a little while.');
 			} catch {
 				/* ignore */
 			}
@@ -49,12 +49,10 @@ export default function Pricing() {
 			if (res.data?.url) {
 				window.location.assign(res.data.url);
 			} else {
-				setError('Failed to start checkout.');
+				setError('An error occured, please try again.');
 			}
 		} catch (err) {
-			const msg =
-				err?.response?.data?.message ||
-				'Stripe is not configured. Please set your Stripe keys and price IDs.';
+			const msg = err?.response?.data?.message || 'An error occured, please try again.';
 			setError(msg);
 			toast.error(msg);
 		} finally {
@@ -89,35 +87,45 @@ export default function Pricing() {
 				{['free', 'pro', 'enterprise'].map((id) => {
 					const p = PLANS[id];
 					const isFree = id === 'free';
+
 					return (
-						<Card key={id} className={id === 'pro' ? 'border-blue-400' : ''}>
-							<CardHeader title={p.name} subtitle={p.blurb} />
-							<CardBody>
-								<div className="text-3xl font-bold">
-									{p.priceMonthly ? `$${p.priceMonthly}/mo` : 'Free'}
+						<div key={id} className="relative">
+							{p.popular && (
+								<div className="absolute  right-0 z-10">
+									<span className="bg-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-tr-lg rounded-bl-lg">
+										Most Popular
+									</span>
 								</div>
-								<ul className="mt-4 space-y-1 text-sm text-gray-700 dark:text-gray-300">
-									<li>• {p.logsPerMonth.toLocaleString()} logs / month</li>
-									<li>• Up to {p.members.toLocaleString()} members</li>
-									<li>• {p.apiKeys.toLocaleString()} API keys</li>
-								</ul>
-								<div className="mt-6">
-									{isFree ? (
-										<Button variant="outline" disabled>
-											Current
-										</Button>
-									) : (
-										<Button
-											onClick={() => startCheckout(id)}
-											loading={loadingPlan === id}
-											disabled={!config.configured || !config.prices[id]}
-										>
-											{id === 'pro' ? 'Choose Pro' : 'Choose Enterprise'}
-										</Button>
-									)}
-								</div>
-							</CardBody>
-						</Card>
+							)}
+							<Card className={id === 'pro' ? 'border-blue-400 border-2' : ''}>
+								<CardHeader title={p.name} subtitle={p.blurb} />
+								<CardBody>
+									<div className="text-3xl font-bold">
+										{p.priceMonthly ? `$${p.priceMonthly}/mo` : 'Free'}
+									</div>
+									<ul className="mt-4 space-y-1 text-sm text-gray-700 dark:text-gray-300">
+										<li>• {p.logsPerMonth.toLocaleString()} logs / month</li>
+										<li>• Up to {p.members.toLocaleString()} members</li>
+										<li>• {p.apiKeys.toLocaleString()} API keys</li>
+									</ul>
+									<div className="mt-6">
+										{isFree ? (
+											<Button variant="outline" disabled>
+												Current
+											</Button>
+										) : (
+											<Button
+												onClick={() => startCheckout(id)}
+												loading={loadingPlan === id}
+												disabled={!config.configured || !config.prices[id]}
+											>
+												{id === 'pro' ? 'Choose Pro' : 'Choose Enterprise'}
+											</Button>
+										)}
+									</div>
+								</CardBody>
+							</Card>
+						</div>
 					);
 				})}
 			</div>

@@ -8,6 +8,8 @@ import OrganizationSettings from './pages/OrganizationSettings.jsx';
 import CreateLog from './pages/CreateLog.jsx';
 import Home from './pages/Home.jsx';
 import CheckoutSuccess from './pages/CheckoutSuccess.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 
 function App() {
 	return (
@@ -20,6 +22,8 @@ function App() {
 					<Route path="/" element={<Home />} />
 					<Route path="/sign-in" element={<SignIn />} />
 					<Route path="/sign-up" element={<SignUp />} />
+					<Route path="/forgot-password" element={<ForgotPassword />} />
+					<Route path="/reset-password/:token" element={<ResetPassword />} />
 
 					{/* private routes */}
 					<Route element={<PrivateRoute />}>
@@ -33,7 +37,7 @@ function App() {
 
 					{/* pricing */}
 					<Route path="/pricing" element={<Pricing />} />
-				<Route path="/checkout-success" element={<CheckoutSuccess />} />
+					<Route path="/checkout-success" element={<CheckoutSuccess />} />
 					<Route path="*" element={<Navigate to="/" replace />} />
 				</Routes>
 			</div>

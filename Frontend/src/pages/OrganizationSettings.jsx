@@ -34,7 +34,10 @@ function OrganizationSettings() {
 			const res = await API.get('/organizations/me');
 			setOrg(res.data?.data ?? null);
 		} catch (err) {
-			toast.error(err?.response?.data?.message || 'Failed to load organization');
+			toast.error(
+				err?.response?.data?.message ||
+					'Sorry, We could not load your workspace right now, try again.',
+			);
 		}
 	}, []);
 
@@ -105,17 +108,15 @@ function OrganizationSettings() {
 				if (res.data?.data?.invitationUrl && res.data?.data?.emailDelivered === false) {
 					try {
 						await navigator.clipboard.writeText(res.data.data.invitationUrl);
-						toast.info('SMTP is not configured, so the invite link was copied to your clipboard.');
+						toast.info('An error occurred sending the invite email, try again.');
 					} catch {
-						toast.info(
-							'SMTP is not configured yet. Use the invite link returned by the API response.',
-						);
+						toast.info('An error occurred sending the invite email, try again.');
 					}
 				}
 
 				toast.success(res.data?.message || 'Invitation sent');
 			} catch (err) {
-				toast.error(err?.response?.data?.message || 'Failed to add member');
+				toast.error(err?.response?.data?.message || 'An error occured, please try again.');
 			}
 		},
 		[newMemberEmail, fetchMembers],
@@ -130,7 +131,10 @@ function OrganizationSettings() {
 				fetchMembers();
 				toast.success('Member removed');
 			} catch (err) {
-				toast.error(err?.response?.data?.message || 'Failed to remove member');
+				toast.error(
+					err?.response?.data?.message ||
+						'Failed to remove member, make sure they are logged out and try again. ',
+				);
 			}
 		},
 		[fetchMembers],
@@ -148,7 +152,7 @@ function OrganizationSettings() {
 				fetchApiKeys();
 				toast.success('API key created (copy now!)');
 			} catch (err) {
-				toast.error(err?.response?.data?.message || 'Failed to create key');
+				toast.error(err?.response?.data?.message || 'An error occured, please try again.');
 			}
 		},
 		[newKeyName, fetchApiKeys],
@@ -163,7 +167,7 @@ function OrganizationSettings() {
 				fetchApiKeys();
 				toast.success('Key revoked');
 			} catch (err) {
-				toast.error(err?.response?.data?.message || 'Failed to revoke key');
+				toast.error(err?.response?.data?.message || 'An error occured, please try again.');
 			}
 		},
 		[fetchApiKeys],
@@ -177,10 +181,10 @@ function OrganizationSettings() {
 			if (url) {
 				window.location.assign(url);
 			} else {
-				toast.error('Failed to start checkout');
+				toast.error('An error occured, please try again.');
 			}
 		} catch (err) {
-			toast.error(err?.response?.data?.message || 'Failed to start checkout');
+			toast.error(err?.response?.data?.message || 'An error occured, please try again.');
 		}
 	}, []);
 
@@ -191,10 +195,10 @@ function OrganizationSettings() {
 			if (url) {
 				window.location.assign(url);
 			} else {
-				toast.error('Failed to open billing portal');
+				toast.error('An error occured, please try again.');
 			}
 		} catch (err) {
-			toast.error(err?.response?.data?.message || 'Failed to open billing portal');
+			toast.error(err?.response?.data?.message || 'An error occured, please try again.');
 		}
 	}, []);
 
@@ -204,7 +208,7 @@ function OrganizationSettings() {
 			await navigator.clipboard.writeText(createdKey);
 			toast.success('Copied API key to clipboard');
 		} catch {
-			toast.error('Failed to copy');
+			toast.error('An error occured, please try again.');
 		}
 	}, [createdKey]);
 
@@ -213,6 +217,9 @@ function OrganizationSettings() {
 		const pct = org.limits.logsPerMonth ? (org.usage.logCount / org.limits.logsPerMonth) * 100 : 0;
 		return Math.min(100, Math.round(pct));
 	}, [org]);
+
+	// memoize paid org.
+	const isPaidOrg = useMemo(() => org?.plan === 'pro' || org?.plan === 'enterprise', [org?.plan]);
 
 	// billing status
 	const billingStatus = useMemo(() => {
@@ -395,17 +402,25 @@ function OrganizationSettings() {
 			<Card>
 				<CardHeader title="API Keys" />
 				<CardBody>
+					{!isPaidOrg && (
+						<div className="mb-4 rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+							API keys are available for paid plans only. Upgrade to Pro or Enterprise to enable
+							server-to-server log ingestion with API keys.
+						</div>
+					)}
 					<form onSubmit={createKey} className="flex flex-col sm:flex-row gap-2 mb-4">
 						<div className="flex-1 min-w-0">
 							<Input
 								value={newKeyName}
 								onChange={(e) => setNewKeyName(e.target.value)}
 								placeholder="Key Name"
+								disabled={!isPaidOrg}
 							/>
 						</div>
 						<Button
 							type="submit"
 							variant="secondary"
+							disabled={!isPaidOrg}
 							className="w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-200"
 						>
 							Create Key
@@ -452,6 +467,7 @@ function OrganizationSettings() {
 								{!k.revoked && (
 									<button
 										onClick={() => revokeKey(k.keyId)}
+										disabled={!isPaidOrg}
 										className="text-red-600 text-sm hover:underline self-end sm:self-auto"
 									>
 										Revoke

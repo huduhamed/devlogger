@@ -22,3 +22,15 @@ export function requireSelfOrAdmin(paramIdField = 'id') {
 		return res.status(403).json({ message: 'Forbidden: not allowed' });
 	};
 }
+
+// require self only
+export function requireSelf(paramIdField = 'id') {
+	return function (req, res, next) {
+		if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+
+		const targetId = req.params[paramIdField];
+		if (req.user._id?.toString() === targetId) return next();
+
+		return res.status(403).json({ message: 'You can only delete your own account.' });
+	};
+}

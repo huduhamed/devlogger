@@ -19,6 +19,9 @@ const organizationSchema = new mongoose.Schema(
 			subscriptionId: { type: String },
 			status: { type: String },
 			currentPeriodEnd: { type: Date },
+			lastPurchaseEmailAt: { type: Date },
+			lastPurchaseEmailPlan: { type: String },
+			lastPurchaseEmailSubscriptionId: { type: String },
 		},
 		limits: {
 			logsPerMonth: { type: Number, default: 10 },
@@ -38,7 +41,7 @@ const organizationSchema = new mongoose.Schema(
 			},
 		],
 	},
-	{ timestamps: true }
+	{ timestamps: true },
 );
 
 const Organization = mongoose.model('Organization', organizationSchema);

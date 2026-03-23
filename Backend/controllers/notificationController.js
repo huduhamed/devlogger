@@ -32,7 +32,7 @@ export async function markAllRead(req, res, next) {
 		const filter = { $or: [{ user: userId }, { organization: orgId }] };
 		await Notification.updateMany(filter, { $set: { read: true } });
 
-		return res.status(200).json({ message: 'marked all as read' });
+		return res.status(200).json({ message: 'All notifications have been marked as read.' });
 	} catch (err) {
 		next(err);
 	}
@@ -46,20 +46,22 @@ export async function markRead(req, res, next) {
 		const orgId = req.user?.organization;
 
 		const notification = await Notification.findById(id);
-		if (!notification) return res.status(404).json({ message: 'notification not found' });
+		if (!notification) return res.status(404).json({ message: 'Notification not found.' });
 
 		// ensure the user has access
 		if (notification.user && !notification.user.equals(userId)) {
 			// if notification is for org, allow if same org
 			if (!notification.organization || !notification.organization.equals(orgId)) {
-				return res.status(403).json({ message: 'forbidden' });
+				return res
+					.status(403)
+					.json({ message: 'You do not have permission to update this notification.' });
 			}
 		}
 
 		notification.read = true;
 		await notification.save();
 
-		return res.status(200).json({ message: 'marked read' });
+		return res.status(200).json({ message: 'Notification marked as read.' });
 	} catch (err) {
 		next(err);
 	}
@@ -69,7 +71,7 @@ export async function markRead(req, res, next) {
 export async function createNotification(req, res, next) {
 	try {
 		const { user, organization, text, data } = req.body;
-		if (!text) return res.status(400).json({ message: 'text is required' });
+		if (!text) return res.status(400).json({ message: 'Please provide a notification message.' });
 
 		const n = await Notification.create({ user, organization, text, data });
 

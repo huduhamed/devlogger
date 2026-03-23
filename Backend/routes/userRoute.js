@@ -10,7 +10,7 @@ import {
 	updateSelf,
 } from '../controllers/userController.js';
 import authorize from '../middleware/auth.js';
-import { requireRole, requireSelfOrAdmin } from '../middleware/roles.js';
+import { requireRole, requireSelf, requireSelfOrAdmin } from '../middleware/roles.js';
 
 // instance of user route
 const userRouter = Router();
@@ -30,7 +30,7 @@ userRouter.put('/:id', authorize, requireSelfOrAdmin('id'), updateUser);
 // self update convenience (profile settings)
 userRouter.patch('/me', authorize, updateSelf);
 
-// delete user endpoint (self or admin)
-userRouter.delete('/:id', authorize, requireSelfOrAdmin('id'), deleteUser);
+// delete user endpoint (self only)
+userRouter.delete('/:id', authorize, requireSelf('id'), deleteUser);
 
 export default userRouter;
