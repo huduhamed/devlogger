@@ -6,7 +6,7 @@ export const PLANS = {
 		priceMonthly: 0,
 		logsPerMonth: 20,
 		members: 3,
-		apiKeys: 2,
+		apiKeys: 0,
 		blurb: 'Get started with logging basics',
 	},
 	pro: {
@@ -15,8 +15,9 @@ export const PLANS = {
 		priceMonthly: 15,
 		logsPerMonth: 200,
 		members: 10,
-		apiKeys: 5,
+		apiKeys: 10,
 		blurb: 'Affordable collaboration for growing teams with real production usage',
+		popular: true,
 	},
 	enterprise: {
 		id: 'enterprise',
@@ -24,7 +25,7 @@ export const PLANS = {
 		priceMonthly: 49,
 		logsPerMonth: 500,
 		members: 50,
-		apiKeys: 25,
+		apiKeys: 20,
 		blurb: 'High-volume logging, larger teams and room to scale before custom contracts',
 	},
 };

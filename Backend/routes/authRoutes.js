@@ -7,6 +7,8 @@ import {
 	signIn,
 	signOut,
 	googleSignIn,
+	forgotPassword,
+	resetPassword,
 } from '../controllers/authController.js';
 import { validate } from '../middleware/validate.js';
 import { signUpSchema, signInSchema } from '../validation/schemas.js';
@@ -21,6 +23,12 @@ authRouter.get('/invitations/:token', getInvitationDetails);
 
 // signin endpoints path => /api/v1/auth/sign-in
 authRouter.post('/sign-in', validate(signInSchema), signIn);
+
+// forgot password => /api/v1/auth/forgot-password
+authRouter.post('/forgot-password', forgotPassword);
+
+// reset password => /api/v1/auth/reset-password
+authRouter.post('/reset-password', resetPassword);
 
 // google Oauth
 authRouter.post('/google', googleSignIn);

@@ -20,15 +20,15 @@ import { createMemberAddedNotifications } from '../utils/organizationMembership.
 export async function createOrganization(req, res, next) {
 	try {
 		const userId = req.user?._id;
-		if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+		if (!userId) return res.status(401).json({ message: 'Please sign in to continue.' });
 		const user = await User.findById(userId);
-		if (!user) return res.status(404).json({ message: 'User not found' });
+		if (!user) return res.status(404).json({ message: 'No account found.' });
 
 		// if user has an organization id stored, verify the organization actually exists.
 		if (user.organization) {
 			const existingOrg = await Organization.findById(user.organization).select('_id');
 			if (existingOrg) {
-				return res.status(400).json({ message: 'User already has an organization' });
+				return res.status(400).json({ message: 'You already have a workspace.' });
 			}
 			// stale reference: clear it and continue with creation
 			user.organization = undefined;
@@ -36,7 +36,9 @@ export async function createOrganization(req, res, next) {
 		}
 		const { name } = req.body;
 		if (!name || typeof name !== 'string' || name.trim().length < 2) {
-			return res.status(400).json({ message: 'Organization name required' });
+			return res
+				.status(400)
+				.json({ message: 'Please enter a workspace name (at least 2 characters).' });
 		}
 
 		// slugify name
@@ -81,6 +83,10 @@ function currentMonthKey() {
 	const d = new Date();
 	return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 }
+// check if paid plan
+function isPaidPlan(plan) {
+	return plan === 'pro' || plan === 'enterprise';
+}
 
 // rotate usage month if needed
 async function ensureUsage(org) {
@@ -96,7 +102,8 @@ async function ensureUsage(org) {
 export async function getOrganization(req, res, next) {
 	try {
 		const orgId = req.user?.organization;
-		if (!orgId) return res.status(400).json({ message: 'No organization for user' });
+		if (!orgId)
+			return res.status(400).json({ message: 'No workspace is linked to your account yet.' });
 
 		const org = await Organization.findById(orgId)
 			.select('-apiKeys')
@@ -104,7 +111,7 @@ export async function getOrganization(req, res, next) {
 			.populate('members.user', 'name email')
 			.lean();
 
-		if (!org) return res.status(404).json({ message: 'Organization not found' });
+		if (!org) return res.status(404).json({ message: 'Workspace not found.' });
 
 		return res.status(200).json({ success: true, data: org });
 	} catch (err) {
@@ -117,7 +124,7 @@ export async function listMembers(req, res, next) {
 	try {
 		const orgId = req.user?.organization;
 		const org = await Organization.findById(orgId).populate('members.user', 'name email').lean();
-		if (!org) return res.status(404).json({ message: 'Organization not found' });
+		if (!org) return res.status(404).json({ message: 'Workspace not found.' });
 
 		return res.status(200).json({ success: true, data: org.members });
 	} catch (err) {
@@ -130,14 +137,15 @@ export async function addMember(req, res, next) {
 	try {
 		const { email, role = 'member' } = req.body;
 		const normalizedEmail = email?.trim()?.toLowerCase();
-		if (!normalizedEmail) return res.status(400).json({ message: 'Email required' });
+		if (!normalizedEmail)
+			return res.status(400).json({ message: 'Please enter an email address.' });
 		if (!['admin', 'member'].includes(role)) {
-			return res.status(400).json({ message: 'Invalid member role' });
+			return res.status(400).json({ message: 'Please choose a valid member role.' });
 		}
 
 		const orgId = req.user?.organization;
 		const org = await Organization.findById(orgId);
-		if (!org) return res.status(404).json({ message: 'Organization not found' });
+		if (!org) return res.status(404).json({ message: 'Workspace not found.' });
 
 		const planCfg = getPlanConfig(org.plan);
 		const memberLimit = org.limits?.members ?? planCfg.members;
@@ -159,7 +167,9 @@ export async function addMember(req, res, next) {
 		const pendingInviteCount = await OrganizationInvite.countDocuments(pendingInviteFilter);
 
 		if (org.members.length + pendingInviteCount >= memberLimit)
-			return res.status(403).json({ message: 'Member limit reached for current plan' });
+			return res
+				.status(403)
+				.json({ message: 'You have reached the member limit for your current plan.' });
 
 		const user = await User.findOne({ email: normalizedEmail });
 		if (!user) {
@@ -197,9 +207,7 @@ export async function addMember(req, res, next) {
 
 			return res.status(201).json({
 				success: true,
-				message: delivery.delivered
-					? 'Invitation sent'
-					: 'Invitation created. Configure SMTP to deliver email automatically.',
+				message: delivery.delivered ? 'Invitation sent' : 'Invitation created.',
 				data: {
 					email: normalizedEmail,
 					role,
@@ -210,13 +218,13 @@ export async function addMember(req, res, next) {
 			});
 		}
 		if (org.members.some((m) => m.user.toString() === user._id.toString())) {
-			return res.status(409).json({ message: 'User already a member' });
+			return res.status(409).json({ message: 'That user is already a member of this workspace.' });
 		}
 		// if user has organization already
 		if (user.organization && user.organization.toString() !== org._id.toString()) {
 			const existingOrg = await Organization.findById(user.organization).select('_id');
 			if (existingOrg) {
-				return res.status(409).json({ message: 'User already belongs to another organization' });
+				return res.status(409).json({ message: 'That user already belongs to another workspace.' });
 			}
 		}
 
@@ -255,11 +263,13 @@ export async function removeMember(req, res, next) {
 		const { userId } = req.params;
 		const orgId = req.user?.organization;
 		const org = await Organization.findById(orgId);
-		if (!org) return res.status(404).json({ message: 'Organization not found' });
+		if (!org) return res.status(404).json({ message: 'Workspace not found.' });
 
 		const member = org.members.find((m) => m.user.toString() === userId);
-		if (!member) return res.status(404).json({ message: 'Member not in organization' });
-		if (member.role === 'owner') return res.status(400).json({ message: 'Cannot remove owner' });
+		if (!member)
+			return res.status(404).json({ message: 'That user is not a member of this workspace.' });
+		if (member.role === 'owner')
+			return res.status(400).json({ message: 'The workspace owner cannot be removed.' });
 
 		org.members = org.members.filter((m) => m.user.toString() !== userId);
 		await org.save();
@@ -274,11 +284,14 @@ export async function removeMember(req, res, next) {
 export async function createApiKey(req, res, next) {
 	try {
 		const { name } = req.body;
-		if (!name) return res.status(400).json({ message: 'Name required' });
+		if (!name) return res.status(400).json({ message: 'Please enter a name for this API key.' });
 
 		const orgId = req.user?.organization;
 		const org = await Organization.findById(orgId);
-		if (!org) return res.status(404).json({ message: 'Organization not found' });
+		if (!org) return res.status(404).json({ message: 'Workspace not found.' });
+		if (!isPaidPlan(org.plan)) {
+			return res.status(403).json({ message: 'API keys are available on paid plans only.' });
+		}
 
 		// key format: dlog_<keyId>_<secret>
 		const keyId = crypto.randomBytes(8).toString('hex');
@@ -297,8 +310,11 @@ export async function createApiKey(req, res, next) {
 export async function listApiKeys(req, res, next) {
 	try {
 		const orgId = req.user?.organization;
-		const org = await Organization.findById(orgId).select('_id');
-		if (!org) return res.status(404).json({ message: 'Organization not found' });
+		const org = await Organization.findById(orgId).select('_id plan');
+		if (!org) return res.status(404).json({ message: 'Workspace not found.' });
+		if (!isPaidPlan(org.plan)) {
+			return res.status(403).json({ message: 'API keys are available on paid plans only.' });
+		}
 
 		const keys = await ApiKey.find({ org: org._id }).select(
 			'name keyId createdAt lastUsedAt revoked',
@@ -315,8 +331,11 @@ export async function revokeApiKey(req, res, next) {
 	try {
 		const { keyId } = req.params;
 		const orgId = req.user?.organization;
-		const org = await Organization.findById(orgId).select('_id');
-		if (!org) return res.status(404).json({ message: 'Organization not found' });
+		const org = await Organization.findById(orgId).select('_id plan');
+		if (!org) return res.status(404).json({ message: 'Workspace not found.' });
+		if (!isPaidPlan(org.plan)) {
+			return res.status(403).json({ message: 'API keys are available on paid plans only.' });
+		}
 
 		const key = await ApiKey.findOne({ org: org._id, keyId, revoked: false });
 		if (!key) return res.status(404).json({ message: 'Key not found or already revoked' });
@@ -406,6 +425,9 @@ export async function ingestLog(req, res, next) {
 
 		const org = await Organization.findById(keyDoc.org);
 		if (!org) return res.status(401).json({ message: 'Invalid API key' });
+		if (!isPaidPlan(org.plan)) {
+			return res.status(403).json({ message: 'API ingestion requires a paid plan' });
+		}
 
 		const match = await bcrypt.compare(secret, keyDoc.keyHash);
 		if (!match) return res.status(401).json({ message: 'Invalid API key' });

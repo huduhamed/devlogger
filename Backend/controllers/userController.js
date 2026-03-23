@@ -140,6 +140,12 @@ export async function updateUser(req, res, next) {
 // delete user
 export async function deleteUser(req, res, next) {
 	try {
+		const requesterId = req.user?._id?.toString();
+		const targetId = req.params.id;
+		if (requesterId && requesterId !== targetId) {
+			return res.status(403).json({ message: 'You can only delete your own account.' });
+		}
+
 		const user = await User.findById(req.params.id);
 
 		if (!user) {

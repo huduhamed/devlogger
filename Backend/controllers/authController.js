@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 // internal imports
 import User from '../models/User.js';
@@ -10,6 +11,7 @@ import { verifyGoogleToken } from '../config/google.js';
 import { getPlanConfig } from '../config/plans.js';
 import { createMemberAddedNotifications } from '../utils/organizationMembership.js';
 import { hashInviteToken, isInviteExpired } from '../utils/organizationInvites.js';
+import { sendPasswordResetEmail } from '../utils/sendOrganizationInviteEmail.js';
 
 // create owned org.
 async function createOwnedOrganization({ user, name }) {
@@ -84,7 +86,7 @@ async function findPendingInvitationsByEmail(email) {
 async function attachUserToInvitation({ app, invite, user }) {
 	const organization = await Organization.findById(invite.organization);
 	if (!organization) {
-		return { error: { status: 404, message: 'Organization not found for invitation' } };
+		return { error: { status: 404, message: 'No organization is linked to this invitation.' } };
 	}
 
 	const planCfg = getPlanConfig(organization.plan);
@@ -98,11 +100,13 @@ async function attachUserToInvitation({ app, invite, user }) {
 	}
 
 	if (organization.members.length >= memberLimit) {
-		return { error: { status: 409, message: 'Organization member limit reached for this invite' } };
+		return { error: { status: 409, message: 'Member limit has been reached.' } };
 	}
 
 	if (user.organization && user.organization.toString() !== organization._id.toString()) {
-		return { error: { status: 409, message: 'User already belongs to another organization' } };
+		return {
+			error: { status: 409, message: 'This account already belongs to another workspace.' },
+		};
 	}
 
 	const inviter = await User.findById(invite.invitedBy).select('name email');
@@ -146,14 +150,14 @@ export async function googleSignIn(req, res, next) {
 	try {
 		const { idToken, inviteToken } = req.body;
 		if (!idToken) {
-			return res.status(400).json({ message: 'Google ID token required' });
+			return res.status(400).json({ message: 'Could not be completed, please try again.' });
 		}
 		// verify token and extract payload
 		let payload;
 		try {
 			payload = await verifyGoogleToken(idToken);
 		} catch (err) {
-			return res.status(401).json({ message: 'Invalid Google token' });
+			return res.status(401).json({ message: 'Sign-in failed, please try again.' });
 		}
 		// extract payload
 		const normalizedEmail = payload.email?.trim()?.toLowerCase();
@@ -161,18 +165,18 @@ export async function googleSignIn(req, res, next) {
 
 		const invite = await findValidInvitation(inviteToken);
 		if (inviteToken && !invite) {
-			return res.status(400).json({ message: 'Invitation is invalid or has expired' });
+			return res.status(400).json({ message: 'This invitation link is no longer valid.' });
 		}
 
 		if (invite && invite.email !== normalizedEmail) {
 			return res
 				.status(400)
-				.json({ message: 'Invitation email does not match this Google account' });
+				.json({ message: 'Please sign-in with the email address that received this invitation.' });
 		}
 
 		const email = normalizedEmail;
 		if (!email) {
-			return res.status(400).json({ message: 'Google account must have an email' });
+			return res.status(400).json({ message: 'An error occured, please try again later.' });
 		}
 		let user = await User.findOne({ email });
 		let isNewUser = false;
@@ -235,20 +239,24 @@ export async function signUp(req, res, next) {
 	try {
 		const { name, email, password, inviteToken } = req.body;
 		if (!name || !email || !password) {
-			return res.status(400).json({ message: 'Name, Email and Password are required' });
+			return res.status(400).json({ message: 'Please provide your name, email, and password.' });
 		}
 		const normalizedEmail = email.trim().toLowerCase();
 		const invite = await findValidInvitation(inviteToken);
 		if (inviteToken && !invite) {
-			return res.status(400).json({ message: 'Invitation is invalid or has expired' });
+			return res.status(400).json({ message: 'This invitation link is no longer valid.' });
 		}
 		if (invite && invite.email !== normalizedEmail) {
-			return res.status(400).json({ message: 'Invitation email does not match this sign-up' });
+			return res
+				.status(400)
+				.json({ message: 'Please sign up with the email address that received this invitation.' });
 		}
 
 		const existingUser = await User.findOne({ email: normalizedEmail });
 		if (existingUser) {
-			return res.status(409).json({ message: 'email already in use, please sign-in' });
+			return res
+				.status(409)
+				.json({ message: 'That email is already in use. Try signing in instead.' });
 		}
 
 		// hash password
@@ -302,13 +310,13 @@ export async function getInvitationDetails(req, res, next) {
 	try {
 		const invite = await findValidInvitation(req.params.token);
 		if (!invite) {
-			return res.status(404).json({ message: 'Invitation not found or has expired' });
+			return res.status(404).json({ message: 'This invitation link is invalid or has expired.' });
 		}
 
 		const organization = await Organization.findById(invite.organization).select('name');
 		const inviter = await User.findById(invite.invitedBy).select('name email');
 		if (!organization) {
-			return res.status(404).json({ message: 'Organization not found for invitation' });
+			return res.status(404).json({ message: 'No organization is linked to this invitation.' });
 		}
 
 		return res.status(200).json({
@@ -333,15 +341,15 @@ export async function signIn(req, res) {
 		const { email, password } = req.body;
 
 		if (!email || !password)
-			return res.status(400).json({ message: 'email and password required' });
+			return res.status(400).json({ message: 'Please enter both email and password.' });
 
 		// cross check credentials
 		const user = await User.findOne({ email });
-		if (!user) return res.status(401).json({ message: 'invalid credentials' });
+		if (!user) return res.status(401).json({ message: 'Email or password is incorrect.' });
 
 		// match credentials
 		const match = await bcrypt.compare(password, user.password);
-		if (!match) return res.status(401).json({ message: 'invalid credentials' });
+		if (!match) return res.status(401).json({ message: 'Email or password is incorrect.' });
 
 		const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
@@ -353,7 +361,7 @@ export async function signIn(req, res) {
 			user,
 		});
 	} catch (error) {
-		return res.status(500).json({ message: 'Something went worng, please try again later.' });
+		return res.status(500).json({ message: 'Something went wrong, please try again shortly.' });
 	}
 }
 
@@ -361,4 +369,93 @@ export async function signIn(req, res) {
 export async function signOut(req, res) {
 	// stateless JWT logout: client just discards token.
 	return res.status(200).json({ success: true, message: 'User successfully signed out' });
+}
+
+// forgot password - send reset link
+export async function forgotPassword(req, res, next) {
+	try {
+		const { email } = req.body;
+		if (!email) {
+			return res.status(400).json({ message: 'Please enter your email address.' });
+		}
+
+		const normalizedEmail = email.trim().toLowerCase();
+		const user = await User.findOne({ email: normalizedEmail });
+		if (!user) {
+			// Don't reveal whether email exists for security
+			return res.status(200).json({
+				success: true,
+				message: 'If an account exists with that email, a password reset link has been sent.',
+			});
+		}
+
+		// Generate reset token
+		const resetToken = crypto.randomBytes(32).toString('hex');
+		const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+		// Set token and expiry (1 hour)
+		user.passwordResetToken = resetTokenHash;
+		user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
+		await user.save();
+
+		// Build reset URL
+		const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+		const resetUrl = `${FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
+
+		// Send email
+		const emailResult = await sendPasswordResetEmail({ to: normalizedEmail, resetUrl });
+
+		return res.status(200).json({
+			success: true,
+			message: emailResult.delivered
+				? 'We sent you a password reset link.'
+				: 'We created a reset link. Use the link below to continue.',
+			resetUrl: emailResult.delivered ? null : emailResult.resetUrl,
+		});
+	} catch (error) {
+		return next(error);
+	}
+}
+
+// reset password
+export async function resetPassword(req, res, next) {
+	try {
+		const { token, email, newPassword } = req.body;
+
+		if (!token || !email || !newPassword) {
+			return res
+				.status(400)
+				.json({ message: 'Please provide the reset token, email and new password.' });
+		}
+
+		const normalizedEmail = email.trim().toLowerCase();
+
+		// Hash the token to compare with stored hash
+		const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+		// Find user and verify token
+		const user = await User.findOne({
+			email: normalizedEmail,
+			passwordResetToken: tokenHash,
+			passwordResetExpires: { $gt: new Date() },
+		});
+
+		if (!user) {
+			return res.status(400).json({ message: 'This reset link is invalid or has expired.' });
+		}
+
+		// Update password
+		user.password = await bcrypt.hash(newPassword, 10);
+		user.passwordResetToken = null;
+		user.passwordResetExpires = null;
+		user.passwordChangedAt = new Date();
+		await user.save();
+
+		return res.status(200).json({
+			success: true,
+			message: 'Password reset successfully. You can now sign in with your new password.',
+		});
+	} catch (error) {
+		return next(error);
+	}
 }

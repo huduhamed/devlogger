@@ -71,17 +71,16 @@ export default function Settings() {
 			toast.success('Profile updated');
 			setProfile((p) => ({ ...p, password: '' }));
 		} catch (err) {
-			let msg = 'Failed to update profile';
+			let msg = 'An error occured updating your profile, please try again.';
 
 			if (err.response) {
-				msg = `Error: ${err.response.status} - ${err.response.data?.message || err.message}`;
-				if (err.response.data?.error) msg += ` (${err.response.data.error})`;
+				msg = err.response.data?.message || 'An error occured, please try again.';
 			} else if (err.message) {
-				msg = err.message;
+				msg = 'Something went wrong while saving your profile. Please try again.';
 			}
 
 			toast.error(msg);
-			console.error('Avatar upload error:', err);
+			console.error('Profile update error:', err);
 		} finally {
 			setLoading(false);
 		}
@@ -98,7 +97,7 @@ export default function Settings() {
 			await refreshOrg?.();
 			setOrgForm({ name: res.data.data.name });
 		} catch (err) {
-			toast.error(err.response?.data?.message || 'Failed to update organization');
+			toast.error(err.response?.data?.message || 'We could not update the workspace right now.');
 		} finally {
 			setOrgLoading(false);
 		}
@@ -114,7 +113,10 @@ export default function Settings() {
 			toast.success('Account deleted');
 			navigate('/', { replace: true });
 		} catch (err) {
-			toast.error(err.response?.data?.message || 'Failed to delete account');
+			toast.error(
+				err.response?.data?.message ||
+					'An error occured deleting your account right now, please try again.',
+			);
 		} finally {
 			setDeleteLoading(false);
 			setDeleteModalOpen(false);
@@ -127,7 +129,7 @@ export default function Settings() {
 		if (!file) return;
 
 		if (!file.type.startsWith('image/')) {
-			toast.error('Please select an image file');
+			toast.error('Please choose a valid image file.');
 			return;
 		}
 
@@ -232,7 +234,9 @@ export default function Settings() {
 										toast.success('Organization created');
 										await refreshOrg?.();
 									} catch (err) {
-										toast.error(err.response?.data?.message || 'Failed to create organization');
+										toast.error(
+											err.response?.data?.message || 'We could not create a workspace right now.',
+										);
 									} finally {
 										setOrgLoading(false);
 									}
@@ -314,7 +318,7 @@ export default function Settings() {
 						}}
 					/>
 					<div className="relative w-full max-w-md">
-						<Card className="border-red-200 dark:border-red-800 shadow-xl">
+						<Card className="border-red-200 dark:border-red-800">
 							<CardHeader
 								title="Delete Account"
 								subtitle="This action is permanent and cannot be undone."

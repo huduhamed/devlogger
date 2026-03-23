@@ -2,7 +2,9 @@ import Stripe from 'stripe';
 
 // internal imports
 import Organization from '../models/Organization.js';
+import User from '../models/User.js';
 import { getPlanConfig } from '../config/plans.js';
+import { sendSubscriptionConfirmationEmail } from '../utils/sendOrganizationInviteEmail.js';
 import {
 	FRONTEND_URL,
 	STRIPE_SECRET_KEY,
@@ -57,18 +59,81 @@ async function syncOrganizationBilling({
 	const filter = orgId ? { _id: orgId } : { 'billing.customerId': customerId };
 	if (!filter._id && !filter['billing.customerId']) return null;
 
-	const update = {
-		...buildPlanUpdate(plan),
-	};
+	const org = await Organization.findOne(filter);
+	if (!org) return null;
 
-	if (subscriptionId) update['billing.subscriptionId'] = subscriptionId;
-	if (status) update['billing.status'] = status;
-	if (currentPeriodEnd) update['billing.currentPeriodEnd'] = currentPeriodEnd;
-	if (customerId) update['billing.customerId'] = customerId;
+	const previousPlan = org.plan || 'free';
+	const previousStatus = org.billing?.status || null;
+	const previousNotifiedPlan = org.billing?.lastPurchaseEmailPlan || null;
+	const previousNotifiedSubscriptionId = org.billing?.lastPurchaseEmailSubscriptionId || null;
 
-	if (Object.keys(update).length === 0) return null;
+	if (plan) {
+		const planUpdate = buildPlanUpdate(plan);
+		if (planUpdate.plan) org.plan = planUpdate.plan;
+		if (planUpdate['limits.logsPerMonth'])
+			org.limits.logsPerMonth = planUpdate['limits.logsPerMonth'];
+		if (planUpdate['limits.members']) org.limits.members = planUpdate['limits.members'];
+	}
 
-	return Organization.findOneAndUpdate(filter, update, { new: true });
+	if (!org.billing) org.billing = {};
+	if (subscriptionId) org.billing.subscriptionId = subscriptionId;
+	if (status) org.billing.status = status;
+	if (currentPeriodEnd) org.billing.currentPeriodEnd = currentPeriodEnd;
+	if (customerId) org.billing.customerId = customerId;
+
+	const nextPlan = org.plan;
+	const nextStatus = org.billing?.status || previousStatus;
+	const nextSubscriptionId = org.billing?.subscriptionId || subscriptionId || null;
+
+	const becamePaid = !isPaidPlan(previousPlan) && isPaidPlan(nextPlan);
+	const changedPaidTier =
+		isPaidPlan(previousPlan) && isPaidPlan(nextPlan) && previousPlan !== nextPlan;
+	const becameActive =
+		!['active', 'trialing'].includes(previousStatus) && ['active', 'trialing'].includes(nextStatus);
+	const shouldConsiderSending =
+		isPaidPlan(nextPlan) && (becamePaid || changedPaidTier || becameActive);
+
+	let shouldSendEmail = false;
+	if (shouldConsiderSending) {
+		// Avoid duplicate emails for the same plan + subscription combination.
+		const alreadyNotifiedForThisSubscription =
+			previousNotifiedPlan === nextPlan &&
+			previousNotifiedSubscriptionId &&
+			nextSubscriptionId &&
+			previousNotifiedSubscriptionId === nextSubscriptionId;
+		shouldSendEmail = !alreadyNotifiedForThisSubscription;
+	}
+
+	if (shouldSendEmail) {
+		try {
+			const owner = await User.findById(org.owner).select('name email').lean();
+			if (owner?.email) {
+				const planConfig = getPlanConfig(nextPlan);
+				const planName = nextPlan.charAt(0).toUpperCase() + nextPlan.slice(1);
+				await sendSubscriptionConfirmationEmail({
+					to: owner.email,
+					ownerName: owner.name,
+					organizationName: org.name,
+					planName,
+					benefits: {
+						logsPerMonth: planConfig.logsPerMonth,
+						members: planConfig.members,
+						apiKeys: planConfig.apiKeys,
+					},
+					manageUrl: `${FRONTEND_BASE_URL}/organization`,
+				});
+				org.billing.lastPurchaseEmailAt = new Date();
+				org.billing.lastPurchaseEmailPlan = nextPlan;
+				org.billing.lastPurchaseEmailSubscriptionId = nextSubscriptionId || undefined;
+			}
+		} catch (err) {
+			// Do not fail billing sync if email delivery fails.
+			console.error('Subscription confirmation email error', err);
+		}
+	}
+
+	await org.save();
+	return org;
 }
 
 // billing
@@ -91,21 +156,26 @@ export function getBillingConfig(_req, res) {
 // checkout session
 export async function createCheckoutSession(req, res, next) {
 	try {
-		if (!stripe) return res.status(500).json({ message: 'Stripe not configured' });
+		if (!stripe)
+			return res
+				.status(500)
+				.json({ message: 'Billing is temporarily unavailable. Please try again shortly.' });
 
 		const orgId = req.user?.organization;
 		const org = await Organization.findById(orgId);
 
-		if (!org) return res.status(404).json({ message: 'Organization not found' });
+		if (!org) return res.status(404).json({ message: 'Workspace not found.' });
 
 		const { plan } = req.body; // 'pro' | 'enterprise'
 		if (!isPaidPlan(plan)) {
-			return res.status(400).json({ message: 'Invalid plan selected' });
+			return res.status(400).json({ message: 'Please select a valid plan.' });
 		}
 
 		const priceId = PLAN_PRICE_IDS[plan];
 		if (!isStripePriceId(priceId))
-			return res.status(400).json({ message: 'Price not configured for selected plan' });
+			return res
+				.status(400)
+				.json({ message: 'This plan is not available right now. Please try again later.' });
 
 		// Ensure customer
 		let customerId = org.billing?.customerId;
@@ -139,13 +209,19 @@ export async function createCheckoutSession(req, res, next) {
 
 export async function createPortalSession(req, res, next) {
 	try {
-		if (!stripe) return res.status(500).json({ message: 'Stripe not configured' });
+		if (!stripe)
+			return res
+				.status(500)
+				.json({ message: 'Billing is temporarily unavailable. Please try again shortly.' });
 
 		const orgId = req.user?.organization;
 		const org = await Organization.findById(orgId);
 
-		if (!org) return res.status(404).json({ message: 'Organization not found' });
-		if (!org.billing?.customerId) return res.status(400).json({ message: 'No customer to manage' });
+		if (!org) return res.status(404).json({ message: 'Workspace not found.' });
+		if (!org.billing?.customerId)
+			return res
+				.status(400)
+				.json({ message: 'No billing account was found for this workspace yet.' });
 
 		const portal = await stripe.billingPortal.sessions.create({
 			customer: org.billing.customerId,
@@ -160,11 +236,14 @@ export async function createPortalSession(req, res, next) {
 
 export async function stripeWebhook(req, res) {
 	try {
-		if (!stripe) return res.status(500).json({ message: 'Stripe not configured' });
+		if (!stripe)
+			return res
+				.status(500)
+				.json({ message: 'Billing is temporarily unavailable. Please try again shortly.' });
 
 		const sig = req.headers['stripe-signature'];
 		if (!sig || !STRIPE_WEBHOOK_SECRET) {
-			return res.status(400).json({ message: 'Missing Stripe webhook signature or secret' });
+			return res.status(400).json({ message: 'An error occured, please try again.' });
 		}
 
 		let event;
@@ -229,16 +308,22 @@ export async function stripeWebhook(req, res) {
 // verify checkout session
 export async function verifyCheckoutSession(req, res, next) {
 	try {
-		if (!stripe) return res.status(500).json({ message: 'Stripe not configured' });
+		if (!stripe)
+			return res
+				.status(500)
+				.json({ message: 'Billing is temporarily unavailable. Please try again shortly.' });
 
 		const { sessionId } = req.body;
-		if (!sessionId) return res.status(400).json({ message: 'Session ID required' });
+		if (!sessionId)
+			return res
+				.status(400)
+				.json({ message: 'Missing checkout session details. Please try again.' });
 
 		const session = await stripe.checkout.sessions.retrieve(sessionId, {
 			expand: ['subscription'],
 		});
 
-		if (!session) return res.status(404).json({ message: 'Session not found' });
+		if (!session) return res.status(404).json({ message: 'An error occured, please try again.' });
 
 		const subscription =
 			session.subscription && typeof session.subscription === 'object'

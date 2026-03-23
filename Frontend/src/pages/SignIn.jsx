@@ -9,11 +9,15 @@ import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
 import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
 import GoogleAuthButton from '../components/Auth.jsx';
+import { getFieldError } from '../utils/validation.js';
 
 // sign-in logic
 function SignIn() {
 	const [form, setForm] = useState({ email: '', password: '' });
+	const [errors, setErrors] = useState({ email: null, password: null });
+	const [touched, setTouched] = useState({ email: false, password: false });
 	const [loading, setLoading] = useState(false);
+	const [showPassword, setShowPassword] = useState(false);
 	const navigate = useNavigate();
 	const { auth, signin } = useContext(AuthContext);
 
@@ -24,21 +28,56 @@ function SignIn() {
 	}
 
 	// handle change
-	const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+	const handleChange = (e) => {
+		const { name, value } = e.target;
+		setForm({ ...form, [name]: value });
+
+		// Live-validate only after field was touched.
+		if (touched[name]) {
+			const error = getFieldError(name, value);
+			setErrors({ ...errors, [name]: error });
+		}
+	};
+
+	const handleBlur = (e) => {
+		const { name, value } = e.target;
+		const normalizedValue = name === 'email' ? value.trim().toLowerCase() : value;
+		setForm((prev) => ({ ...prev, [name]: normalizedValue }));
+		setTouched((prev) => ({ ...prev, [name]: true }));
+		setErrors((prev) => ({ ...prev, [name]: getFieldError(name, normalizedValue) }));
+	};
 
 	// handle submit
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+		setTouched({ email: true, password: true });
+
+		const normalizedForm = {
+			...form,
+			email: form.email.trim().toLowerCase(),
+		};
+
+		// validate all fields before submit
+		const emailError = getFieldError('email', normalizedForm.email);
+		const passwordError = getFieldError('password', normalizedForm.password);
+
+		if (emailError || passwordError) {
+			setErrors({ email: emailError, password: passwordError });
+			return;
+		}
+
 		setLoading(true);
 
 		try {
-			const res = await API.post('/auth/sign-in', form);
+			const res = await API.post('/auth/sign-in', normalizedForm);
 			const { token, user } = res.data;
-			if (!token || !user) throw new Error('Invalid response from API');
+			if (!token || !user) throw new Error('An error occured, please try again.');
 			signin(token, user);
 			navigate('/dashboard', { replace: true });
 		} catch (error) {
-			toast.error('Signin failed: ' + (error.response?.data?.message || error.message));
+			toast.error(
+				error.response?.data?.message || 'Sign-in failed. Please check your details and try again.',
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -50,22 +89,63 @@ function SignIn() {
 		try {
 			// react-google-login returns an id_token in `tokenId`
 			const idToken = googleData.tokenId;
-			if (!idToken) throw new Error('No token received from Google');
+			if (!idToken) throw new Error('An error occured, please try again.');
 			const res = await API.post('/auth/google', { idToken });
 			const { token, user } = res.data;
-			if (!token || !user) throw new Error('Invalid response from API');
+			if (!token || !user) throw new Error('An error occured, please try again.');
 			signin(token, user);
 			navigate('/dashboard', { replace: true });
 		} catch (error) {
-			toast.error('Google Sign-In failed: ' + (error.response?.data?.message || error.message));
+			toast.error(error.response?.data?.message || 'An error occured, please try again.');
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	const handleGoogleFailure = (error) => {
-		toast.error('Google Sign-In failed');
+		toast.error('An error occured, please try again.');
 	};
+
+	// pass visibility
+	const togglePasswordVisibility = () => {
+		setShowPassword((prev) => !prev);
+	};
+
+	const passwordToggleButton = (
+		<button
+			type="button"
+			onClick={togglePasswordVisibility}
+			className="rounded p-1 text-slate-500 hover:text-slate-700 dark:text-gray-300 dark:hover:text-white"
+			aria-label={showPassword ? 'Hide password' : 'Show password'}
+			title={showPassword ? 'Hide password' : 'Show password'}
+		>
+			{showPassword ? (
+				<svg
+					viewBox="0 0 24 24"
+					className="h-5 w-5"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="2"
+				>
+					<path d="M3 3l18 18" />
+					<path d="M10.6 10.6A3 3 0 0013.4 13.4" />
+					<path d="M9.9 5.1A10.2 10.2 0 0112 4c5 0 9.3 3.1 11 8-0.6 1.8-1.6 3.3-2.9 4.5" />
+					<path d="M6.6 6.6C4.9 7.8 3.5 9.7 3 12c1.7 4.9 6 8 11 8a10.5 10.5 0 003.1-.5" />
+				</svg>
+			) : (
+				<svg
+					viewBox="0 0 24 24"
+					className="h-5 w-5"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="2"
+				>
+					<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+					<circle cx="12" cy="12" r="3" />
+				</svg>
+			)}
+		</button>
+	);
 
 	return (
 		<div className="min-h-[80vh] flex items-center justify-center px-4">
@@ -78,24 +158,40 @@ function SignIn() {
 							name="email"
 							value={form.email}
 							onChange={handleChange}
+							onBlur={handleBlur}
 							placeholder="you@example.com"
 							label="Email"
 							autoComplete="email"
+							error={errors.email}
 							required
 						/>
 						<Input
-							type="password"
+							type={showPassword ? 'text' : 'password'}
 							name="password"
 							value={form.password}
 							onChange={handleChange}
+							onBlur={handleBlur}
 							placeholder="••••••••"
 							label="Password"
 							autoComplete="current-password"
+							rightAdornment={passwordToggleButton}
+							error={errors.password}
 							required
 						/>
-						<Button className="w-full" type="submit" variant="primary" loading={loading}>
+						<Button
+							className="w-full"
+							type="submit"
+							variant="primary"
+							loading={loading}
+							disabled={errors.email || errors.password}
+						>
 							Sign In
 						</Button>
+						<div className="text-right">
+							<Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
+								Forgot password?
+							</Link>
+						</div>
 					</form>
 					<div className="flex items-center my-4">
 						<div className="flex-grow border-t border-gray-200 dark:border-gray-700" />
