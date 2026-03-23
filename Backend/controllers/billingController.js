@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 // internal imports
 import Organization from '../models/Organization.js';
 import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 import { getPlanConfig } from '../config/plans.js';
 import { sendSubscriptionConfirmationEmail } from '../utils/sendOrganizationInviteEmail.js';
 import {
@@ -55,6 +56,7 @@ async function syncOrganizationBilling({
 	subscriptionId,
 	status,
 	currentPeriodEnd,
+	io,
 }) {
 	const filter = orgId ? { _id: orgId } : { 'billing.customerId': customerId };
 	if (!filter._id && !filter['billing.customerId']) return null;
@@ -129,6 +131,46 @@ async function syncOrganizationBilling({
 		} catch (err) {
 			// Do not fail billing sync if email delivery fails.
 			console.error('Subscription confirmation email error', err);
+		}
+
+		// Create in-app notification for successful plan upgrade
+		try {
+			const planName = nextPlan.charAt(0).toUpperCase() + nextPlan.slice(1);
+			let notificationText = '';
+			if (becamePaid && previousPlan === 'free') {
+				notificationText = `Welcome! You've successfully upgraded to the ${planName} plan. Check your email for plan details and benefits.`;
+			} else if (changedPaidTier) {
+				const previousPlanName = previousPlan.charAt(0).toUpperCase() + previousPlan.slice(1);
+				notificationText = `Your subscription has been upgraded from ${previousPlanName} to ${planName}. Check your email for your new plan benefits.`;
+			} else if (becameActive) {
+				notificationText = `Your ${planName} subscription is now active. You can now access all plan features.`;
+			}
+
+			if (notificationText) {
+				const notification = await Notification.create({
+					user: org.owner,
+					organization: org._id,
+					text: notificationText,
+					data: {
+						type: 'subscription_upgrade',
+						plan: nextPlan,
+						previousPlan,
+					},
+				});
+
+				// Emit real-time notification via Socket.IO if io is available
+				if (io) {
+					try {
+						io.to(`user:${org.owner.toString()}`).emit('notification', notification);
+						io.to(`org:${org._id.toString()}`).emit('notification', notification);
+					} catch (socketErr) {
+						console.error('Socket.IO emit error', socketErr);
+					}
+				}
+			}
+		} catch (err) {
+			// Do not fail billing sync if notification creation fails.
+			console.error('An error occured, please try again later.', err);
 		}
 	}
 
@@ -254,6 +296,7 @@ export async function stripeWebhook(req, res) {
 			return res.status(400).send(`Webhook Error: ${err.message}`);
 		}
 
+		const io = req.app.get('io');
 		switch (event.type) {
 			case 'checkout.session.completed': {
 				const session = event.data.object;
@@ -271,6 +314,7 @@ export async function stripeWebhook(req, res) {
 						plan,
 						subscriptionId,
 						status: 'active',
+						io,
 					});
 				}
 				break;
@@ -291,7 +335,45 @@ export async function stripeWebhook(req, res) {
 					subscriptionId: sub.id,
 					status,
 					currentPeriodEnd,
+					io,
 				});
+				break;
+			}
+			case 'invoice.payment_failed': {
+				const invoice = event.data.object;
+				const customerId = invoice.customer;
+
+				try {
+					const org = await Organization.findOne({
+						'billing.customerId': customerId,
+					});
+
+					if (org) {
+						const notification = await Notification.create({
+							user: org.owner,
+							organization: org._id,
+							text: 'Payment failed for your subscription. Please update your payment method to avoid service interruption.',
+							data: {
+								type: 'payment_failed',
+								subscriptionId: invoice.subscription,
+								attemptCount: invoice.attempt_count || 1,
+							},
+						});
+
+						// Emit real-time notification via Socket.IO if io is available
+						if (io) {
+							try {
+								io.to(`user:${org.owner.toString()}`).emit('notification', notification);
+								io.to(`org:${org._id.toString()}`).emit('notification', notification);
+							} catch (socketErr) {
+								console.error('Socket.IO emit error', socketErr);
+							}
+						}
+					}
+				} catch (err) {
+					console.error('Payment failed notification error', err);
+				}
+
 				break;
 			}
 			default:

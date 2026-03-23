@@ -427,11 +427,15 @@ function OrganizationSettings() {
 						</Button>
 					</form>
 					{createdKey && (
-						<div className="p-3 bg-yellow-100 border border-yellow-300 rounded text-sm mb-4">
+						<div className="p-3 bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 rounded text-sm mb-4 text-gray-900 dark:text-yellow-100">
 							<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 								<div className="flex-1">
-									<p className="font-medium">New Key (copy now):</p>
-									<code className="break-all text-xs">{createdKey}</code>
+									<p className="font-medium text-gray-900 dark:text-yellow-100">
+										New Key (copy now):
+									</p>
+									<code className="break-all text-xs text-gray-800 dark:text-yellow-50">
+										{createdKey}
+									</code>
 								</div>
 								<div className="shrink-0 w-full sm:w-auto">
 									<Button
