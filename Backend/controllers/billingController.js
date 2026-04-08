@@ -319,22 +319,44 @@ export async function stripeWebhook(req, res) {
 				}
 				break;
 			}
-			case 'customer.subscription.updated':
-			case 'customer.subscription.created':
 
-			case 'customer.subscription.deleted': {
+			case 'customer.subscription.created': {
 				const sub = event.data.object;
-				const customerId = sub.customer;
-				const status = sub.status;
-				const plan = getPlanFromPriceId(sub.items?.data?.[0]?.price?.id);
-				const currentPeriodEnd = new Date(sub.current_period_end * 1000);
+				await syncOrganizationBilling({
+					customerId: sub.customer,
+					plan: getPlanFromPriceId(sub.items?.data?.[0]?.price?.id),
+					subscriptionId: sub.id,
+					status: sub.status,
+					currentPeriodEnd: new Date(sub.current_period_end * 1000),
+					io,
+				});
+				break;
+			}
+			case 'customer.subscription.updated': {
+				const sub = event.data.object;
+				const org = await Organization.findOne({ 'billing.customerId': sub.customer }).lean();
+
+				// skip duplicate update events that do not change status
+				if (org?.billing?.status === sub.status) break;
 
 				await syncOrganizationBilling({
-					customerId,
-					plan,
+					customerId: sub.customer,
+					plan: getPlanFromPriceId(sub.items?.data?.[0]?.price?.id),
 					subscriptionId: sub.id,
-					status,
-					currentPeriodEnd,
+					status: sub.status,
+					currentPeriodEnd: new Date(sub.current_period_end * 1000),
+					io,
+				});
+				break;
+			}
+			case 'customer.subscription.deleted': {
+				const sub = event.data.object;
+				await syncOrganizationBilling({
+					customerId: sub.customer,
+					plan: getPlanFromPriceId(sub.items?.data?.[0]?.price?.id),
+					subscriptionId: sub.id,
+					status: sub.status,
+					currentPeriodEnd: new Date(sub.current_period_end * 1000),
 					io,
 				});
 				break;
