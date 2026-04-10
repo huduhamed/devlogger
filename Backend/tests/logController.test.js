@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 
 // logs
-let getLogs, createLog, updateLog, deleteLog, getLog, Log;
+let getLogs, createLog, updateLog, deleteLog, getLog, Log, Organization;
 
 // fake express res object with spyable methods
 const makeRes = () => {
@@ -26,6 +26,15 @@ describe('logController', () => {
 			},
 		}));
 
+		await jest.unstable_mockModule('../models/Organization.js', () => ({
+			__esModule: true,
+			default: {
+				findById: jest.fn(),
+				updateOne: jest.fn(),
+				findOneAndUpdate: jest.fn(),
+			},
+		}));
+
 		// import controller fns after mock is in place
 		const ctrlMod = await import('../controllers/logController.js');
 
@@ -39,10 +48,22 @@ describe('logController', () => {
 		// import mocked log model to configure behavior in tests
 		const LogMod = await import('../models/Log.js');
 		Log = LogMod.default;
+
+		const OrgMod = await import('../models/Organization.js');
+		Organization = OrgMod.default;
 	});
 
 	beforeEach(() => {
 		jest.resetAllMocks();
+		Organization.findById.mockReturnValue({
+			select: jest.fn().mockResolvedValue({
+				_id: 'org1',
+				plan: 'free',
+				limits: { logsPerMonth: 20 },
+			}),
+		});
+		Organization.updateOne.mockResolvedValue({ acknowledged: true });
+		Organization.findOneAndUpdate.mockResolvedValue({ _id: 'org1', usage: { logCount: 1 } });
 	});
 
 	// get logs
@@ -51,7 +72,8 @@ describe('logController', () => {
 			const fakeLogs = [{ title: 'logtitle1' }, { title: 'logtitle2' }];
 			const sortMock = jest.fn().mockReturnThis();
 			const skipMock = jest.fn().mockReturnThis();
-			const limitMock = jest.fn().mockResolvedValue(fakeLogs);
+			const leanMock = jest.fn().mockResolvedValue(fakeLogs);
+			const limitMock = jest.fn().mockReturnValue({ lean: leanMock });
 			Log.find.mockReturnValue({ sort: sortMock, skip: skipMock, limit: limitMock });
 			Log.countDocuments = jest.fn().mockResolvedValue(2);
 
@@ -65,13 +87,14 @@ describe('logController', () => {
 			expect(sortMock).toHaveBeenCalledWith({ createdAt: -1 });
 			expect(skipMock).toHaveBeenCalledWith(0); // page 1
 			expect(limitMock).toHaveBeenCalledWith(20); // default limit
+			expect(leanMock).toHaveBeenCalled();
 			expect(res.status).toHaveBeenCalledWith(200);
 			expect(res.json).toHaveBeenCalledWith(
 				expect.objectContaining({
 					success: true,
 					data: fakeLogs,
 					pagination: expect.objectContaining({ page: 1, limit: 20, total: 2, pages: 1 }),
-				})
+				}),
 			);
 		});
 	});
@@ -92,11 +115,14 @@ describe('logController', () => {
 
 		test('normalizes tags string into array and creates log', async () => {
 			// log.create resolves to created object
-			const created = { title: 'T', tags: ['a', 'b'], user: 'user1' };
+			const created = { title: 'T', tags: ['a', 'b'], user: 'user1', organization: 'org1' };
 			Log.create.mockResolvedValue(created);
 
 			// mock body args
-			const req = { body: { title: 'T', tags: 'a, b' }, user: { _id: 'user1' } };
+			const req = {
+				body: { title: 'T', tags: 'a, b' },
+				user: { _id: 'user1', organization: 'org1' },
+			};
 			const res = makeRes();
 			const next = jest.fn();
 
@@ -109,11 +135,12 @@ describe('logController', () => {
 				description: undefined,
 				tags: ['a', 'b'],
 				user: 'user1',
+				organization: 'org1',
 			});
 			expect(res.status).toHaveBeenCalledWith(201);
 			// Controller includes a message field, verify success and return data
 			expect(res.json).toHaveBeenCalledWith(
-				expect.objectContaining({ success: true, data: created })
+				expect.objectContaining({ success: true, data: created }),
 			);
 		});
 	});
@@ -148,7 +175,9 @@ describe('logController', () => {
 
 			// if not owner of log
 			expect(res.status).toHaveBeenCalledWith(403);
-			expect(res.json).toHaveBeenCalledWith({ message: 'Forbidden: outside your organization' });
+			expect(res.json).toHaveBeenCalledWith({
+				message: 'Forbidden: only the log owner can modify this log',
+			});
 		});
 
 		// finally updates if owner matches
@@ -169,13 +198,13 @@ describe('logController', () => {
 			expect(Log.findByIdAndUpdate).toHaveBeenCalledWith(
 				'log1',
 				{ title: 'Updated' },
-				{ new: true, runValidators: true }
+				{ new: true, runValidators: true },
 			);
 			expect(res.status).toHaveBeenCalledWith(200);
 
 			// controller includes a message field, verify success & returned data
 			expect(res.json).toHaveBeenCalledWith(
-				expect.objectContaining({ success: true, data: updated })
+				expect.objectContaining({ success: true, data: updated }),
 			);
 		});
 	});
@@ -196,7 +225,7 @@ describe('logController', () => {
 
 			//"log not found" => case-insensitive
 			expect(res.json).toHaveBeenCalledWith(
-				expect.objectContaining({ message: expect.stringMatching(/log not found/i) })
+				expect.objectContaining({ message: expect.stringMatching(/log not found/i) }),
 			);
 		});
 
@@ -212,7 +241,9 @@ describe('logController', () => {
 			await deleteLog(req, res, next);
 
 			expect(res.status).toHaveBeenCalledWith(403);
-			expect(res.json).toHaveBeenCalledWith({ message: 'Forbidden: outside your organization' });
+			expect(res.json).toHaveBeenCalledWith({
+				message: 'Forbidden: only the log owner can delete this log',
+			});
 		});
 
 		test('deletes when owner', async () => {
@@ -232,7 +263,7 @@ describe('logController', () => {
 
 			//log deleted & returns success:true
 			expect(res.json).toHaveBeenCalledWith(
-				expect.objectContaining({ success: true, message: expect.stringMatching(/log deleted/i) })
+				expect.objectContaining({ success: true, message: expect.stringMatching(/log deleted/i) }),
 			);
 		});
 	});

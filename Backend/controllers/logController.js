@@ -1,5 +1,46 @@
 // internal imports
 import Log from '../models/Log.js';
+import Organization from '../models/Organization.js';
+import { getPlanConfig } from '../config/plans.js';
+
+// current month key
+function currentMonthKey() {
+	const d = new Date();
+	return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+async function reserveOrganizationLogQuota(orgId) {
+	if (!orgId) return { ok: false, reason: 'Organization missing for user' };
+
+	const org = await Organization.findById(orgId).select('_id plan limits');
+	if (!org) return { ok: false, reason: 'Organization not found' };
+
+	const monthKey = currentMonthKey();
+	await Organization.updateOne(
+		{ _id: orgId, 'usage.month': { $ne: monthKey } },
+		{ $set: { 'usage.month': monthKey, 'usage.logCount': 0 } },
+	);
+
+	const planCfg = getPlanConfig(org.plan);
+	const limit = org.limits?.logsPerMonth ?? planCfg.logsPerMonth;
+
+	const updated = await Organization.findOneAndUpdate(
+		{ _id: orgId, 'usage.month': monthKey, 'usage.logCount': { $lt: limit } },
+		{ $inc: { 'usage.logCount': 1 } },
+		{ new: true, projection: '_id usage' },
+	);
+
+	if (!updated) return { ok: false, reason: 'Monthly log quota exceeded. Upgrade plan.' };
+	return { ok: true, monthKey };
+}
+
+async function releaseOrganizationLogQuota(orgId, monthKey) {
+	if (!orgId || !monthKey) return;
+	await Organization.updateOne(
+		{ _id: orgId, 'usage.month': monthKey, 'usage.logCount': { $gt: 0 } },
+		{ $inc: { 'usage.logCount': -1 } },
+	);
+}
 
 // all logs, regardless of user
 export async function getAllLogs(req, res, next) {
@@ -165,22 +206,25 @@ export async function createLog(req, res, next) {
 		// map user, then create log
 		const userId = req.user && (req.user._id || req.user.id);
 		const orgId = req.user && req.user.organization;
-		const log = await Log.create({
-			title,
-			description,
-			level,
-			tags: tagsArray,
-			user: userId,
-			organization: orgId,
-		});
+		const quotaReservation = await reserveOrganizationLogQuota(orgId);
+		if (!quotaReservation.ok) {
+			const status = quotaReservation.reason === 'Organization not found' ? 404 : 403;
+			return res.status(status).json({ message: quotaReservation.reason });
+		}
 
-		// if enforceUsage middleware ran, increment count
-		if (req.organization) {
-			const monthKey = req.organization.usage?.month;
-			if (monthKey) {
-				req.organization.usage.logCount += 1;
-				await req.organization.save();
-			}
+		let log;
+		try {
+			log = await Log.create({
+				title,
+				description,
+				level,
+				tags: tagsArray,
+				user: userId,
+				organization: orgId,
+			});
+		} catch (err) {
+			await releaseOrganizationLogQuota(orgId, quotaReservation.monthKey);
+			throw err;
 		}
 
 		return res.status(201).json({
@@ -203,13 +247,11 @@ export async function updateLog(req, res, next) {
 		const log = await Log.findById(id);
 		if (!log) return res.status(404).json({ message: 'Log not found' });
 
-		// authenticate user (ownership or same organization)
+		// mutate permissions: only the log owner can edit
 		const userId = req.user && (req.user._id || req.user.id);
-		const orgId = req.user && req.user.organization;
 		const owns = log.user.toString() === userId.toString();
-		const sameOrg = orgId && log.organization && log.organization.toString() === orgId.toString();
-		if (!owns && !sameOrg) {
-			return res.status(403).json({ message: 'Forbidden: outside your organization' });
+		if (!owns) {
+			return res.status(403).json({ message: 'Forbidden: only the log owner can modify this log' });
 		}
 
 		const updateData = { ...req.body };
@@ -245,13 +287,11 @@ export async function deleteLog(req, res, next) {
 		const log = await Log.findById(id);
 		if (!log) return res.status(404).json({ message: 'log not found' });
 
-		// authenticate user (ownership or org membership)
+		// mutate permissions: only the log owner can delete
 		const userId = req.user && (req.user._id || req.user.id);
-		const orgId = req.user && req.user.organization;
 		const owns = log.user.toString() === userId.toString();
-		const sameOrg = orgId && log.organization && log.organization.toString() === orgId.toString();
-		if (!owns && !sameOrg) {
-			return res.status(403).json({ message: 'Forbidden: outside your organization' });
+		if (!owns) {
+			return res.status(403).json({ message: 'Forbidden: only the log owner can delete this log' });
 		}
 
 		await log.deleteOne();
