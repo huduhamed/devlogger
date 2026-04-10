@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import Stripe from 'stripe';
 
 // internal imports
 import Organization from '../models/Organization.js';
@@ -7,6 +8,7 @@ import User from '../models/User.js';
 import ApiKey from '../models/ApiKey.js';
 import OrganizationInvite from '../models/OrganizationInvite.js';
 import { getPlanConfig } from '../config/plans.js';
+import { STRIPE_SECRET_KEY } from '../config/env.js';
 import {
 	buildInviteUrl,
 	createInviteToken,
@@ -15,6 +17,10 @@ import {
 } from '../utils/organizationInvites.js';
 import { sendOrganizationInviteEmail } from '../utils/sendOrganizationInviteEmail.js';
 import { createMemberAddedNotifications } from '../utils/organizationMembership.js';
+
+const stripe = STRIPE_SECRET_KEY
+	? new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' })
+	: null;
 
 // create organization for user if none exists
 export async function createOrganization(req, res, next) {
@@ -385,6 +391,24 @@ export async function upgradePlan(req, res, next) {
 		const org = await Organization.findById(orgId);
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
 
+		const subscriptionId = org.billing?.subscriptionId;
+		if (subscriptionId) {
+			if (!stripe) {
+				return res.status(503).json({
+					message:
+						'Billing provider is unavailable, so subscription cancellation cannot be completed right now.',
+				});
+			}
+
+			try {
+				await stripe.subscriptions.cancel(subscriptionId);
+			} catch (err) {
+				if (err?.code !== 'resource_missing') {
+					throw err;
+				}
+			}
+		}
+
 		org.plan = 'free';
 
 		// update plan limits to match selected plan
@@ -392,6 +416,10 @@ export async function upgradePlan(req, res, next) {
 		org.limits = org.limits || {};
 		org.limits.logsPerMonth = planCfg.logsPerMonth;
 		org.limits.members = planCfg.members;
+		org.billing = org.billing || {};
+		org.billing.status = 'canceled';
+		org.billing.subscriptionId = undefined;
+		org.billing.currentPeriodEnd = undefined;
 		await org.save();
 
 		return res.status(200).json({ success: true, message: 'Plan updated', plan: 'free' });
