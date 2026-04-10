@@ -88,14 +88,35 @@ function isPaidPlan(plan) {
 	return plan === 'pro' || plan === 'enterprise';
 }
 
-// rotate usage month if needed
-async function ensureUsage(org) {
+// reserve a usage slot atomically to avoid concurrent overages
+async function reserveUsageSlot(org) {
 	const monthKey = currentMonthKey();
-	if (!org.usage || org.usage.month !== monthKey) {
-		org.usage = { month: monthKey, logCount: 0 };
-		await org.save();
+	await Organization.updateOne(
+		{ _id: org._id, 'usage.month': { $ne: monthKey } },
+		{ $set: { 'usage.month': monthKey, 'usage.logCount': 0 } },
+	);
+
+	const planCfg = getPlanConfig(org.plan);
+	const limit = org.limits?.logsPerMonth ?? planCfg.logsPerMonth;
+	const updated = await Organization.findOneAndUpdate(
+		{ _id: org._id, 'usage.month': monthKey, 'usage.logCount': { $lt: limit } },
+		{ $inc: { 'usage.logCount': 1 } },
+		{ new: true, projection: '_id usage' },
+	);
+
+	if (!updated) {
+		return { ok: false, reason: 'Monthly log limit reached' };
 	}
-	return org;
+
+	return { ok: true, monthKey };
+}
+
+async function releaseUsageSlot(orgId, monthKey) {
+	if (!orgId || !monthKey) return;
+	await Organization.updateOne(
+		{ _id: orgId, 'usage.month': monthKey, 'usage.logCount': { $gt: 0 } },
+		{ $inc: { 'usage.logCount': -1 } },
+	);
 }
 
 // get org
@@ -354,21 +375,26 @@ export async function upgradePlan(req, res, next) {
 		const { plan } = req.body;
 		const allowed = ['free', 'pro', 'enterprise'];
 		if (!allowed.includes(plan)) return res.status(400).json({ message: 'Invalid plan selection' });
+		if (plan !== 'free') {
+			return res.status(403).json({
+				message: 'Paid upgrades must be completed through Stripe checkout.',
+			});
+		}
 
 		const orgId = req.user?.organization;
 		const org = await Organization.findById(orgId);
 		if (!org) return res.status(404).json({ message: 'Organization not found' });
 
-		org.plan = plan;
+		org.plan = 'free';
 
 		// update plan limits to match selected plan
-		const planCfg = getPlanConfig(plan);
+		const planCfg = getPlanConfig('free');
 		org.limits = org.limits || {};
 		org.limits.logsPerMonth = planCfg.logsPerMonth;
 		org.limits.members = planCfg.members;
 		await org.save();
 
-		return res.status(200).json({ success: true, message: 'Plan updated', plan });
+		return res.status(200).json({ success: true, message: 'Plan updated', plan: 'free' });
 	} catch (err) {
 		next(err);
 	}
@@ -432,28 +458,34 @@ export async function ingestLog(req, res, next) {
 		const match = await bcrypt.compare(secret, keyDoc.keyHash);
 		if (!match) return res.status(401).json({ message: 'Invalid API key' });
 
-		// rotate usage month if needed and check plan limit
-		await ensureUsage(org);
-		if (org.usage.logCount + 1 > org.limits.logsPerMonth)
-			return res.status(403).json({ message: 'Monthly log limit reached' });
+		// reserve quota before creating the log to avoid race conditions
+		const quotaReservation = await reserveUsageSlot(org);
+		if (!quotaReservation.ok) {
+			return res.status(403).json({ message: quotaReservation.reason });
+		}
 
 		// basic payload
 		const { title, description, level = 'info', tags = [] } = req.body || {};
 		if (!title) return res.status(400).json({ message: 'title required' });
 
 		const Log = (await import('../models/Log.js')).default;
-		const logDoc = await Log.create({
-			title,
-			description,
-			level,
-			tags: Array.isArray(tags) ? tags : [],
-			organization: org._id,
-			user: org.owner,
-		});
+		let logDoc;
+		try {
+			logDoc = await Log.create({
+				title,
+				description,
+				level,
+				tags: Array.isArray(tags) ? tags : [],
+				organization: org._id,
+				user: org.owner,
+			});
+		} catch (err) {
+			await releaseUsageSlot(org._id, quotaReservation.monthKey);
+			throw err;
+		}
 
-		org.usage.logCount += 1;
 		keyDoc.lastUsedAt = new Date();
-		await Promise.all([org.save(), keyDoc.save()]);
+		await keyDoc.save();
 
 		return res.status(201).json({ success: true, data: logDoc });
 	} catch (err) {
