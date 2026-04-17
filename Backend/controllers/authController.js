@@ -13,6 +13,8 @@ import { createMemberAddedNotifications } from '../utils/organizationMembership.
 import { hashInviteToken, isInviteExpired } from '../utils/organizationInvites.js';
 import { sendPasswordResetEmail } from '../utils/sendOrganizationInviteEmail.js';
 
+const strongPasswordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+
 // create owned org.
 async function createOwnedOrganization({ user, name }) {
 	const orgBase = name
@@ -232,8 +234,6 @@ export async function googleSignIn(req, res, next) {
 	}
 }
 
-// (dev-only googleTestSignIn removed) Use real Google ID tokens via /api/v1/auth/google
-
 // register user
 export async function signUp(req, res, next) {
 	try {
@@ -283,7 +283,6 @@ export async function signUp(req, res, next) {
 				organization = pendingOrg;
 				wasPendingInvite = true;
 			} else {
-				// only create personal org if no pending invitations
 				organization = await createOwnedOrganization({ user: newUser, name });
 			}
 		}
@@ -344,7 +343,8 @@ export async function signIn(req, res) {
 			return res.status(400).json({ message: 'Please enter both email and password.' });
 
 		// cross check credentials
-		const user = await User.findOne({ email });
+		const normalizedEmail = email.trim().toLowerCase();
+		const user = await User.findOne({ email: normalizedEmail });
 		if (!user) return res.status(401).json({ message: 'Email or password is incorrect.' });
 
 		// match credentials
@@ -426,6 +426,13 @@ export async function resetPassword(req, res, next) {
 			return res
 				.status(400)
 				.json({ message: 'Please provide the reset token, email and new password.' });
+		}
+
+		if (!strongPasswordRegex.test(newPassword)) {
+			return res.status(400).json({
+				message:
+					'Password must be at least 8 characters and include at least one letter and one number.',
+			});
 		}
 
 		const normalizedEmail = email.trim().toLowerCase();

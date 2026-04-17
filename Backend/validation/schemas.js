@@ -1,11 +1,17 @@
 import { z } from 'zod';
 
+// tighten password
+const passwordPolicyMessage =
+	'Password must be at least 8 characters and include at least one letter and one number.';
+
+const passwordPolicyRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+
 // singup schema
 export const signUpSchema = z.object({
 	body: z.object({
 		name: z.string().min(2).max(50),
 		email: z.string().email(),
-		password: z.string().min(4),
+		password: z.string().regex(passwordPolicyRegex, passwordPolicyMessage),
 		inviteToken: z.string().min(1).optional(),
 	}),
 });
@@ -14,7 +20,7 @@ export const signUpSchema = z.object({
 export const signInSchema = z.object({
 	body: z.object({
 		email: z.string().email(),
-		password: z.string().min(4),
+		password: z.string().min(8),
 	}),
 });
 
