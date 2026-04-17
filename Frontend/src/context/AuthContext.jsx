@@ -1,9 +1,10 @@
-import { useState, createContext, useEffect, useRef } from 'react';
+import { useState, createContext, useEffect, useRef, useCallback, useMemo } from 'react';
 
 // internal imports
 import API from '../services/api';
 
 const AuthContext = createContext();
+const activityEvents = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
 
 // auth provider
 export function AuthProvider({ children }) {
@@ -26,22 +27,14 @@ export function AuthProvider({ children }) {
 	const idleTimerRef = useRef(null);
 	const lastActivityRef = useRef(Number(sessionStorage.getItem('lastActivity') || Date.now()));
 
-	// signin
-	const signin = (token, user) => {
-		sessionStorage.setItem('token', token);
-		sessionStorage.setItem('user', JSON.stringify(user));
-		sessionStorage.setItem('lastActivity', String(Date.now()));
+	const clearIdleTimer = useCallback(() => {
+		if (idleTimerRef.current) {
+			clearTimeout(idleTimerRef.current);
+			idleTimerRef.current = null;
+		}
+	}, []);
 
-		lastActivityRef.current = Date.now();
-
-		setAuth({ token, user });
-
-		API.defaults.headers.Authorization = `Bearer ${token}`;
-		resetIdleTimer();
-	};
-
-	// logout
-	const logout = () => {
+	const logout = useCallback(() => {
 		sessionStorage.removeItem('token');
 		sessionStorage.removeItem('user');
 		sessionStorage.removeItem('lastActivity');
@@ -51,31 +44,39 @@ export function AuthProvider({ children }) {
 
 		delete API.defaults.headers.Authorization;
 		clearIdleTimer();
-	};
+	}, [clearIdleTimer]);
 
-	const clearIdleTimer = () => {
-		if (idleTimerRef.current) {
-			clearTimeout(idleTimerRef.current);
-			idleTimerRef.current = null;
-		}
-	};
-
-	const handleIdleTimeout = () => {
+	const handleIdleTimeout = useCallback(() => {
 		logout();
-	};
+	}, [logout]);
 
-	const resetIdleTimer = () => {
+	const resetIdleTimer = useCallback(() => {
 		lastActivityRef.current = Date.now();
 		sessionStorage.setItem('lastActivity', String(lastActivityRef.current));
 		clearIdleTimer();
 		idleTimerRef.current = setTimeout(() => {
 			handleIdleTimeout();
 		}, SESSION_TIMEOUT_MS);
-	};
+	}, [SESSION_TIMEOUT_MS, clearIdleTimer, handleIdleTimeout]);
 
-	const activityEvents = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
+	// signin
+	const signin = useCallback(
+		(token, user) => {
+			sessionStorage.setItem('token', token);
+			sessionStorage.setItem('user', JSON.stringify(user));
+			sessionStorage.setItem('lastActivity', String(Date.now()));
 
-	const onVisibilityChange = () => {
+			lastActivityRef.current = Date.now();
+
+			setAuth({ token, user });
+
+			API.defaults.headers.Authorization = `Bearer ${token}`;
+			resetIdleTimer();
+		},
+		[resetIdleTimer],
+	);
+
+	const onVisibilityChange = useCallback(() => {
 		if (document.visibilityState === 'hidden') {
 			// store when user left
 			sessionStorage.setItem('lastHiddenAt', String(Date.now()));
@@ -89,7 +90,7 @@ export function AuthProvider({ children }) {
 				resetIdleTimer();
 			}
 		}
-	};
+	}, [SESSION_TIMEOUT_MS, handleIdleTimeout, resetIdleTimer]);
 
 	// if auth.token changes, sync Axios header
 	useEffect(() => {
@@ -117,13 +118,11 @@ export function AuthProvider({ children }) {
 			document.removeEventListener('visibilitychange', onVisibilityChange);
 			clearIdleTimer();
 		};
-	}, [auth?.token]);
+	}, [auth?.token, clearIdleTimer, onVisibilityChange, resetIdleTimer]);
 
-	return (
-		<AuthContext.Provider value={{ auth, setAuth, signin, logout }}>
-			{children}
-		</AuthContext.Provider>
-	);
+	const value = useMemo(() => ({ auth, setAuth, signin, logout }), [auth, signin, logout]);
+
+	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export default AuthContext;

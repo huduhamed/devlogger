@@ -1,5 +1,5 @@
 import { useContext, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 // internal imoports
@@ -23,8 +23,7 @@ function SignIn() {
 
 	// redirect if already logged in
 	if (auth?.token && auth?.user) {
-		navigate('/dashboard', { replace: true });
-		return null;
+		return <Navigate to="/dashboard" replace />;
 	}
 
 	// handle change
@@ -102,7 +101,7 @@ function SignIn() {
 		}
 	};
 
-	const handleGoogleFailure = (error) => {
+	const handleGoogleFailure = () => {
 		toast.error('An error occured, please try again.');
 	};
 

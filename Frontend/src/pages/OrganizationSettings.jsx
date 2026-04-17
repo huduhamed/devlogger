@@ -17,6 +17,11 @@ function OrganizationSettings() {
 	const [members, setMembers] = useState([]);
 	const [apiKeys, setApiKeys] = useState([]);
 	const [loading, setLoading] = useState(true);
+	const [orgError, setOrgError] = useState(null);
+	const [membersLoading, setMembersLoading] = useState(false);
+	const [membersError, setMembersError] = useState(null);
+	const [keysLoading, setKeysLoading] = useState(false);
+	const [keysError, setKeysError] = useState(null);
 	const [newMemberEmail, setNewMemberEmail] = useState('');
 	const [newKeyName, setNewKeyName] = useState('');
 	const [createdKey, setCreatedKey] = useState(null);
@@ -30,34 +35,46 @@ function OrganizationSettings() {
 
 	// fetch org
 	const fetchOrg = useCallback(async () => {
+		setOrgError(null);
 		try {
 			const res = await API.get('/organizations/me');
 			setOrg(res.data?.data ?? null);
+			return res.data?.data ?? null;
 		} catch (err) {
-			toast.error(
+			const message =
 				err?.response?.data?.message ||
-					'Sorry, We could not load your workspace right now, try again.',
-			);
+				'Sorry, we could not load your workspace right now. Please try again.';
+			setOrgError(message);
+			setOrg(null);
+			throw err;
 		}
 	}, []);
 
 	// fetch members
 	const fetchMembers = useCallback(async () => {
+		setMembersLoading(true);
+		setMembersError(null);
 		try {
 			const res = await API.get('/organizations/members');
 			setMembers(res.data?.data ?? []);
-		} catch {
-			// non-critical: ignore
+		} catch (err) {
+			setMembersError(err?.response?.data?.message || 'Failed to load members.');
+		} finally {
+			setMembersLoading(false);
 		}
 	}, []);
 
 	// fetch keys
 	const fetchApiKeys = useCallback(async () => {
+		setKeysLoading(true);
+		setKeysError(null);
 		try {
 			const res = await API.get('/organizations/api-keys');
 			setApiKeys(res.data?.data ?? []);
-		} catch {
-			// non-critical: ignore
+		} catch (err) {
+			setKeysError(err?.response?.data?.message || 'Failed to load API keys.');
+		} finally {
+			setKeysLoading(false);
 		}
 	}, []);
 
@@ -66,8 +83,18 @@ function OrganizationSettings() {
 
 		(async () => {
 			setLoading(true);
-			await Promise.all([fetchOrg(), fetchMembers(), fetchApiKeys()]);
-			if (isMounted) setLoading(false);
+			try {
+				await fetchOrg();
+			} catch {
+				// handled by orgError state
+			} finally {
+				if (isMounted) setLoading(false);
+			}
+
+			if (isMounted) {
+				fetchMembers();
+				fetchApiKeys();
+			}
 		})();
 
 		return () => {
@@ -85,13 +112,14 @@ function OrganizationSettings() {
 		(async () => {
 			refreshOrg?.();
 			await fetchOrg();
+			await Promise.allSettled([fetchMembers(), fetchApiKeys()]);
 			toast.success('Subscription updated');
 
 			const url = new URL(window.location.href);
 			url.searchParams.delete('session_id');
 			window.history.replaceState({}, '', url.toString());
 		})();
-	}, [refreshOrg, fetchOrg]);
+	}, [fetchApiKeys, fetchMembers, fetchOrg, refreshOrg]);
 
 	// adding member
 	const addMember = useCallback(
@@ -218,6 +246,12 @@ function OrganizationSettings() {
 		return Math.min(100, Math.round(pct));
 	}, [org]);
 
+	const formatDate = (value) => {
+		if (!value) return 'Unknown time';
+		const date = new Date(value);
+		return Number.isNaN(date.getTime()) ? 'Unknown time' : date.toLocaleString();
+	};
+
 	// memoize paid org.
 	const isPaidOrg = useMemo(() => org?.plan === 'pro' || org?.plan === 'enterprise', [org?.plan]);
 
@@ -244,7 +278,15 @@ function OrganizationSettings() {
 	}, [org]);
 
 	if (loading) return <div className="p-6">Loading organization...</div>;
-	if (!org) return <div className="p-6 text-red-500">Organization not found</div>;
+	if (!org)
+		return (
+			<div className="p-6">
+				<p className="text-red-500">{orgError || 'Organization not found'}</p>
+				<Button className="mt-3" size="sm" onClick={fetchOrg}>
+					Retry
+				</Button>
+			</div>
+		);
 
 	return (
 		<div className="max-w-3xl sm:max-w-6xl mx-auto px-4 p-4 space-y-6">
@@ -372,7 +414,19 @@ function OrganizationSettings() {
 							Invite Member
 						</Button>
 					</form>
+					{membersLoading && <p className="text-sm text-gray-500 mb-2">Loading members...</p>}
+					{membersError && (
+						<div className="mb-3 rounded border border-red-200 bg-red-50 p-3 text-red-700">
+							<p className="text-sm">{membersError}</p>
+							<Button size="sm" className="mt-2" onClick={fetchMembers}>
+								Retry
+							</Button>
+						</div>
+					)}
 					<ul className="space-y-2">
+						{!membersLoading && !membersError && members.length === 0 && (
+							<li className="text-sm text-gray-600">No members yet.</li>
+						)}
 						{members.map((m) => (
 							<li
 								key={m.user._id}
@@ -450,7 +504,19 @@ function OrganizationSettings() {
 							</div>
 						</div>
 					)}
+					{keysLoading && <p className="text-sm text-gray-500 mb-2">Loading...</p>}
+					{keysError && (
+						<div className="mb-3 rounded border border-red-200 bg-red-50 p-3 text-red-700">
+							<p className="text-sm">{keysError}</p>
+							<Button size="sm" className="mt-2" onClick={fetchApiKeys}>
+								Retry
+							</Button>
+						</div>
+					)}
 					<ul className="space-y-2">
+						{!keysLoading && !keysError && apiKeys.length === 0 && isPaidOrg && (
+							<li className="text-sm text-gray-600">No keys created yet.</li>
+						)}
 						{apiKeys.map((k) => (
 							<li
 								key={k.keyId || k.name}
@@ -464,7 +530,7 @@ function OrganizationSettings() {
 									</span>
 									{k.lastUsedAt && (
 										<span className="ml-2 text-xs text-gray-400">
-											last used {new Date(k.lastUsedAt).toLocaleString()}
+											last used {formatDate(k.lastUsedAt)}
 										</span>
 									)}
 								</div>

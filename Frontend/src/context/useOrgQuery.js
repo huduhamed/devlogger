@@ -15,7 +15,7 @@ export function useOrgQuery() {
 		queryKey: ['org', 'me'],
 		queryFn: fetchOrg,
 		staleTime: 10 * 60 * 1000,
-		cacheTime: 30 * 60 * 1000,
+		gcTime: 30 * 60 * 1000,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
 		retry: 1,

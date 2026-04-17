@@ -1,4 +1,5 @@
-import { createContext, useState, useEffect, useCallback, useRef } from 'react';
+import { createContext, useState, useMemo, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // internal imports
 import API from '../services/api';
@@ -8,81 +9,68 @@ const LogsContext = createContext();
 
 // logs provider
 export function LogsProvider({ children }) {
-	const [logs, setLogs] = useState([]);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState(null);
+	const queryClient = useQueryClient();
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
-	const [total, setTotal] = useState(0);
-	const [pages, setPages] = useState(1);
 	const [filters, setFilters] = useState({ level: '', tag: '', q: '' });
-	const stateRef = useRef({ page: 1, limit: 20, filters: { level: '', tag: '', q: '' } });
-	const requestIdRef = useRef(0);
 
-	useEffect(() => {
-		stateRef.current = { page, limit, filters };
-	}, [page, limit, filters]);
+	const queryKey = useMemo(
+		() => ['logs', page, limit, filters.level, filters.tag, filters.q],
+		[page, limit, filters.level, filters.tag, filters.q],
+	);
 
-	// fetch logs
-	const fetchLogs = useCallback(async (override = {}) => {
-		setLoading(true);
-		setError(null);
-		const requestId = ++requestIdRef.current;
-
-		try {
-			const current = {
-				page: stateRef.current.page,
-				limit: stateRef.current.limit,
-				...stateRef.current.filters,
-				...override,
-			};
+	const logsQuery = useQuery({
+		queryKey,
+		queryFn: async () => {
 			const params = new URLSearchParams();
-			if (current.page) params.set('page', current.page);
-			if (current.limit) params.set('limit', current.limit);
-			if (current.level) params.set('level', current.level);
-			if (current.tag) params.set('tag', current.tag);
-			if (current.q) params.set('q', current.q);
+			params.set('page', String(page));
+			params.set('limit', String(limit));
+			if (filters.level) params.set('level', filters.level);
+			if (filters.tag) params.set('tag', filters.tag);
+			if (filters.q) params.set('q', filters.q);
 
 			const res = await API.get(`/logs?${params.toString()}`);
-			if (requestId !== requestIdRef.current) return;
+			return {
+				logs: res.data?.data || [],
+				pagination: res.data?.pagination || { page, limit, total: 0, pages: 1 },
+			};
+		},
+		staleTime: 60 * 1000,
+		gcTime: 30 * 60 * 1000,
+		refetchOnWindowFocus: true,
+		refetchOnReconnect: true,
+		retry: 1,
+		placeholderData: (previousData) => previousData,
+	});
 
-			setLogs(res.data.data || []);
-			if (res.data.pagination) {
-				setPage(res.data.pagination.page);
-				setLimit(res.data.pagination.limit);
-				setTotal(res.data.pagination.total);
-				setPages(res.data.pagination.pages);
+	const fetchLogs = useCallback(
+		async (override = {}) => {
+			const hasOverride = override && Object.keys(override).length > 0;
+			if (!hasOverride) {
+				await logsQuery.refetch();
+				return;
 			}
-		} catch (err) {
-			if (requestId !== requestIdRef.current) return;
-			const msg = err.response?.data?.message || err.message || 'Failed to fetch logs';
-			setError(msg);
-		} finally {
-			if (requestId === requestIdRef.current) {
-				setLoading(false);
+
+			if (Object.hasOwn(override, 'page')) {
+				const nextPage = Number(override.page);
+				if (Number.isFinite(nextPage) && nextPage > 0) setPage(nextPage);
 			}
-		}
-	}, []);
 
-	useEffect(() => {
-		fetchLogs();
-	}, [fetchLogs]);
+			if (Object.hasOwn(override, 'limit')) {
+				const nextLimit = Number(override.limit);
+				if (Number.isFinite(nextLimit) && nextLimit > 0) setLimit(nextLimit);
+			}
 
-	// revalidate logs on window focus & periodic interval
-	useEffect(() => {
-		const onFocus = () => {
-			if (!document.hidden && !loading) fetchLogs();
-		};
-		window.addEventListener('focus', onFocus);
-
-		const intervalId = setInterval(() => {
-			if (!loading) fetchLogs();
-		}, 120000);
-		return () => {
-			window.removeEventListener('focus', onFocus);
-			clearInterval(intervalId);
-		};
-	}, [fetchLogs, loading]);
+			const nextFilters = {};
+			if (Object.hasOwn(override, 'level')) nextFilters.level = override.level || '';
+			if (Object.hasOwn(override, 'tag')) nextFilters.tag = override.tag || '';
+			if (Object.hasOwn(override, 'q')) nextFilters.q = override.q || '';
+			if (Object.keys(nextFilters).length > 0) {
+				setFilters((prev) => ({ ...prev, ...nextFilters }));
+			}
+		},
+		[logsQuery],
+	);
 
 	const updateFilters = (f) => {
 		setFilters((prev) => ({ ...prev, ...f }));
@@ -93,26 +81,30 @@ export function LogsProvider({ children }) {
 		setPage(p);
 	};
 
-	return (
-		<LogsContext.Provider
-			value={{
-				logs,
-				loading,
-				error,
-				page,
-				limit,
-				pages,
-				total,
-				filters,
-				setLimit,
-				updateFilters,
-				goToPage,
-				fetchLogs,
-			}}
-		>
-			{children}
-		</LogsContext.Provider>
-	);
+	const value = useMemo(() => {
+		const pagination = logsQuery.data?.pagination;
+		return {
+			logs: logsQuery.data?.logs || [],
+			loading: logsQuery.isLoading,
+			fetching: logsQuery.isFetching,
+			error:
+				logsQuery.error?.response?.data?.message ||
+				logsQuery.error?.message ||
+				(logsQuery.isError ? 'Failed to fetch logs' : null),
+			page: pagination?.page ?? page,
+			limit: pagination?.limit ?? limit,
+			pages: pagination?.pages ?? 1,
+			total: pagination?.total ?? 0,
+			filters,
+			setLimit,
+			updateFilters,
+			goToPage,
+			fetchLogs,
+			invalidateLogs: () => queryClient.invalidateQueries({ queryKey: ['logs'] }),
+		};
+	}, [fetchLogs, filters, limit, logsQuery, page, queryClient]);
+
+	return <LogsContext.Provider value={value}>{children}</LogsContext.Provider>;
 }
 
 export default LogsContext;
