@@ -6,6 +6,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 
 // internal imports
 import authRouter from './routes/authRoutes.js';
@@ -23,7 +24,33 @@ import User from './models/User.js';
 import { JWT_SECRET } from './config/env.js';
 
 const app = express();
-app.use(cors({ origin: FRONTEND_URL || 'http://localhost:5173', credentials: true }));
+
+const rawOrigins = (FRONTEND_URL || '')
+	.split(',')
+	.map((origin) => origin.trim())
+	.filter(Boolean);
+
+if (process.env.NODE_ENV === 'production' && rawOrigins.length === 0) {
+	throw new Error('FRONTEND_URL must be set in production.');
+}
+
+const allowedOrigins =
+	rawOrigins.length > 0
+		? rawOrigins
+		: process.env.NODE_ENV === 'test'
+			? []
+			: ['http://localhost:5173'];
+
+const corsOptions = {
+	credentials: true,
+	origin(origin, callback) {
+		if (!origin) return callback(null, true);
+		if (allowedOrigins.includes(origin)) return callback(null, true);
+		return callback(new Error('Origin not allowed by CORS'));
+	},
+};
+
+app.use(cors(corsOptions));
 
 // create an HTTP server to attach socket.io
 const httpServer = http.createServer(app);
@@ -31,7 +58,7 @@ const httpServer = http.createServer(app);
 // initialize socket.io
 const io = new IOServer(httpServer, {
 	cors: {
-		origin: FRONTEND_URL || 'http://localhost:5173',
+		origin: allowedOrigins,
 		methods: ['GET', 'POST'],
 		credentials: true,
 	},
@@ -44,15 +71,25 @@ io.on('connection', async (socket) => {
 	try {
 		const token = socket.handshake.auth?.token;
 		if (!token) {
+			socket.emit('auth_error', 'Token missing');
+			socket.disconnect(true);
 			return;
 		}
 
 		const decoded = jwt.verify(token, JWT_SECRET);
 		const userId = decoded.userId || decoded.id || decoded._id;
-		if (!userId) return;
+		if (!userId) {
+			socket.emit('auth_error', 'Invalid token payload');
+			socket.disconnect(true);
+			return;
+		}
 
 		const user = await User.findById(userId).select('-password');
-		if (!user) return;
+		if (!user) {
+			socket.emit('auth_error', 'User not found');
+			socket.disconnect(true);
+			return;
+		}
 
 		// join rooms for user and org
 		socket.join(`user:${user._id.toString()}`);
@@ -62,7 +99,12 @@ io.on('connection', async (socket) => {
 			// no-op for now
 		});
 	} catch (e) {
-		// ignore errors
+		console.error('Socket authentication failed', {
+			socketId: socket.id,
+			error: e.message,
+		});
+		socket.emit('auth_error', 'Authentication failed');
+		socket.disconnect(true);
 	}
 });
 
@@ -84,6 +126,26 @@ const limiter = rateLimit({
 	legacyHeaders: false,
 });
 app.use(limiter);
+
+const authLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000,
+	max: 8,
+	standardHeaders: true,
+	legacyHeaders: false,
+	message: { message: 'Too many authentication attempts. Please try again later.' },
+});
+
+const passwordResetLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000,
+	max: 3,
+	standardHeaders: true,
+	legacyHeaders: false,
+	message: { message: 'Too many reset requests. Please try again later.' },
+});
+
+app.use('/api/v1/auth/sign-in', authLimiter);
+app.use('/api/v1/auth/sign-up', authLimiter);
+app.use('/api/v1/auth/forgot-password', passwordResetLimiter);
 
 // simple structured request logging
 app.use((req, _res, next) => {
@@ -114,16 +176,47 @@ app.get('/', (req, res) => {
 	res.send('welcome onboard buddy!');
 });
 
+app.get('/health', (_req, res) => {
+	return res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
+app.get('/ready', (_req, res) => {
+	if (mongoose.connection.readyState !== 1) {
+		return res.status(503).json({ status: 'not_ready' });
+	}
+
+	return res.status(200).json({ status: 'ready' });
+});
+
 // Error handler
 app.use(errorHandler);
 
 // Only start listening and connect to DB when NOT testing
 if (process.env.NODE_ENV !== 'test') {
-	httpServer.listen(PORT, async () => {
+	const server = httpServer.listen(PORT, async () => {
 		console.log(`Server running on  http://localhost:${PORT}`);
 		// connect to db
 		await connectToDB();
 	});
+
+	const shutdown = (signal) => {
+		console.log(`${signal} received. Shutting down gracefully...`);
+		server.close(async () => {
+			try {
+				io.close();
+				if (mongoose.connection.readyState !== 0) {
+					await mongoose.connection.close();
+				}
+				process.exit(0);
+			} catch (error) {
+				console.error('Graceful shutdown failed', error);
+				process.exit(1);
+			}
+		});
+	};
+
+	process.on('SIGTERM', () => shutdown('SIGTERM'));
+	process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 export default app;
