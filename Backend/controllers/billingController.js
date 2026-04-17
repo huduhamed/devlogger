@@ -66,8 +66,6 @@ async function syncOrganizationBilling({
 
 	const previousPlan = org.plan || 'free';
 	const previousStatus = org.billing?.status || null;
-	const previousNotifiedPlan = org.billing?.lastPurchaseEmailPlan || null;
-	const previousNotifiedSubscriptionId = org.billing?.lastPurchaseEmailSubscriptionId || null;
 
 	if (plan) {
 		const planUpdate = buildPlanUpdate(plan);
@@ -95,18 +93,46 @@ async function syncOrganizationBilling({
 	const shouldConsiderSending =
 		isPaidPlan(nextPlan) && (becamePaid || changedPaidTier || becameActive);
 
-	let shouldSendEmail = false;
-	if (shouldConsiderSending) {
-		// Avoid duplicate emails for the same plan + subscription combination.
-		const alreadyNotifiedForThisSubscription =
-			previousNotifiedPlan === nextPlan &&
-			previousNotifiedSubscriptionId &&
-			nextSubscriptionId &&
-			previousNotifiedSubscriptionId === nextSubscriptionId;
-		shouldSendEmail = !alreadyNotifiedForThisSubscription;
+	let notificationText = '';
+	if (becamePaid && previousPlan === 'free') {
+		const planName = nextPlan.charAt(0).toUpperCase() + nextPlan.slice(1);
+		notificationText = `Welcome! You've successfully upgraded to the ${planName} plan. Check your email for plan details and benefits.`;
+	} else if (changedPaidTier) {
+		const previousPlanName = previousPlan.charAt(0).toUpperCase() + previousPlan.slice(1);
+		const planName = nextPlan.charAt(0).toUpperCase() + nextPlan.slice(1);
+		notificationText = `Your subscription has been upgraded from ${previousPlanName} to ${planName}. Check your email for your new plan benefits.`;
+	} else if (becameActive) {
+		const planName = nextPlan.charAt(0).toUpperCase() + nextPlan.slice(1);
+		notificationText = `Your ${planName} subscription is now active. You can now access all plan features.`;
 	}
 
-	if (shouldSendEmail) {
+	await org.save();
+
+	if (!shouldConsiderSending) {
+		return org;
+	}
+
+	const notificationKey = `${nextPlan}:${nextSubscriptionId || 'none'}:${nextStatus || 'unknown'}`;
+	const commClaim = await Organization.updateOne(
+		{
+			_id: org._id,
+			'billing.lastPurchaseNotificationKey': { $ne: notificationKey },
+		},
+		{
+			$set: {
+				'billing.lastPurchaseNotificationKey': notificationKey,
+				'billing.lastPurchaseEmailAt': new Date(),
+				'billing.lastPurchaseEmailPlan': nextPlan,
+				'billing.lastPurchaseEmailSubscriptionId': nextSubscriptionId || undefined,
+			},
+		},
+	);
+
+	if (commClaim.modifiedCount === 0) {
+		return org;
+	}
+
+	{
 		try {
 			const owner = await User.findById(org.owner).select('name email').lean();
 			if (owner?.email) {
@@ -124,9 +150,6 @@ async function syncOrganizationBilling({
 					},
 					manageUrl: `${FRONTEND_BASE_URL}/organization`,
 				});
-				org.billing.lastPurchaseEmailAt = new Date();
-				org.billing.lastPurchaseEmailPlan = nextPlan;
-				org.billing.lastPurchaseEmailSubscriptionId = nextSubscriptionId || undefined;
 			}
 		} catch (err) {
 			// Do not fail billing sync if email delivery fails.
@@ -135,26 +158,16 @@ async function syncOrganizationBilling({
 
 		// Create in-app notification for successful plan upgrade
 		try {
-			const planName = nextPlan.charAt(0).toUpperCase() + nextPlan.slice(1);
-			let notificationText = '';
-			if (becamePaid && previousPlan === 'free') {
-				notificationText = `Welcome! You've successfully upgraded to the ${planName} plan. Check your email for plan details and benefits.`;
-			} else if (changedPaidTier) {
-				const previousPlanName = previousPlan.charAt(0).toUpperCase() + previousPlan.slice(1);
-				notificationText = `Your subscription has been upgraded from ${previousPlanName} to ${planName}. Check your email for your new plan benefits.`;
-			} else if (becameActive) {
-				notificationText = `Your ${planName} subscription is now active. You can now access all plan features.`;
-			}
-
 			if (notificationText) {
 				const notification = await Notification.create({
 					user: org.owner,
 					organization: org._id,
 					text: notificationText,
 					data: {
-						type: 'subscription_upgrade',
+						type: 'billing.subscription_updated',
 						plan: nextPlan,
 						previousPlan,
+						notificationKey,
 					},
 				});
 
@@ -174,7 +187,6 @@ async function syncOrganizationBilling({
 		}
 	}
 
-	await org.save();
 	return org;
 }
 
@@ -442,6 +454,7 @@ export async function verifyCheckoutSession(req, res, next) {
 			(!subscriptionStatus || ['active', 'trialing'].includes(subscriptionStatus));
 
 		if (isSuccessful && (session.metadata?.orgId || session.customer)) {
+			const io = req.app.get('io');
 			await syncOrganizationBilling({
 				orgId: session.metadata?.orgId,
 				customerId: session.customer,
@@ -451,6 +464,7 @@ export async function verifyCheckoutSession(req, res, next) {
 				currentPeriodEnd: subscription?.current_period_end
 					? new Date(subscription.current_period_end * 1000)
 					: undefined,
+				io,
 			});
 		}
 

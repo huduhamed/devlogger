@@ -19,6 +19,7 @@ const organizationSchema = new mongoose.Schema(
 			subscriptionId: { type: String },
 			status: { type: String },
 			currentPeriodEnd: { type: Date },
+			lastPurchaseNotificationKey: { type: String },
 			lastPurchaseEmailAt: { type: Date },
 			lastPurchaseEmailPlan: { type: String },
 			lastPurchaseEmailSubscriptionId: { type: String },

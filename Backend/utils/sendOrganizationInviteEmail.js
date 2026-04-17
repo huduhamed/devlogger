@@ -169,3 +169,45 @@ export async function sendSubscriptionConfirmationEmail({
 
 	return { delivered: true };
 }
+
+// send member added/invited notification email
+export async function sendMemberAddedEmail({ to, inviterName, organizationName, manageUrl }) {
+	const resend = getResendClient();
+	if (!resend) {
+		if (process.env.NODE_ENV !== 'test') {
+			console.log(`Member added email not sent for ${to}. Org: ${organizationName}`);
+		}
+		return { delivered: false };
+	}
+
+	const safeInviter = escapeHtml(inviterName || 'A teammate');
+	const safeOrg = escapeHtml(organizationName || 'your organization');
+	const safeManageUrl = escapeHtml(manageUrl);
+
+	await resend.emails.send({
+		from: RESEND_FROM_EMAIL || 'DevLogger <onboarding@resend.dev>',
+		to,
+		subject: `You've been added to ${safeOrg} on DevLogger`,
+		text: `${inviterName || 'A teammate'} added you to ${organizationName || 'their organization'} on DevLogger. Open your workspace here: ${manageUrl}`,
+		html: `
+			<div style="background:#f8fafc;padding:28px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+				<div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
+					<div style="padding:20px 24px;background:#0f172a;color:#f8fafc;">
+						<div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.85;">Team Update</div>
+						<h2 style="margin:8px 0 0;font-size:24px;line-height:1.25;">You've been added to ${safeOrg}</h2>
+					</div>
+					<div style="padding:24px;line-height:1.6;font-size:15px;">
+						<p style="margin:0 0 14px;">${safeInviter} added you to <strong>${safeOrg}</strong> in DevLogger.</p>
+						<p style="margin:0 0 18px;">
+							<a href="${safeManageUrl}" style="display:inline-block;padding:12px 18px;background:#111827;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:600;">Open workspace</a>
+						</p>
+						<p style="margin:0;color:#64748b;font-size:13px;">If the button does not work, copy and paste this link into your browser:</p>
+						<p style="margin:8px 0 0;"><a href="${safeManageUrl}" style="color:#2563eb;word-break:break-all;">${safeManageUrl}</a></p>
+					</div>
+				</div>
+			</div>
+		`,
+	});
+
+	return { delivered: true };
+}
