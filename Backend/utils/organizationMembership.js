@@ -1,5 +1,6 @@
 // internal imports
 import Notification from '../models/Notification.js';
+import { sendMemberAddedEmail } from './sendOrganizationInviteEmail.js';
 
 export function emitNotification(app, notification) {
 	try {
@@ -64,4 +65,15 @@ export async function createMemberAddedNotifications({
 	const notifications = [...teammateNotifications, memberNotification];
 	const createdNotifications = await Notification.insertMany(notifications);
 	createdNotifications.forEach((notification) => emitNotification(app, notification));
+
+	try {
+		await sendMemberAddedEmail({
+			to: addedUser.email,
+			inviterName: actorName,
+			organizationName: orgName,
+			manageUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/organization`,
+		});
+	} catch {
+		// Keep in-app notifications reliable even if email delivery fails.
+	}
 }
