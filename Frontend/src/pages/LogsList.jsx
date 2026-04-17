@@ -1,4 +1,4 @@
-import { useContext, useState, useRef } from 'react';
+import { useContext, useState, useRef, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
 // internal imports
@@ -13,37 +13,48 @@ import Badge from '../components/ui/Badge.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
 import Pagination from '../components/Pagination.jsx';
 import EditLogModal from '../components/EditLogModal.jsx';
-import OrgContext from '../context/OrgContext.jsx';
 
 // log list
 function LogsList() {
 	const { auth } = useContext(AuthContext);
-	const { org } = useContext(OrgContext);
 	const {
 		logs,
 		loading,
+		fetching,
 		error,
 		page,
 		pages,
 		limit,
 		total,
 		filters,
-		updateFilters,
 		goToPage,
 		setLimit,
 		fetchLogs,
 	} = useContext(LogsContext);
 
 	const [editing, setEditing] = useState(null);
+	const [searchValue, setSearchValue] = useState(filters.q || '');
 	const debounceTimer = useRef(null);
+
+	useEffect(() => {
+		return () => {
+			clearTimeout(debounceTimer.current);
+		};
+	}, []);
 
 	// debounce search input (only fetch after user stops typing for 500ms)
 	const handleSearchChange = (value) => {
-		updateFilters({ q: value });
+		setSearchValue(value);
 		clearTimeout(debounceTimer.current);
 		debounceTimer.current = setTimeout(() => {
 			fetchLogs({ page: 1, q: value });
 		}, 500);
+	};
+
+	const formatDate = (value) => {
+		if (!value) return 'Unknown time';
+		const date = new Date(value);
+		return Number.isNaN(date.getTime()) ? 'Unknown time' : date.toLocaleString();
 	};
 
 	// handle delete
@@ -62,7 +73,7 @@ function LogsList() {
 	const applyFilters = (e) => {
 		e.preventDefault();
 		clearTimeout(debounceTimer.current);
-		fetchLogs({ page: 1, ...filters });
+		fetchLogs({ page: 1, level: filters.level, tag: filters.tag, q: searchValue });
 	};
 
 	return (
@@ -81,7 +92,7 @@ function LogsList() {
 							<div className="sm:col-span-2 md:col-span-2">
 								<Input
 									placeholder="Search..."
-									value={filters.q}
+									value={searchValue}
 									onChange={(e) => handleSearchChange(e.target.value)}
 								/>
 							</div>
@@ -89,9 +100,7 @@ function LogsList() {
 								value={filters.level}
 								onChange={(e) => {
 									const level = e.target.value;
-									updateFilters({ level });
-									clearTimeout(debounceTimer.current);
-									debounceTimer.current = setTimeout(() => fetchLogs({ page: 1, level }), 300);
+									fetchLogs({ page: 1, level });
 								}}
 							>
 								<option value="">Level</option>
@@ -105,9 +114,7 @@ function LogsList() {
 								value={filters.tag}
 								onChange={(e) => {
 									const tag = e.target.value;
-									updateFilters({ tag });
-									clearTimeout(debounceTimer.current);
-									debounceTimer.current = setTimeout(() => fetchLogs({ page: 1, tag }), 300);
+									fetchLogs({ page: 1, tag });
 								}}
 							/>
 							<Select
@@ -115,7 +122,7 @@ function LogsList() {
 								onChange={(e) => {
 									const nextLimit = parseInt(e.target.value, 10);
 									setLimit(nextLimit);
-									fetchLogs({ page: 1, limit: nextLimit });
+									goToPage(1);
 								}}
 							>
 								<option value={10}>10</option>
@@ -136,13 +143,32 @@ function LogsList() {
 					<Spinner /> Loading logs...
 				</div>
 			)}
-			{error && <p className="text-red-500">{error}</p>}
+			{fetching && !loading && <p className="text-sm text-gray-500 mb-2">Refreshing...</p>}
+			{error && (
+				<div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-red-700">
+					<p className="text-sm">{error}</p>
+					<Button className="mt-2" size="sm" onClick={() => fetchLogs()}>
+						Retry
+					</Button>
+				</div>
+			)}
 
 			<div className="text-sm text-gray-600 mb-2">
 				Showing page {page} of {pages} • {total} total
 			</div>
 
 			<ul className="space-y-4">
+				{!loading && !error && logs.length === 0 && (
+					<li>
+						<Card>
+							<CardBody>
+								<p className="text-sm text-gray-600">
+									No logs match your filters yet. Try clearing filters or create a new log.
+								</p>
+							</CardBody>
+						</Card>
+					</li>
+				)}
 				{logs.map((log) => {
 					const levelColor =
 						log.level === 'error'
@@ -169,7 +195,7 @@ function LogsList() {
 											<p className="text-gray-700 dark:text-gray-300">{log.description}</p>
 											<small className="block text-gray-500 mt-1">
 												By: <span className="capitalize">{log.user?.name}</span> •{' '}
-												{new Date(log.createdAt).toLocaleString()}
+												{formatDate(log.createdAt)}
 											</small>
 											{log.tags?.length > 0 && (
 												<div className="mt-2 text-sm text-blue-600">#{log.tags.join(' #')}</div>
@@ -199,7 +225,6 @@ function LogsList() {
 					pages={pages}
 					onPage={(p) => {
 						goToPage(p);
-						fetchLogs({ page: p });
 					}}
 				/>
 			</div>

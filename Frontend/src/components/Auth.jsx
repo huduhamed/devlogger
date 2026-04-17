@@ -5,11 +5,9 @@ function GoogleAuthButton({ onSuccess, onFailure }) {
 	const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 	useEffect(() => {
-		let mounted = true;
-
 		if (!clientId) {
 			onFailure && onFailure(new Error('client ID'));
-			return () => (mounted = false);
+			return;
 		}
 
 		const initGsi = () => {
@@ -37,12 +35,12 @@ function GoogleAuthButton({ onSuccess, onFailure }) {
 				}
 
 				return true;
-			} catch (err) {
+			} catch {
 				return false;
 			}
 		};
 
-		if (initGsi()) return () => (mounted = false);
+		if (initGsi()) return;
 
 		const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
 		if (existing) {
@@ -59,7 +57,7 @@ function GoogleAuthButton({ onSuccess, onFailure }) {
 			document.head.appendChild(script);
 		}
 
-		return () => (mounted = false);
+		return;
 	}, [clientId, onSuccess, onFailure]);
 
 	return (

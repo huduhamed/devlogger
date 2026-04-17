@@ -15,6 +15,12 @@ function Notification() {
 		markAllRead,
 	} = useContext(NotificationsContext);
 
+	const formatDate = (value) => {
+		if (!value) return 'Unknown time';
+		const date = new Date(value);
+		return Number.isNaN(date.getTime()) ? 'Unknown time' : date.toLocaleString();
+	};
+
 	useEffect(() => {
 		function onClick(e) {
 			if (ref.current && !ref.current.contains(e.target)) {
@@ -91,7 +97,7 @@ function Notification() {
 									<div>
 										<div className="text-sm text-slate-800 dark:text-gray-100">{n.text}</div>
 										<div className="text-xs text-slate-500 dark:text-gray-400">
-											{n.time || new Date(n.createdAt).toLocaleString()}
+											{n.time || formatDate(n.createdAt)}
 										</div>
 									</div>
 									<div className="ml-3">

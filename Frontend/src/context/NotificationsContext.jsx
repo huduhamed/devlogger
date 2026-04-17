@@ -1,5 +1,6 @@
-import { useState, createContext, useEffect, useContext } from 'react';
+import { useMemo, createContext, useEffect, useContext, useCallback } from 'react';
 import { io as ioClient } from 'socket.io-client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // internal imports
 import API from '../services/api';
@@ -37,92 +38,80 @@ const NotificationsContext = createContext();
 // notif provider
 export function NotificationsProvider({ children }) {
 	const { auth } = useContext(AuthContext);
-	const [notifications, setNotifications] = useState([]);
-	const [unread, setUnread] = useState(0);
-	const [loading, setLoading] = useState(false);
+	const queryClient = useQueryClient();
 
-	const fetchNotifications = async () => {
-		setLoading(true);
-		try {
-			// if no auth token, use mock fallback so UI still shows something in dev
-			if (!auth?.token) {
-				const mock = [
-					{ id: 1, text: 'New log created in Project Alpha', time: '2m', read: false },
-					{ id: 2, text: 'Organization settings updated', time: '1h', read: false },
-					{ id: 3, text: 'Billing invoice ready', time: '1d', read: false },
-				];
-				setNotifications(mock);
-				setUnread(mock.filter((n) => !n.read).length);
-			} else {
-				const res = await API.get('notifications');
-				const data = res?.data?.data || [];
-				setNotifications(data);
-				// support a meta.unread, fallback to counting unread flags
-				const metaUnread = res?.data?.meta?.unread;
-				setUnread(typeof metaUnread === 'number' ? metaUnread : data.filter((n) => !n.read).length);
-			}
-		} catch {
-			// on error, keep UI usable with an empty list
-			setNotifications([]);
-			setUnread(0);
-		} finally {
-			setLoading(false);
-		}
-	};
+	const notificationsQuery = useQuery({
+		queryKey: ['notifications'],
+		queryFn: async () => {
+			const res = await API.get('notifications');
+			return res?.data?.data || [];
+		},
+		enabled: Boolean(auth?.token),
+		staleTime: 60 * 1000,
+		gcTime: 30 * 60 * 1000,
+		refetchOnWindowFocus: true,
+		refetchOnReconnect: true,
+		refetchInterval: auth?.token ? 120 * 1000 : false,
+		retry: 1,
+		placeholderData: (previousData) => previousData,
+	});
 
-	const markAllRead = async () => {
-		// optimistic update
-		setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-		setUnread(0);
-
-		try {
-			if (auth?.token) {
-				await API.post('notifications/mark-all-read');
-			}
-		} catch {
-			// ignore network errors for now
-		}
-	};
-
-	const markRead = async (id) => {
-		setNotifications((prev) =>
-			prev.map((n) => (n._id === id || n.id === id ? { ...n, read: true } : n)),
-		);
-		setUnread((u) => Math.max(0, u - 1));
-
-		try {
-			if (auth?.token) {
-				await API.post(`notifications/${id}/mark-read`);
-			}
-		} catch {
-			// ignore network errors for now
-		}
-	};
-
-	const addNotification = (notification) => {
-		setNotifications((prev) => [notification, ...prev]);
-		setUnread((u) => u + (notification.read ? 0 : 1));
-	};
-
-	// fetch when a user signs in; clear when signed out and start polling
 	useEffect(() => {
-		let intervalId;
-		if (auth?.user) {
-			// initial fetch
-			fetchNotifications();
-			// poll every 2 minutes (reduced from 30s)
-			intervalId = setInterval(fetchNotifications, 120 * 1000);
-		} else {
-			setNotifications([]);
-			setUnread(0);
+		if (!auth?.token) {
+			queryClient.setQueryData(['notifications'], []);
 		}
+	}, [auth?.token, queryClient]);
 
-		// clean up
-		return () => {
-			if (intervalId) clearInterval(intervalId);
-		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [auth?.user]);
+	const fetchNotifications = useCallback(async () => {
+		await notificationsQuery.refetch();
+	}, [notificationsQuery]);
+
+	const markAllRead = useCallback(async () => {
+		if (!auth?.token) return;
+
+		const previous = queryClient.getQueryData(['notifications']) || [];
+		queryClient.setQueryData(['notifications'], (prev = []) =>
+			prev.map((n) => ({ ...n, read: true })),
+		);
+
+		try {
+			await API.post('notifications/mark-all-read');
+		} catch {
+			queryClient.setQueryData(['notifications'], previous);
+		}
+	}, [auth?.token, queryClient]);
+
+	const markRead = useCallback(
+		async (id) => {
+			if (!auth?.token) return;
+
+			const previous = queryClient.getQueryData(['notifications']) || [];
+			queryClient.setQueryData(['notifications'], (prev = []) =>
+				prev.map((n) => (n._id === id || n.id === id ? { ...n, read: true } : n)),
+			);
+
+			try {
+				await API.post(`notifications/${id}/mark-read`);
+			} catch {
+				queryClient.setQueryData(['notifications'], previous);
+			}
+		},
+		[auth?.token, queryClient],
+	);
+
+	const addNotification = useCallback(
+		(notification) => {
+			if (!notification) return;
+			queryClient.setQueryData(['notifications'], (prev = []) => {
+				const exists = prev.some(
+					(item) => (item._id || item.id) === (notification._id || notification.id),
+				);
+				if (exists) return prev;
+				return [notification, ...prev];
+			});
+		},
+		[queryClient],
+	);
 
 	// socket.io real-time connection: connect when authenticated
 	useEffect(() => {
@@ -147,24 +136,44 @@ export function NotificationsProvider({ children }) {
 		return () => {
 			if (socket) socket.disconnect();
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [auth?.token]);
+	}, [addNotification, auth?.token]);
 
-	return (
-		<NotificationsContext.Provider
-			value={{
-				notifications,
-				unread,
-				loading,
-				fetchNotifications,
-				markAllRead,
-				markRead,
-				addNotification,
-			}}
-		>
-			{children}
-		</NotificationsContext.Provider>
+	const notifications = useMemo(() => notificationsQuery.data ?? [], [notificationsQuery.data]);
+	const unread = useMemo(
+		() => notifications.filter((notification) => !notification.read).length,
+		[notifications],
 	);
+
+	const value = useMemo(
+		() => ({
+			notifications,
+			unread,
+			loading: notificationsQuery.isLoading,
+			fetching: notificationsQuery.isFetching,
+			error:
+				notificationsQuery.error?.response?.data?.message ||
+				notificationsQuery.error?.message ||
+				(notificationsQuery.isError ? 'Failed to load notifications.' : null),
+			fetchNotifications,
+			markAllRead,
+			markRead,
+			addNotification,
+		}),
+		[
+			addNotification,
+			fetchNotifications,
+			markAllRead,
+			markRead,
+			notifications,
+			notificationsQuery.error,
+			notificationsQuery.isError,
+			notificationsQuery.isFetching,
+			notificationsQuery.isLoading,
+			unread,
+		],
+	);
+
+	return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 }
 
 export default NotificationsContext;

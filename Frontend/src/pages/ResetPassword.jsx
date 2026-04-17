@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 // internal imports
@@ -20,12 +20,7 @@ function ResetPassword() {
 	const [searchParams] = useSearchParams();
 	const token = searchParams.get('token');
 	const email = searchParams.get('email');
-
-	// redirect if already logged in
-	if (auth?.token && auth?.user) {
-		navigate('/dashboard', { replace: true });
-		return null;
-	}
+	const isAuthenticated = Boolean(auth?.token && auth?.user);
 
 	// validate URL params on mount
 	useEffect(() => {
@@ -85,8 +80,10 @@ function ResetPassword() {
 			return;
 		}
 
-		if (form.password.length < 4) {
-			toast.error('Your password must be at least 6 characters long.');
+		if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(form.password)) {
+			toast.error(
+				'Password must be at least 8 characters and include at least one letter and one number.',
+			);
 			return;
 		}
 
@@ -114,6 +111,10 @@ function ResetPassword() {
 			setLoading(false);
 		}
 	};
+
+	if (isAuthenticated) {
+		return <Navigate to="/dashboard" replace />;
+	}
 
 	return (
 		<div className="min-h-[80vh] flex items-center justify-center px-4">
