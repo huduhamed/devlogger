@@ -80,7 +80,9 @@ export default function Pricing() {
 			</div>
 
 			{error && (
-				<div className="mb-4 p-3 border border-red-300 bg-red-50 text-red-800 rounded">{error}</div>
+				<div role="alert" className="mb-4 p-3 border border-red-300 bg-red-50 text-red-800 rounded">
+					{error}
+				</div>
 			)}
 
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -110,7 +112,7 @@ export default function Pricing() {
 									</ul>
 									<div className="mt-6">
 										{isFree ? (
-											<Button variant="outline" disabled>
+											<Button variant="outline" disabled className="w-full sm:w-auto">
 												Current
 											</Button>
 										) : (
@@ -118,6 +120,7 @@ export default function Pricing() {
 												onClick={() => startCheckout(id)}
 												loading={loadingPlan === id}
 												disabled={!config.configured || !config.prices[id]}
+												className="w-full sm:w-auto"
 											>
 												{id === 'pro' ? 'Choose Pro' : 'Choose Enterprise'}
 											</Button>

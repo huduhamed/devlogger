@@ -1,5 +1,5 @@
 import { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 // internal imports
@@ -14,13 +14,11 @@ function ForgotPassword() {
 	const [email, setEmail] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [submitted, setSubmitted] = useState(false);
-	const navigate = useNavigate();
 	const { auth } = useContext(AuthContext);
 
 	// redirect if already logged in
 	if (auth?.token && auth?.user) {
-		navigate('/dashboard', { replace: true });
-		return null;
+		return <Navigate to="/dashboard" replace />;
 	}
 
 	const handleSubmit = async (e) => {
@@ -53,7 +51,11 @@ function ForgotPassword() {
 				<CardBody>
 					{submitted ? (
 						<div className="text-center space-y-4">
-							<div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900">
+							<div
+								role="status"
+								aria-live="polite"
+								className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900"
+							>
 								<p className="font-medium mb-2">Check your email</p>
 								<p className="text-green-800">
 									If an account exists with that email, you'll receive a password reset link
@@ -69,6 +71,7 @@ function ForgotPassword() {
 								<p className="text-gray-600 text-xs">
 									Didn't receive the email? Check your spam folder or{' '}
 									<button
+										type="button"
 										onClick={() => setSubmitted(false)}
 										className="text-blue-600 hover:underline"
 									>

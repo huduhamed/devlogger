@@ -91,12 +91,14 @@ function LogsList() {
 						>
 							<div className="sm:col-span-2 md:col-span-2">
 								<Input
+									aria-label="Search logs"
 									placeholder="Search..."
 									value={searchValue}
 									onChange={(e) => handleSearchChange(e.target.value)}
 								/>
 							</div>
 							<Select
+								aria-label="Filter by level"
 								value={filters.level}
 								onChange={(e) => {
 									const level = e.target.value;
@@ -110,6 +112,7 @@ function LogsList() {
 								<option value="error">Error</option>
 							</Select>
 							<Input
+								aria-label="Filter by tag"
 								placeholder="Tag"
 								value={filters.tag}
 								onChange={(e) => {
@@ -118,6 +121,7 @@ function LogsList() {
 								}}
 							/>
 							<Select
+								aria-label="Select logs per page"
 								value={limit}
 								onChange={(e) => {
 									const nextLimit = parseInt(e.target.value, 10);
@@ -139,13 +143,17 @@ function LogsList() {
 			</div>
 
 			{loading && (
-				<div className="flex items-center gap-2 text-gray-600">
+				<div role="status" aria-live="polite" className="flex items-center gap-2 text-gray-600">
 					<Spinner /> Loading logs...
 				</div>
 			)}
-			{fetching && !loading && <p className="text-sm text-gray-500 mb-2">Refreshing...</p>}
+			{fetching && !loading && (
+				<p role="status" aria-live="polite" className="text-sm text-gray-500 mb-2">
+					Refreshing...
+				</p>
+			)}
 			{error && (
-				<div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-red-700">
+				<div role="alert" className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-red-700">
 					<p className="text-sm">{error}</p>
 					<Button className="mt-2" size="sm" onClick={() => fetchLogs()}>
 						Retry
@@ -184,7 +192,7 @@ function LogsList() {
 								<CardBody>
 									<div className="flex flex-col sm:flex-row sm:justify-between items-start gap-4">
 										<div>
-											<h3 className="text-lg font-semibold flex items-center gap-2">
+											<h3 className="text-lg font-semibold flex flex-wrap items-center gap-2 break-words">
 												{log.title}
 												{log.level && (
 													<Badge color={levelColor} className="capitalize">
@@ -192,21 +200,33 @@ function LogsList() {
 													</Badge>
 												)}
 											</h3>
-											<p className="text-gray-700 dark:text-gray-300">{log.description}</p>
+											<p className="text-gray-700 dark:text-gray-300 break-words">
+												{log.description}
+											</p>
 											<small className="block text-gray-500 mt-1">
 												By: <span className="capitalize">{log.user?.name}</span> •{' '}
 												{formatDate(log.createdAt)}
 											</small>
 											{log.tags?.length > 0 && (
-												<div className="mt-2 text-sm text-blue-600">#{log.tags.join(' #')}</div>
+												<div className="mt-2 text-sm text-blue-600 break-all">
+													#{log.tags.join(' #')}
+												</div>
 											)}
 										</div>
 										{auth?.user?._id === log.user?._id && (
-											<div className="flex gap-2 mt-3 sm:mt-0 sm:ml-4">
-												<Button onClick={() => setEditing(log)} variant="primary">
+											<div className="flex flex-col sm:flex-row gap-2 mt-3 sm:mt-0 sm:ml-4 w-full sm:w-auto">
+												<Button
+													onClick={() => setEditing(log)}
+													variant="primary"
+													className="w-full sm:w-auto"
+												>
 													Edit
 												</Button>
-												<Button onClick={() => handleDelete(log._id)} variant="danger">
+												<Button
+													onClick={() => handleDelete(log._id)}
+													variant="danger"
+													className="w-full sm:w-auto"
+												>
 													Delete
 												</Button>
 											</div>

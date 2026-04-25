@@ -235,7 +235,6 @@ function SignUp() {
 					{invite && (
 						<div className="mb-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
 							You’re accepting an invitation to join <strong>{invite.organization?.name}.</strong>
-							&nbsp; as a<strong>{invite.role}</strong>.
 						</div>
 					)}
 					<form onSubmit={handleSubmit} className="space-y-4">

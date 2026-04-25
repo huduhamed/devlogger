@@ -254,6 +254,8 @@ function OrganizationSettings() {
 
 	// memoize paid org.
 	const isPaidOrg = useMemo(() => org?.plan === 'pro' || org?.plan === 'enterprise', [org?.plan]);
+	const showKeysError =
+		Boolean(keysError) && !String(keysError).toLowerCase().includes('organization owner role');
 
 	// billing status
 	const billingStatus = useMemo(() => {
@@ -468,13 +470,13 @@ function OrganizationSettings() {
 								value={newKeyName}
 								onChange={(e) => setNewKeyName(e.target.value)}
 								placeholder="Key Name"
-								disabled={!isPaidOrg}
+								disabled={!isPaidOrg || !isOwner}
 							/>
 						</div>
 						<Button
 							type="submit"
 							variant="secondary"
-							disabled={!isPaidOrg}
+							disabled={!isPaidOrg || !isOwner}
 							className="w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-200"
 						>
 							Create Key
@@ -505,16 +507,13 @@ function OrganizationSettings() {
 						</div>
 					)}
 					{keysLoading && <p className="text-sm text-gray-500 mb-2">Loading...</p>}
-					{keysError && (
+					{showKeysError && (
 						<div className="mb-3 rounded border border-red-200 bg-red-50 p-3 text-red-700">
 							<p className="text-sm">{keysError}</p>
-							<Button size="sm" className="mt-2" onClick={fetchApiKeys}>
-								Retry
-							</Button>
 						</div>
 					)}
 					<ul className="space-y-2">
-						{!keysLoading && !keysError && apiKeys.length === 0 && isPaidOrg && (
+						{!keysLoading && !showKeysError && apiKeys.length === 0 && isPaidOrg && (
 							<li className="text-sm text-gray-600">No keys created yet.</li>
 						)}
 						{apiKeys.map((k) => (
