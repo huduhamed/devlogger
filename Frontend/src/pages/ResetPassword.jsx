@@ -14,6 +14,7 @@ function ResetPassword() {
 	const [form, setForm] = useState({ password: '', confirmPassword: '' });
 	const [loading, setLoading] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 	const [success, setSuccess] = useState(false);
 	const navigate = useNavigate();
 	const { auth } = useContext(AuthContext);
@@ -36,6 +37,10 @@ function ResetPassword() {
 		setShowPassword((prev) => !prev);
 	};
 
+	const toggleConfirmPasswordVisibility = () => {
+		setShowConfirmPassword((prev) => !prev);
+	};
+
 	const passwordToggleButton = (
 		<button
 			type="button"
@@ -45,6 +50,42 @@ function ResetPassword() {
 			title={showPassword ? 'Hide password' : 'Show password'}
 		>
 			{showPassword ? (
+				<svg
+					viewBox="0 0 24 24"
+					className="h-5 w-5"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="2"
+				>
+					<path d="M3 3l18 18" />
+					<path d="M10.6 10.6A3 3 0 0013.4 13.4" />
+					<path d="M9.9 5.1A10.2 10.2 0 0112 4c5 0 9.3 3.1 11 8-0.6 1.8-1.6 3.3-2.9 4.5" />
+					<path d="M6.6 6.6C4.9 7.8 3.5 9.7 3 12c1.7 4.9 6 8 11 8a10.5 10.5 0 003.1-.5" />
+				</svg>
+			) : (
+				<svg
+					viewBox="0 0 24 24"
+					className="h-5 w-5"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="2"
+				>
+					<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+					<circle cx="12" cy="12" r="3" />
+				</svg>
+			)}
+		</button>
+	);
+
+	const confirmPasswordToggleButton = (
+		<button
+			type="button"
+			onClick={toggleConfirmPasswordVisibility}
+			className="rounded p-1 text-slate-500 hover:text-slate-700 dark:text-gray-300 dark:hover:text-white"
+			aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+			title={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+		>
+			{showConfirmPassword ? (
 				<svg
 					viewBox="0 0 24 24"
 					className="h-5 w-5"
@@ -147,11 +188,12 @@ function ResetPassword() {
 							/>
 							<Input
 								name="confirmPassword"
-								type={showPassword ? 'text' : 'password'}
+								type={showConfirmPassword ? 'text' : 'password'}
 								value={form.confirmPassword}
 								onChange={handleChange}
 								placeholder="••••••••"
 								label="Confirm password"
+								rightAdornment={confirmPasswordToggleButton}
 								required
 							/>
 							<Button className="w-full" type="submit" variant="primary" loading={loading}>
