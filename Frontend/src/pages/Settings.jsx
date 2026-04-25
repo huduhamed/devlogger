@@ -313,18 +313,30 @@ export default function Settings() {
 				<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
 					<div
 						className="absolute inset-0 bg-black/50"
+						aria-hidden="true"
 						onClick={() => {
 							if (!deleteLoading) setDeleteModalOpen(false);
 						}}
 					/>
-					<div className="relative w-full max-w-md">
+					<div
+						role="alertdialog"
+						aria-modal="true"
+						aria-labelledby="delete-account-title"
+						aria-describedby="delete-account-description"
+						className="relative w-full max-w-md"
+					>
 						<Card className="border-red-200 dark:border-red-800">
-							<CardHeader
-								title="Delete Account"
-								subtitle="This action is permanent and cannot be undone."
-							/>
+							<div id="delete-account-title">
+								<CardHeader
+									title="Delete Account"
+									subtitle="This action is permanent and cannot be undone."
+								/>
+							</div>
 							<CardBody className="space-y-4">
-								<div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+								<div
+									id="delete-account-description"
+									className="text-sm text-gray-700 dark:text-gray-300 space-y-2"
+								>
 									<p>
 										Your account will be permanently deleted and you will not be able to access it
 										again.
@@ -336,11 +348,17 @@ export default function Settings() {
 										variant="outline"
 										onClick={() => setDeleteModalOpen(false)}
 										disabled={deleteLoading}
+										className="w-full sm:w-auto"
 									>
 										Cancel
 									</Button>
-									<Button variant="danger" onClick={deleteAccount} loading={deleteLoading}>
-										Yes, Delete My Account
+									<Button
+										variant="danger"
+										onClick={deleteAccount}
+										loading={deleteLoading}
+										className="w-full sm:w-auto"
+									>
+										Yes, delete My Account
 									</Button>
 								</div>
 							</CardBody>

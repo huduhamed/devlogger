@@ -56,7 +56,11 @@ export default function CheckoutSuccess() {
 
 	if (loading) {
 		return (
-			<div className="max-w-2xl mx-auto flex items-center justify-center min-h-96">
+			<div
+				role="status"
+				aria-live="polite"
+				className="max-w-2xl mx-auto flex items-center justify-center min-h-96"
+			>
 				<Spinner />
 			</div>
 		);
@@ -85,10 +89,18 @@ export default function CheckoutSuccess() {
 							</p>
 						</div>
 						<div className="flex flex-col gap-3 sm:flex-row">
-							<Button onClick={() => navigate('/organization')} variant="primary">
+							<Button
+								onClick={() => navigate('/organization')}
+								variant="primary"
+								className="w-full sm:w-auto"
+							>
 								Go to Organization Settings
 							</Button>
-							<Button onClick={() => navigate('/dashboard')} variant="outline">
+							<Button
+								onClick={() => navigate('/dashboard')}
+								variant="outline"
+								className="w-full sm:w-auto"
+							>
 								Open Dashboard
 							</Button>
 						</div>
@@ -104,7 +116,11 @@ export default function CheckoutSuccess() {
 							Your payment is being processed. This usually takes a few moments. You'll receive a
 							confirmation email shortly.
 						</p>
-						<Button onClick={() => navigate('/organization')} variant="secondary">
+						<Button
+							onClick={() => navigate('/organization')}
+							variant="secondary"
+							className="w-full sm:w-auto"
+						>
 							Go to Organization Settings
 						</Button>
 					</CardBody>
@@ -121,11 +137,19 @@ export default function CheckoutSuccess() {
 						<p className="text-gray-700 dark:text-gray-300 mb-6">
 							There was an issue processing your payment. Please try again or contact support.
 						</p>
-						<div className="flex gap-3">
-							<Button onClick={() => navigate('/pricing')} variant="secondary">
+						<div className="flex flex-col sm:flex-row gap-3">
+							<Button
+								onClick={() => navigate('/pricing')}
+								variant="secondary"
+								className="w-full sm:w-auto"
+							>
 								Back to Pricing
 							</Button>
-							<Button onClick={() => navigate('/organization')} variant="primary">
+							<Button
+								onClick={() => navigate('/organization')}
+								variant="primary"
+								className="w-full sm:w-auto"
+							>
 								Go to Settings
 							</Button>
 						</div>

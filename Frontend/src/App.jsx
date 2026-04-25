@@ -16,7 +16,7 @@ function App() {
 		<div className="min-h-screen flex flex-col bg-stone-100 dark:bg-gray-950 text-slate-900 dark:text-gray-100">
 			<Navbar />
 
-			<div className="flex-1 p-6">
+			<div className="flex-1 p-4 sm:p-6">
 				<Routes>
 					{/* public home pages */}
 					<Route path="/" element={<Home />} />

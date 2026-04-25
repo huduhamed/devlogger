@@ -59,7 +59,11 @@ function Navbar() {
 						</h1>
 					</NavLink>
 					{!auth?.user && (
-						<NavLink to="/" title="Home" className="hidden md:flex items-center gap-2 flex-shrink-0">
+						<NavLink
+							to="/"
+							title="Home"
+							className="hidden md:flex items-center gap-2 flex-shrink-0"
+						>
 							<h1
 								className="text-2xl font-extrabold brand-text cursor-pointer select-none tracking-tight drop-shadow-sm dark:hover:text-blue-100 transition-transform duration-200"
 								style={{ letterSpacing: '-1px' }}
@@ -95,6 +99,7 @@ function Navbar() {
 							variant="ghost"
 							onClick={toggle}
 							title="Toggle theme"
+							aria-label="Toggle theme"
 							className="mr-1 focus-brand"
 						>
 							{theme === 'dark' ? '🌙' : '☀️'}
@@ -102,15 +107,25 @@ function Navbar() {
 						{auth?.user ? (
 							<div className="flex items-center gap-3 min-w-0">
 								<Notification />
-								<NavLink to="/settings" className={linkClasses} title="Settings">
+								<NavLink
+									to="/settings"
+									className={linkClasses}
+									title="Settings"
+									aria-label="Settings"
+								>
 									⚙️
 								</NavLink>
-								<NavLink to="/settings" title="Profile Settings" className="flex-shrink-0">
+								<NavLink
+									to="/settings"
+									title="Profile Settings"
+									aria-label="Profile settings"
+									className="flex-shrink-0"
+								>
 									<div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold overflow-hidden cursor-pointer flex-shrink-0">
 										{auth.user?.avatarUrl ? (
 											<img
 												src={auth.user.avatarUrl}
-												alt="avatar"
+												alt={`${auth.user?.name || 'User'} avatar`}
 												className="w-full h-full object-cover"
 											/>
 										) : (
@@ -198,11 +213,17 @@ function Navbar() {
 								variant="ghost"
 								onClick={toggle}
 								title="Toggle theme"
+								aria-label="Toggle theme"
 								className="focus-brand text-lg"
 							>
 								{theme === 'dark' ? '🌙' : '☀️'}
 							</Button>
-							<NavLink to="/settings" className="p-2 hover:bg-blue-100 dark:hover:bg-gray-800 rounded-lg transition-colors" title="Settings">
+							<NavLink
+								to="/settings"
+								className="p-2 hover:bg-blue-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+								title="Settings"
+								aria-label="Settings"
+							>
 								⚙️
 							</NavLink>
 							<Button variant="danger" onClick={handleLogout} size="sm">

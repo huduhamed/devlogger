@@ -7,6 +7,8 @@ import Textarea from './ui/Textarea.jsx';
 import Select from './ui/Select.jsx';
 import Button from './ui/Button.jsx';
 
+const TITLE_MAX_LENGTH = 50;
+
 // logform
 function LogForm({ onSubmit, initialData = null, onCancel }) {
 	const [form, setForm] = useState({
@@ -30,14 +32,29 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 	}, [initialData]);
 
 	// handle input changes
-	const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+	const handleChange = (e) => {
+		const { name, value } = e.target;
+		if (name === 'title') {
+			setForm({ ...form, title: value.slice(0, TITLE_MAX_LENGTH) });
+			return;
+		}
+
+		setForm({ ...form, [name]: value });
+	};
 
 	// handle form submit
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 
+		const normalizedTitle = form.title.trim();
+		if (!normalizedTitle) {
+			toast.error('Please enter a title.');
+			return;
+		}
+
 		const payload = {
 			...form,
+			title: normalizedTitle,
 			tags: form.tags
 				.split(',')
 				.map((t) => t.trim())
@@ -62,7 +79,9 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 
 	return (
 		<>
-			<h1 className="text-2xl font-bold mb-4">{initialData ? 'Edit Log' : 'Create Log'}</h1>
+			<h1 className="text-xl sm:text-2xl font-bold mb-4">
+				{initialData ? 'Edit Log' : 'Create Log'}
+			</h1>
 			<form onSubmit={handleSubmit} className="space-y-3">
 				<Input
 					name="title"
@@ -70,8 +89,14 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 					onChange={handleChange}
 					placeholder="Title"
 					label="Title"
+					hint={`${form.title.length}/${TITLE_MAX_LENGTH} characters`}
+					maxLength={TITLE_MAX_LENGTH}
+					aria-describedby="log-title-counter"
 					required
 				/>
+				<p id="log-title-counter" aria-live="polite" className="sr-only">
+					{`${TITLE_MAX_LENGTH - form.title.length} characters remaining`}
+				</p>
 				<Textarea
 					name="description"
 					value={form.description}

@@ -221,10 +221,10 @@ export async function googleSignIn(req, res, next) {
 			success: true,
 			message:
 				invite || wasPendingInvite
-					? 'Invitation accepted and Google user signed in'
+					? 'Invitation accepted and user signed in'
 					: isNewUser
-						? 'Google user created and signed in'
-						: 'Google user signed in',
+						? 'User created and signed-in'
+						: 'User signed-in',
 			token,
 			user,
 			organization: org,

@@ -27,10 +27,20 @@ function Notification() {
 				setOpen(false);
 			}
 		}
+
+		function onEscape(e) {
+			if (e.key === 'Escape') {
+				setOpen(false);
+			}
+		}
 		window.addEventListener('click', onClick);
+		window.addEventListener('keydown', onEscape);
 
 		// clean up
-		return () => window.removeEventListener('click', onClick);
+		return () => {
+			window.removeEventListener('click', onClick);
+			window.removeEventListener('keydown', onEscape);
+		};
 	}, []);
 
 	const toggle = (e) => {
@@ -46,7 +56,12 @@ function Notification() {
 		<div className="relative" ref={ref}>
 			<button
 				onClick={toggle}
+				type="button"
 				title="Notifications"
+				aria-label="Notifications"
+				aria-haspopup="menu"
+				aria-expanded={open}
+				aria-controls="notifications-menu"
 				className="relative p-2 rounded-md hover:bg-slate-100 dark:hover:bg-gray-800 transition"
 			>
 				{/* bell icon */}
@@ -70,32 +85,44 @@ function Notification() {
 						{unread}
 					</span>
 				)}
+				<span className="sr-only">{`${unread} unread notifications`}</span>
 			</button>
 
 			{/* dropdown */}
 			{open && (
-				<div className="absolute right-0 mt-2 w-72 bg-stone-50 dark:bg-gray-800 border border-stone-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden z-50">
+				<div
+					id="notifications-menu"
+					role="menu"
+					aria-label="Notifications"
+					className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-1rem)] bg-stone-50 dark:bg-gray-800 border border-stone-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden z-50"
+				>
 					<div className="p-3 border-b border-stone-200 dark:border-gray-700 font-semibold">
 						Notifications
 					</div>
 					<div className="max-h-64 overflow-auto">
 						{loading ? (
-							<div className="p-4 text-sm text-slate-500">Loading...</div>
+							<div role="status" aria-live="polite" className="p-4 text-sm text-slate-500">
+								Loading...
+							</div>
 						) : notifications.length === 0 ? (
 							<div className="p-4 text-sm text-slate-500">No notifications</div>
 						) : (
 							notifications.map((n) => (
-								<div
+								<button
+									type="button"
+									role="menuitem"
 									key={n._id || n.id}
-									className="p-3 hover:bg-stone-100 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-start"
+									className="w-full p-3 hover:bg-stone-100 dark:hover:bg-gray-700 text-left cursor-pointer flex justify-between items-start"
 									onClick={() => {
-										// mark read optimistically and navigate to notifications page
+										// mark read optimistically
 										markAllRead();
 										navigate('/notifications');
 									}}
 								>
 									<div>
-										<div className="text-sm text-slate-800 dark:text-gray-100">{n.text}</div>
+										<div className="text-sm text-slate-800 dark:text-gray-100 break-words">
+											{n.text}
+										</div>
 										<div className="text-xs text-slate-500 dark:text-gray-400">
 											{n.time || formatDate(n.createdAt)}
 										</div>
@@ -103,12 +130,13 @@ function Notification() {
 									<div className="ml-3">
 										{!n.read && <span className="text-xs text-blue-600">New</span>}
 									</div>
-								</div>
+								</button>
 							))
 						)}
 					</div>
 					<div className="p-2 border-t border-stone-200 dark:border-gray-700 text-center">
 						<button
+							type="button"
 							className="text-sm text-blue-600 dark:text-blue-400"
 							onClick={() => navigate('/notifications')}
 						>
