@@ -149,7 +149,7 @@ function SignIn() {
 	return (
 		<div className="min-h-[80vh] flex items-center justify-center px-4">
 			<Card className="w-full max-w-md">
-				<CardHeader title="Welcome back" subtitle="Sign in to access your DevLogger dashboard" />
+				<CardHeader title="Welcome back" subtitle="Sign in to access your Devlogger dashboard" />
 				<CardBody>
 					<form onSubmit={handleSubmit} className="space-y-4">
 						<Input

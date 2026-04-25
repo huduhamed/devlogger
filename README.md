@@ -1,8 +1,8 @@
-# DevLogger (Multi‑Tenant SaaS Logging Platform)
+# Devlogger (Multi‑Tenant SaaS Logging Platform)
 
 ![App's home page](/Frontend/public/home.png)
 
-DevLogger is evolving from a personal logging dashboard into a multi‑tenant SaaS platform. Each new user automatically receives an Organization (tenant) and all logs are scoped by organization for strong data isolation. The stack is:
+Devlogger is evolving from a personal logging dashboard into a multi‑tenant SaaS platform. Each new user automatically receives an Organization (tenant) and all logs are scoped by organization for strong data isolation. The stack is:
 
 - Backend: Node.js / Express 5, Mongoose 8, JWT auth, Zod validation, role & org aware access
 - Frontend: React (Vite), Context API, TailwindCSS, react-toastify
@@ -76,7 +76,7 @@ GET `/logs` → scoped to caller's organization, supports query params:
 
 ## Stripe Billing
 
-DevLogger uses Stripe Checkout for paid subscriptions and Stripe Billing Portal for managing an existing subscription.
+Devlogger uses Stripe Checkout for paid subscriptions and Stripe Billing Portal for managing an existing subscription.
 
 ### What the app expects
 
@@ -89,8 +89,8 @@ DevLogger uses Stripe Checkout for paid subscriptions and Stripe Billing Portal 
 
 1. Turn on Stripe `Test mode`.
 2. Create two products in Stripe:
-   - `DevLogger Pro`
-   - `DevLogger Enterprise`
+   - `Devlogger Pro`
+   - `Devlogger Enterprise`
 3. Create one recurring monthly price for each product.
 4. Copy the `price_...` IDs for those recurring prices.
 5. Enable the Stripe Customer Portal if you want `Manage Billing` to work.
@@ -106,7 +106,7 @@ PRODUCT_PRICE_PRO=price_...
 PRODUCT_PRICE_ENTERPRISE=price_...
 FRONTEND_URL=http://localhost:5173
 RESEND_API_KEY=re_...
-RESEND_FROM_EMAIL=DevLogger <onboarding@resend.dev>
+RESEND_FROM_EMAIL=Devlogger <onboarding@resend.dev>
 PORT=5500
 ```
 
