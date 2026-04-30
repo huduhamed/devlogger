@@ -24,6 +24,10 @@ export function AuthProvider({ children }) {
 		};
 	});
 
+	// key used to broadcast auth events across tabs
+	const AUTH_EVENT_KEY = 'devlogger-auth-event';
+	const bcRef = useRef(null);
+
 	const idleTimerRef = useRef(null);
 	const lastActivityRef = useRef(Number(sessionStorage.getItem('lastActivity') || Date.now()));
 
@@ -35,6 +39,7 @@ export function AuthProvider({ children }) {
 	}, []);
 
 	const logout = useCallback(() => {
+		// clear session data
 		sessionStorage.removeItem('token');
 		sessionStorage.removeItem('user');
 		sessionStorage.removeItem('lastActivity');
@@ -44,6 +49,19 @@ export function AuthProvider({ children }) {
 
 		delete API.defaults.headers.Authorization;
 		clearIdleTimer();
+
+		// fall back to localStorage events for older browsers
+		const payload = { type: 'logout', ts: Date.now() };
+		try {
+			if (typeof BroadcastChannel !== 'undefined') {
+				if (!bcRef.current) bcRef.current = new BroadcastChannel(AUTH_EVENT_KEY);
+				bcRef.current.postMessage(payload);
+			} else {
+				localStorage.setItem(AUTH_EVENT_KEY, JSON.stringify(payload));
+			}
+		} catch {
+			// ignore errors
+		}
 	}, [clearIdleTimer]);
 
 	const handleIdleTimeout = useCallback(() => {
@@ -72,6 +90,19 @@ export function AuthProvider({ children }) {
 
 			API.defaults.headers.Authorization = `Bearer ${token}`;
 			resetIdleTimer();
+
+			// broadcast sign-in to other tabs so they can sync auth state
+			const payload = { type: 'signin', token, user, ts: Date.now() };
+			try {
+				if (typeof BroadcastChannel !== 'undefined') {
+					if (!bcRef.current) bcRef.current = new BroadcastChannel(AUTH_EVENT_KEY);
+					bcRef.current.postMessage(payload);
+				} else {
+					localStorage.setItem(AUTH_EVENT_KEY, JSON.stringify(payload));
+				}
+			} catch {
+				// ignore errors
+			}
 		},
 		[resetIdleTimer],
 	);
@@ -119,6 +150,66 @@ export function AuthProvider({ children }) {
 			clearIdleTimer();
 		};
 	}, [auth?.token, clearIdleTimer, onVisibilityChange, resetIdleTimer]);
+
+	// listen for auth events from other tabs (BroadcastChannel preferred, localStorage fallback)
+	useEffect(() => {
+		const processPayload = (payload) => {
+			if (!payload || !payload.type) return;
+
+			if (payload.type === 'logout') {
+				logout();
+				return;
+			}
+
+			if (payload.type === 'signin') {
+				if (!auth?.token) {
+					sessionStorage.setItem('token', payload.token);
+					sessionStorage.setItem('user', JSON.stringify(payload.user));
+					setAuth({ token: payload.token, user: payload.user });
+					API.defaults.headers.Authorization = `Bearer ${payload.token}`;
+					resetIdleTimer();
+				}
+				return;
+			}
+		};
+
+		// BroadcastChannel listener
+		let bc;
+		if (typeof BroadcastChannel !== 'undefined') {
+			try {
+				bc = new BroadcastChannel(AUTH_EVENT_KEY);
+				bc.onmessage = (ev) => processPayload(ev.data);
+				bcRef.current = bc;
+			} catch {
+				bc = null;
+			}
+		}
+
+		// storage event fallback for older browsers or when BroadcastChannel isn't available
+		const handleStorage = (e) => {
+			if (!e?.key || e.key !== AUTH_EVENT_KEY || !e.newValue) return;
+			try {
+				const payload = JSON.parse(e.newValue);
+				processPayload(payload);
+			} catch {
+				// ignore
+			}
+		};
+
+		window.addEventListener('storage', handleStorage);
+
+		return () => {
+			window.removeEventListener('storage', handleStorage);
+			if (bc) {
+				try {
+					bc.close();
+				} catch {
+					// ignore
+				}
+				bcRef.current = null;
+			}
+		};
+	}, [auth?.token, logout, resetIdleTimer]);
 
 	const value = useMemo(() => ({ auth, setAuth, signin, logout }), [auth, signin, logout]);
 
