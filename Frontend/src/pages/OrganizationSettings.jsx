@@ -458,12 +458,7 @@ function OrganizationSettings() {
 			<Card>
 				<CardHeader title="API Keys" />
 				<CardBody>
-					{!isPaidOrg && (
-						<div className="mb-4 rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-							API keys are available for paid plans only. Upgrade to Pro or Enterprise to enable
-							server-to-server log ingestion with API keys.
-						</div>
-					)}
+					{/* Paid-plan notice removed per UX request */}
 					<form onSubmit={createKey} className="flex flex-col sm:flex-row gap-2 mb-4">
 						<div className="flex-1 min-w-0">
 							<Input
