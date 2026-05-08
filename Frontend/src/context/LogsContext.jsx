@@ -12,11 +12,11 @@ export function LogsProvider({ children }) {
 	const queryClient = useQueryClient();
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
-	const [filters, setFilters] = useState({ level: '', tag: '', q: '' });
+	const [filters, setFilters] = useState({ level: '', tag: '', q: '', userId: '' });
 
 	const queryKey = useMemo(
-		() => ['logs', page, limit, filters.level, filters.tag, filters.q],
-		[page, limit, filters.level, filters.tag, filters.q],
+		() => ['logs', page, limit, filters.level, filters.tag, filters.q, filters.userId],
+		[page, limit, filters.level, filters.tag, filters.q, filters.userId],
 	);
 
 	const logsQuery = useQuery({
@@ -28,6 +28,7 @@ export function LogsProvider({ children }) {
 			if (filters.level) params.set('level', filters.level);
 			if (filters.tag) params.set('tag', filters.tag);
 			if (filters.q) params.set('q', filters.q);
+			if (filters.userId) params.set('userId', filters.userId);
 
 			const res = await API.get(`/logs?${params.toString()}`);
 			return {
@@ -65,6 +66,7 @@ export function LogsProvider({ children }) {
 			if (Object.hasOwn(override, 'level')) nextFilters.level = override.level || '';
 			if (Object.hasOwn(override, 'tag')) nextFilters.tag = override.tag || '';
 			if (Object.hasOwn(override, 'q')) nextFilters.q = override.q || '';
+			if (Object.hasOwn(override, 'userId')) nextFilters.userId = override.userId || '';
 			if (Object.keys(nextFilters).length > 0) {
 				setFilters((prev) => ({ ...prev, ...nextFilters }));
 			}

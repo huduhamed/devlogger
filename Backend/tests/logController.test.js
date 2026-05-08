@@ -72,9 +72,16 @@ describe('logController', () => {
 			const fakeLogs = [{ title: 'logtitle1' }, { title: 'logtitle2' }];
 			const sortMock = jest.fn().mockReturnThis();
 			const skipMock = jest.fn().mockReturnThis();
+			const limitMock = jest.fn().mockReturnThis();
+			const populateMock = jest.fn().mockReturnThis();
 			const leanMock = jest.fn().mockResolvedValue(fakeLogs);
-			const limitMock = jest.fn().mockReturnValue({ lean: leanMock });
-			Log.find.mockReturnValue({ sort: sortMock, skip: skipMock, limit: limitMock });
+			Log.find.mockReturnValue({
+				sort: sortMock,
+				skip: skipMock,
+				limit: limitMock,
+				populate: populateMock,
+				lean: leanMock,
+			});
 			Log.countDocuments = jest.fn().mockResolvedValue(2);
 
 			const req = { user: { _id: 'user1' }, query: {} };
@@ -87,6 +94,7 @@ describe('logController', () => {
 			expect(sortMock).toHaveBeenCalledWith({ createdAt: -1 });
 			expect(skipMock).toHaveBeenCalledWith(0); // page 1
 			expect(limitMock).toHaveBeenCalledWith(20); // default limit
+			expect(populateMock).toHaveBeenCalledWith('user', '_id name email');
 			expect(leanMock).toHaveBeenCalled();
 			expect(res.status).toHaveBeenCalledWith(200);
 			expect(res.json).toHaveBeenCalledWith(
@@ -197,7 +205,7 @@ describe('logController', () => {
 
 			expect(Log.findByIdAndUpdate).toHaveBeenCalledWith(
 				'log1',
-				{ title: 'Updated' },
+				expect.objectContaining({ title: 'Updated', updatedAt: expect.any(Date) }),
 				{ new: true, runValidators: true },
 			);
 			expect(res.status).toHaveBeenCalledWith(200);
