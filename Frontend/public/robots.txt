@@ -1,0 +1,23 @@
+# Devlogger robots.txt
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /settings/
+Disallow: /organization/settings/
+
+# Specific rules for Googlebot
+User-agent: Googlebot
+Allow: /
+
+# Specific rules for Bingbot
+User-agent: Bingbot
+Allow: /
+
+# Sitemap
+Sitemap: https://devlogger.io/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 1

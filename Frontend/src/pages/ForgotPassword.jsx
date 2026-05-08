@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -8,6 +8,7 @@ import AuthContext from '../context/AuthContext';
 import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
 import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
+import { setPageMeta } from '../utils/seo.js';
 
 // forgot password
 function ForgotPassword() {
@@ -15,6 +16,15 @@ function ForgotPassword() {
 	const [loading, setLoading] = useState(false);
 	const [submitted, setSubmitted] = useState(false);
 	const { auth } = useContext(AuthContext);
+
+	// Set SEO on mount
+	useEffect(() => {
+		setPageMeta(
+			'Forgot Password',
+			'Reset your Devlogger password. Enter your email address to receive a password reset link.',
+			'https://devlogger.io/forgot-password',
+		);
+	}, []);
 
 	// redirect if already logged in
 	if (auth?.token && auth?.user) {

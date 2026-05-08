@@ -8,6 +8,7 @@ import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
 import Button from '../components/ui/Button.jsx';
 import API from '../services/api';
 import AuthContext from '../context/AuthContext.jsx';
+import { setPageMeta } from '../utils/seo.js';
 
 // pricing comp
 export default function Pricing() {
@@ -20,6 +21,15 @@ export default function Pricing() {
 		configured: true,
 		prices: { pro: true, enterprise: true },
 	});
+
+	// Set SEO on mount
+	useEffect(() => {
+		setPageMeta(
+			'Pricing Plans',
+			'Simple, transparent pricing for team logging. Choose Freemium, Pro, or Enterprise to get started with Devlogger.',
+			'https://devlogger.io/pricing',
+		);
+	}, []);
 
 	// fetch billing config
 	useEffect(() => {
