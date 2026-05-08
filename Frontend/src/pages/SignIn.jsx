@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -10,6 +10,7 @@ import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
 import GoogleAuthButton from '../components/Auth.jsx';
 import { getFieldError } from '../utils/validation.js';
+import { setPageMeta } from '../utils/seo.js';
 
 // sign-in logic
 function SignIn() {
@@ -20,6 +21,15 @@ function SignIn() {
 	const [showPassword, setShowPassword] = useState(false);
 	const navigate = useNavigate();
 	const { auth, signin } = useContext(AuthContext);
+
+	// Set SEO on mount
+	useEffect(() => {
+		setPageMeta(
+			'Sign In',
+			'Sign in to your Devlogger account and start tracking, sharing, and learning from team events.',
+			'https://devlogger.io/sign-in',
+		);
+	}, []);
 
 	// redirect if already logged in
 	if (auth?.token && auth?.user) {

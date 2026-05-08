@@ -1,13 +1,23 @@
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 // internal imports
 import Button from '../components/ui/Button.jsx';
 import AuthContext from '../context/AuthContext.jsx';
+import { setPageMeta, addStructuredData, getOrganizationSchema } from '../utils/seo.js';
 
 // home comp
 export default function Home() {
 	const { auth } = useContext(AuthContext);
+
+	useEffect(() => {
+		setPageMeta(
+			'Team Logging & Collaboration',
+			"Track, share and learn from every event. Empower your team with Devlogger's collaborative logging platform.",
+			'https://devlogger.io',
+		);
+		addStructuredData(getOrganizationSchema());
+	}, []);
 	const isSignedIn = !!auth?.token && !!auth?.user;
 
 	return (

@@ -10,6 +10,7 @@ import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
 import GoogleAuthButton from '../components/Auth.jsx';
 import { getFieldError } from '../utils/validation.js';
+import { setPageMeta } from '../utils/seo.js';
 
 // sign-up
 function SignUp() {
@@ -24,6 +25,15 @@ function SignUp() {
 	const [searchParams] = useSearchParams();
 	const inviteToken = searchParams.get('inviteToken') || '';
 	const inviteEmail = searchParams.get('email') || '';
+
+	useEffect(() => {
+		// Set SEO on mount
+		setPageMeta(
+			'Sign Up',
+			'Create your free Devlogger account. Start logging events and collaborating with your team today.',
+			'https://devlogger.io/sign-up',
+		);
+	}, []);
 
 	useEffect(() => {
 		if (auth?.token) {
