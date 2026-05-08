@@ -50,9 +50,10 @@ export async function getAllLogs(req, res, next) {
 		const query = orgId ? { organization: orgId } : {};
 
 		// filtering
-		const { level, tag, q, searchMode } = req.query;
+		const { level, tag, q, searchMode, userId: creatorUserId } = req.query;
 		if (level) query.level = level;
 		if (tag) query.tags = tag;
+		if (creatorUserId) query.user = creatorUserId;
 		let projection = null;
 		let sort = { createdAt: -1 };
 
@@ -78,7 +79,7 @@ export async function getAllLogs(req, res, next) {
 			.sort(sort)
 			.skip(skip)
 			.limit(limit)
-			.populate('user', 'name email')
+			.populate('user', '_id name email')
 			.lean();
 		const [logs, total] = await Promise.all([findChain, Log.countDocuments(query)]);
 
@@ -108,9 +109,10 @@ export async function getLogs(req, res, next) {
 
 		// filtering
 		const query = { ...baseQuery };
-		const { level, tag, q, searchMode } = req.query;
+		const { level, tag, q, searchMode, userId: creatorUserId } = req.query;
 		if (level) query.level = level;
 		if (tag) query.tags = tag;
+		if (creatorUserId) query.user = creatorUserId;
 		let projection = null;
 		let sort = { createdAt: -1 };
 
@@ -136,6 +138,7 @@ export async function getLogs(req, res, next) {
 			.sort(sort)
 			.skip(skip)
 			.limit(limit)
+			.populate('user', '_id name email')
 			.lean();
 		const [logs, total] = await Promise.all([findChain, Log.countDocuments(query)]);
 
@@ -261,6 +264,8 @@ export async function updateLog(req, res, next) {
 				.map((t) => t.trim())
 				.filter(Boolean);
 		}
+
+		updateData.updatedAt = new Date();
 
 		// finally allow to update
 		const updated = await Log.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });

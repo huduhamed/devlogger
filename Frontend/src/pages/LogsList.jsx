@@ -1,5 +1,6 @@
 import { useContext, useState, useRef, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { useSearchParams } from 'react-router-dom';
 
 // internal imports
 import API from '../services/api';
@@ -33,14 +34,25 @@ function LogsList() {
 	} = useContext(LogsContext);
 
 	const [editing, setEditing] = useState(null);
+	const [deleteConfirm, setDeleteConfirm] = useState(null);
 	const [searchValue, setSearchValue] = useState(filters.q || '');
+	const [searchParams, setSearchParams] = useSearchParams();
 	const debounceTimer = useRef(null);
+	const creatorId = searchParams.get('userId') || filters.userId || '';
+	const creatorName = searchParams.get('userName') || '';
 
 	useEffect(() => {
 		return () => {
 			clearTimeout(debounceTimer.current);
 		};
 	}, []);
+
+	useEffect(() => {
+		const nextUserId = searchParams.get('userId') || '';
+		if (nextUserId !== filters.userId) {
+			fetchLogs({ page: 1, userId: nextUserId });
+		}
+	}, [fetchLogs, filters.userId, searchParams]);
 
 	// debounce search input (only fetch after user stops typing for 500ms)
 	const handleSearchChange = (value) => {
@@ -57,15 +69,29 @@ function LogsList() {
 		return Number.isNaN(date.getTime()) ? 'Unknown time' : date.toLocaleString();
 	};
 
-	// handle delete
-	const handleDelete = async (id) => {
-		if (!window.confirm('Are you sure you want to delete this log?')) return;
+	const isEditedLog = (log) => {
+		if (!log?.updatedAt || !log?.createdAt) return false;
+		return new Date(log.updatedAt).getTime() > new Date(log.createdAt).getTime();
+	};
+
+	// handle delete - show confirmation dialog
+	const handleDelete = (id) => {
+		setDeleteConfirm(id);
+	};
+
+	// confirm and execute delete
+	const confirmDelete = async () => {
+		if (!deleteConfirm) return;
+		const id = deleteConfirm;
+		setDeleteConfirm(null);
+
 		try {
 			await API.delete(`/logs/${id}`);
+			toast.success('Log deleted successfully');
 			fetchLogs();
 		} catch (err) {
 			console.error(err);
-			toast.error('Failed to delete log');
+			toast.error(err?.response?.data?.message || 'Failed to delete log');
 		}
 	};
 
@@ -73,7 +99,21 @@ function LogsList() {
 	const applyFilters = (e) => {
 		e.preventDefault();
 		clearTimeout(debounceTimer.current);
-		fetchLogs({ page: 1, level: filters.level, tag: filters.tag, q: searchValue });
+		fetchLogs({
+			page: 1,
+			level: filters.level,
+			tag: filters.tag,
+			q: searchValue,
+			userId: creatorId,
+		});
+	};
+
+	const clearCreatorFilter = () => {
+		const nextParams = new URLSearchParams(searchParams);
+		nextParams.delete('userId');
+		nextParams.delete('userName');
+		setSearchParams(nextParams, { replace: true });
+		fetchLogs({ page: 1, userId: '' });
 	};
 
 	return (
@@ -165,6 +205,18 @@ function LogsList() {
 				Showing page {page} of {pages} • {total} total
 			</div>
 
+			{creatorId && (
+				<div className="mb-3 flex items-center gap-2 text-sm text-gray-600">
+					<span>
+						Filtering by creator:{' '}
+						<span className="font-medium">{creatorName || 'Selected user'}</span>
+					</span>
+					<Button size="sm" variant="secondary" onClick={clearCreatorFilter}>
+						Clear
+					</Button>
+				</div>
+			)}
+
 			<ul className="space-y-4">
 				{!loading && !error && logs.length === 0 && (
 					<li>
@@ -207,6 +259,11 @@ function LogsList() {
 												By: <span className="capitalize">{log.user?.name}</span> •{' '}
 												{formatDate(log.createdAt)}
 											</small>
+											{isEditedLog(log) && (
+												<small className="block text-gray-500 mt-1">
+													Edited: {formatDate(log.updatedAt)}
+												</small>
+											)}
 											{log.tags?.length > 0 && (
 												<div className="mt-2 text-sm text-blue-600 break-all">
 													#{log.tags.join(' #')}
@@ -257,16 +314,42 @@ function LogsList() {
 						onSubmit: async (payload) => {
 							try {
 								await API.put(`/logs/${editing._id}`, payload);
+								toast.success('Log updated successfully');
 								setEditing(null);
 								fetchLogs();
 							} catch (err) {
-								toast.error('Failed to update log');
+								toast.error(err?.response?.data?.message || 'Failed to update log');
 								throw err;
 							}
 						},
 					}}
 					onClose={() => setEditing(null)}
 				/>
+			)}
+
+			{/* Delete Confirmation Dialog */}
+			{deleteConfirm && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+					<div className="absolute inset-0 bg-black/50" onClick={() => setDeleteConfirm(null)} />
+					<div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 max-w-sm mx-2">
+						<h3 className="text-lg font-semibold mb-2">Delete Log</h3>
+						<p className="text-gray-600 dark:text-gray-300 mb-6">
+							Are you sure you want to delete this log? This action cannot be undone.
+						</p>
+						<div className="flex gap-3 justify-end">
+							<Button
+								variant="outline"
+								onClick={() => setDeleteConfirm(null)}
+								className="w-full sm:w-auto"
+							>
+								Cancel
+							</Button>
+							<Button variant="danger" onClick={confirmDelete} className="w-full sm:w-auto">
+								Delete Log
+							</Button>
+						</div>
+					</div>
+				</div>
 			)}
 		</div>
 	);
