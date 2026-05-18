@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext, useMemo } from 'react';
 import { toast } from 'react-toastify';
 
 // internal imports
@@ -6,6 +6,7 @@ import Input from './ui/Input.jsx';
 import Textarea from './ui/Textarea.jsx';
 import Select from './ui/Select.jsx';
 import Button from './ui/Button.jsx';
+import LogsContext from '../context/LogsContext.jsx';
 
 const TITLE_MAX_LENGTH = 50;
 
@@ -40,6 +41,34 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 		}
 
 		setForm({ ...form, [name]: value });
+	};
+
+	// recent tag suggestions derived from current logs
+	const { logs: recentLogs = [] } = useContext(LogsContext) || {};
+	const tagSuggestions = useMemo(() => {
+		const counts = {};
+		recentLogs.forEach((l) => {
+			(l.tags || []).forEach((t) => {
+				const tag = String(t || '')
+					.trim()
+					.toLowerCase();
+				if (!tag) return;
+				counts[tag] = (counts[tag] || 0) + 1;
+			});
+		});
+		return Object.keys(counts)
+			.sort((a, b) => counts[b] - counts[a])
+			.slice(0, 8);
+	}, [recentLogs]);
+
+	const addTagSuggestion = (tag) => {
+		const current = form.tags
+			.split(',')
+			.map((t) => t.trim())
+			.filter(Boolean);
+		if (!current.includes(tag)) {
+			setForm({ ...form, tags: [...current, tag].join(', ') });
+		}
 	};
 
 	// handle form submit
@@ -118,6 +147,24 @@ function LogForm({ onSubmit, initialData = null, onCancel }) {
 					placeholder="ui, api, auth"
 					label="Tags (comma separated)"
 				/>
+				{tagSuggestions.length > 0 && (
+					<div className="mt-2">
+						<p className="text-xs text-slate-500 mb-1">Suggestions:</p>
+						<div className="flex flex-wrap gap-2">
+							{tagSuggestions.map((t) => (
+								<Button
+									key={t}
+									size="sm"
+									variant="outline"
+									type="button"
+									onClick={() => addTagSuggestion(t)}
+								>
+									{t}
+								</Button>
+							))}
+						</div>
+					</div>
+				)}
 				<div className="flex flex-col sm:flex-row sm:items-center gap-2">
 					<Button type="submit" loading={loading} className="w-full sm:w-auto">
 						{initialData ? 'Update Log' : 'Add Log'}
