@@ -6,6 +6,8 @@ import API from '../services/api';
 import Card, { CardBody, CardHeader } from '../components/ui/Card.jsx';
 import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
+import Timeline from '../components/ui/Timeline.jsx';
+import InviteMemberModal from '../components/ui/InviteMemberModal.jsx';
 import OrgContext from '../context/OrgContext.jsx';
 import AuthContext from '../context/AuthContext.jsx';
 import { PLANS } from '../config/plans.js';
@@ -23,8 +25,79 @@ function OrganizationSettings() {
 	const [keysLoading, setKeysLoading] = useState(false);
 	const [keysError, setKeysError] = useState(null);
 	const [newMemberEmail, setNewMemberEmail] = useState('');
+	const [isInviteOpen, setInviteOpen] = useState(false);
+	const [inviteName, setInviteName] = useState('');
+	const [inviteEmail, setInviteEmail] = useState('');
 	const [newKeyName, setNewKeyName] = useState('');
 	const [createdKey, setCreatedKey] = useState(null);
+	const [timeline, setTimeline] = useState([]);
+
+	const mapOrganizationEvent = useCallback((event) => {
+		const actorName = event?.actor?.name || event?.actor?.email || 'Someone';
+		const date = event?.createdAt ? new Date(event.createdAt).toLocaleDateString() : '';
+		const addedMemberName =
+			event?.data?.userName ||
+			event?.data?.memberName ||
+			event?.data?.name ||
+			event?.data?.email ||
+			'a member';
+
+		switch (event?.type) {
+			case 'member_invite_sent':
+				return {
+					id: event._id || event.id,
+					type: event.type,
+					title: `${actorName} invited ${event?.data?.email || 'a teammate'}`,
+					detail: `Role: ${event?.data?.role || 'member'}`,
+					time: date,
+					color: '#f59e0b',
+				};
+			case 'member_added':
+				return {
+					id: event._id || event.id,
+					type: event.type,
+					title: `${addedMemberName} was added`,
+					time: date,
+					color: '#10b981',
+				};
+			case 'member_removed':
+				return {
+					id: event._id || event.id,
+					type: event.type,
+					title: `${actorName} removed a member`,
+					detail: event?.data?.userId ? `User ID: ${event.data.userId}` : 'Member removed',
+					time: date,
+					color: '#ef4444',
+				};
+			case 'api_key_created':
+				return {
+					id: event._id || event.id,
+					type: event.type,
+					title: `${actorName} created API key ${event?.data?.name || 'Unnamed key'}`,
+					detail: event?.data?.keyId ? `Key ID: ${event.data.keyId}` : 'API key created',
+					time: date,
+					color: '#06b6d4',
+				};
+			case 'api_key_revoked':
+				return {
+					id: event._id || event.id,
+					type: event.type,
+					title: `${actorName} revoked an API key`,
+					detail: event?.data?.keyId ? `Key ID: ${event.data.keyId}` : 'API key revoked',
+					time: date,
+					color: '#f97316',
+				};
+			default:
+				return {
+					id: event._id || event.id,
+					type: event.type,
+					title: event?.title || event?.type || 'Activity',
+					detail: event?.detail || event?.message || '',
+					time: date,
+					color: event?.color,
+				};
+		}
+	}, []);
 
 	// Check if current user is organization owner
 	const isOwner = useMemo(() => {
@@ -94,6 +167,17 @@ function OrganizationSettings() {
 			if (isMounted) {
 				fetchMembers();
 				fetchApiKeys();
+				// try to fetch server-side org events if available
+				(async () => {
+					try {
+						const res = await API.get('/organizations/events');
+						if (Array.isArray(res.data?.data)) {
+							setTimeline(res.data.data.map(mapOrganizationEvent));
+						}
+					} catch {
+						// ignore if endpoint doesn't exist
+					}
+				})();
 			}
 		})();
 
@@ -121,80 +205,184 @@ function OrganizationSettings() {
 		})();
 	}, [fetchApiKeys, fetchMembers, fetchOrg, refreshOrg]);
 
-	// adding member
+	// adding member (optimistic + timeline)
 	const addMember = useCallback(
 		async (e) => {
 			e.preventDefault();
 			if (!newMemberEmail) return;
+			const email = newMemberEmail;
+			setNewMemberEmail('');
+			const tempId = `pending-member-${Date.now()}`;
+			const pending = { user: { _id: tempId, name: email, email }, role: 'invited', pending: true };
+			setMembers((prev) => [pending, ...prev]);
+			const evId = `evt-invite-${Date.now()}`;
+			setTimeline((t) => [
+				{
+					id: evId,
+					type: 'invite',
+					title: `Invited ${email}`,
+					detail: 'Invitation pending',
+					time: new Date().toLocaleString(),
+					color: '#f59e0b',
+				},
+				...t,
+			]);
 			try {
-				const res = await API.post('/organizations/members', { email: newMemberEmail });
-				setNewMemberEmail('');
+				const res = await API.post('/organizations/members', { email });
 				if (res.data?.data?.user) {
+					// refresh list to get canonical IDs
 					fetchMembers();
 				}
 
 				if (res.data?.data?.invitationUrl && res.data?.data?.emailDelivered === false) {
 					try {
 						await navigator.clipboard.writeText(res.data.data.invitationUrl);
-						toast.info('An error occurred sending the invite email, try again.');
+						toast.info('An error occurred sending the invite email, link copied to clipboard.');
 					} catch {
 						toast.info('An error occurred sending the invite email, try again.');
 					}
 				}
 
+				setTimeline((t) =>
+					t.map((it) =>
+						it.id === evId ? { ...it, detail: 'Invitation sent', color: '#10b981' } : it,
+					),
+				);
 				toast.success(res.data?.message || 'Invitation sent');
 			} catch (err) {
+				// remove pending member
+				setMembers((prev) => prev.filter((m) => m.user._id !== tempId));
+				setTimeline((t) =>
+					t.map((it) =>
+						it.id === evId ? { ...it, title: `${it.title} (failed)`, color: '#ef4444' } : it,
+					),
+				);
 				toast.error(err?.response?.data?.message || 'An error occured, please try again.');
 			}
 		},
 		[newMemberEmail, fetchMembers],
 	);
 
-	// removing a member
+	// removing a member (optimistic)
 	const removeMember = useCallback(
 		async (userId) => {
 			if (!window.confirm('Remove this member?')) return;
+			const removed = members.find((m) => m.user._id === userId);
+			setMembers((prev) => prev.filter((m) => m.user._id !== userId));
+			const evId = `evt-remove-${Date.now()}`;
+			setTimeline((t) => [
+				{
+					id: evId,
+					type: 'remove',
+					title: `Removed ${removed?.user?.email || userId}`,
+					detail: '',
+					time: new Date().toLocaleString(),
+					color: '#ef4444',
+				},
+				...t,
+			]);
 			try {
 				await API.delete(`/organizations/members/${userId}`);
-				fetchMembers();
+				setTimeline((t) =>
+					t.map((it) =>
+						it.id === evId ? { ...it, detail: 'Member removed', color: '#ef4444' } : it,
+					),
+				);
 				toast.success('Member removed');
 			} catch (err) {
+				// revert
+				if (removed) setMembers((prev) => [removed, ...prev]);
+				setTimeline((t) =>
+					t.map((it) =>
+						it.id === evId ? { ...it, title: `${it.title} (failed)`, color: '#f59e0b' } : it,
+					),
+				);
 				toast.error(
 					err?.response?.data?.message ||
 						'Failed to remove member, make sure they are logged out and try again. ',
 				);
 			}
 		},
-		[fetchMembers],
+		[members],
 	);
 
-	// creating a key
+	// creating a key (optimistic + timeline)
 	const createKey = useCallback(
 		async (e) => {
 			e.preventDefault();
 			if (!newKeyName) return;
+			const name = newKeyName;
+			setNewKeyName('');
+			const tempId = `pending-key-${Date.now()}`;
+			const tempKey = { name, keyId: tempId, revoked: false, lastUsedAt: null, pending: true };
+			setApiKeys((prev) => [tempKey, ...prev]);
+			const evId = `evt-key-${Date.now()}`;
+			setTimeline((t) => [
+				{
+					id: evId,
+					type: 'key-create',
+					title: `Created key ${name}`,
+					detail: 'Creating...',
+					time: new Date().toLocaleString(),
+					color: '#06b6d4',
+				},
+				...t,
+			]);
 			try {
-				const res = await API.post('/organizations/api-keys', { name: newKeyName });
+				const res = await API.post('/organizations/api-keys', { name });
 				setCreatedKey(res.data?.apiKey ?? null);
-				setNewKeyName('');
 				fetchApiKeys();
+				setTimeline((t) =>
+					t.map((it) => (it.id === evId ? { ...it, detail: 'Key created', color: '#10b981' } : it)),
+				);
 				toast.success('API key created (copy now!)');
 			} catch (err) {
+				setApiKeys((prev) => prev.filter((k) => k.keyId !== tempId));
+				setTimeline((t) =>
+					t.map((it) =>
+						it.id === evId ? { ...it, title: `${it.title} (failed)`, color: '#ef4444' } : it,
+					),
+				);
 				toast.error(err?.response?.data?.message || 'An error occured, please try again.');
 			}
 		},
 		[newKeyName, fetchApiKeys],
 	);
 
-	// revoke key
+	// revoke key (optimistic)
 	const revokeKey = useCallback(
 		async (keyId) => {
 			if (!window.confirm('Revoke this API key?')) return;
+			setApiKeys((prev) =>
+				prev.map((k) => (k.keyId === keyId ? { ...k, revoked: true, pendingRevoke: true } : k)),
+			);
+			const evId = `evt-revoke-${Date.now()}`;
+			setTimeline((t) => [
+				{
+					id: evId,
+					type: 'key-revoke',
+					title: `Revoked key ${keyId}`,
+					detail: 'Revoking...',
+					time: new Date().toLocaleString(),
+					color: '#f97316',
+				},
+				...t,
+			]);
 			try {
 				await API.post(`/organizations/api-keys/${encodeURIComponent(keyId)}/revoke`);
 				fetchApiKeys();
+				setTimeline((t) => t.map((it) => (it.id === evId ? { ...it, detail: 'Key revoked' } : it)));
 				toast.success('Key revoked');
 			} catch (err) {
+				// revert optimistic change
+				setApiKeys((prev) =>
+					prev.map((k) => (k.keyId === keyId ? { ...k, revoked: false, pendingRevoke: false } : k)),
+				);
+				setTimeline((t) =>
+					t.map((it) =>
+						it.id === evId ? { ...it, title: `${it.title} (failed)`, color: '#ef4444' } : it,
+					),
+				);
 				toast.error(err?.response?.data?.message || 'An error occured, please try again.');
 			}
 		},
@@ -296,302 +484,389 @@ function OrganizationSettings() {
 		);
 
 	return (
-		<div
-			className="max-w-3xl sm:max-w-6xl mx-auto px-4 p-4 space-y-6"
-			role="main"
-			aria-labelledby="org-heading"
-		>
-			<h1 id="org-heading" className="sr-only">
-				Organization Settings
-			</h1>
-			<Card>
-				<CardHeader title="Organization" subtitle="Overview of your plan and usage" />
-				<CardBody>
-					<div className="grid md:grid-cols-2 gap-4">
-						<div>
-							<p className="text-sm text-gray-600">
-								Name: <span className="font-medium">{org.name}</span>
-							</p>
-							<p className="text-sm text-gray-600">
-								Plan: <span className="font-medium capitalize">{org.plan}</span>
-							</p>
-							{billingStatus && (
-								<p className="text-sm text-gray-600">
-									Billing: <span className="font-medium">{billingStatus}</span>
-								</p>
-							)}
-							<p className="text-sm text-gray-600">
-								Monthly Logs: {org.usage?.logCount || 0} / {org.limits?.logsPerMonth}
-							</p>
-							<div className="w-full bg-gray-200 h-3 rounded mt-2">
-								<div
-									className="h-3 rounded bg-blue-500 transition-all"
-									style={{ width: usagePct + '%' }}
-								/>
-							</div>
-							<div className="mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2">
-								{org.plan === 'free' && (
-									<>
-										<Button onClick={() => startCheckout('pro')} className="w-full sm:w-auto">
-											Upgrade to Pro
-										</Button>
-										<Button
-											variant="secondary"
-											onClick={() => startCheckout('enterprise')}
-											className="w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-200"
-										>
-											Upgrade to Enterprise
-										</Button>
-									</>
-								)}
-								{(org.billing?.customerId || orgCtx?.billing?.customerId) && (
-									<Button
-										variant="outline"
-										onClick={openBillingPortal}
-										className="w-full sm:w-auto"
-									>
-										Manage Billing
-									</Button>
-								)}
-							</div>
-						</div>
-						<div className="space-y-3">
-							<p className="text-sm text-gray-600 font-medium">Plans</p>
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-								<div className="border rounded-lg p-3 bg-white dark:bg-gray-900">
-									<h4 className="font-semibold">
-										{PLANS.pro.name}{' '}
-										<span className="text-sm text-gray-500 font-normal">
-											${PLANS.pro.priceMonthly}/mo
-										</span>
-									</h4>
-									<ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300 mt-1">
-										<li>Higher monthly log limit</li>
-										<li>Email support</li>
-									</ul>
-									<div className="mt-2">
-										<Button
-											size="sm"
-											onClick={() => startCheckout('pro')}
-											disabled={org.plan === 'pro'}
-											className="w-full sm:w-auto"
-										>
-											{org.plan === 'pro' ? 'Current Plan' : 'Choose Pro'}
-										</Button>
+		<div className="max-w-7xl mx-auto px-4 p-4">
+			<div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+				<main role="main" aria-labelledby="org-heading">
+					<h1 id="org-heading" className="sr-only">
+						Organization Settings
+					</h1>
+					<div className="space-y-6">
+						<Card>
+							<CardHeader title="Organization" subtitle="Overview of your plan and usage" />
+							<CardBody>
+								<div className="grid md:grid-cols-2 gap-4">
+									<div>
+										<p className="text-sm text-gray-600">
+											Name: <span className="font-medium">{org.name}</span>
+										</p>
+										<p className="text-sm text-gray-600">
+											Plan: <span className="font-medium capitalize">{org.plan}</span>
+										</p>
+										{billingStatus && (
+											<p className="text-sm text-gray-600">
+												Billing: <span className="font-medium">{billingStatus}</span>
+											</p>
+										)}
+										<p className="text-sm text-gray-600">
+											Monthly Logs: {org.usage?.logCount || 0} / {org.limits?.logsPerMonth}
+										</p>
+										<div className="w-full bg-gray-200 h-3 rounded mt-2">
+											<div
+												className="h-3 rounded bg-blue-500 transition-all"
+												style={{ width: usagePct + '%' }}
+											/>
+										</div>
+										<div className="mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2">
+											{org.plan === 'free' && (
+												<>
+													<Button onClick={() => startCheckout('pro')} className="w-full sm:w-auto">
+														Upgrade to Pro
+													</Button>
+													<Button
+														variant="secondary"
+														onClick={() => startCheckout('enterprise')}
+														className="w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-200"
+													>
+														Upgrade to Enterprise
+													</Button>
+												</>
+											)}
+											{(org.billing?.customerId || orgCtx?.billing?.customerId) && (
+												<Button
+													variant="outline"
+													onClick={openBillingPortal}
+													className="w-full sm:w-auto"
+												>
+													Manage Billing
+												</Button>
+											)}
+										</div>
+									</div>
+									<div className="space-y-3">
+										<p className="text-sm text-gray-600 font-medium">Plans</p>
+										<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+											<div className="border rounded-lg p-3 bg-white dark:bg-gray-900">
+												<h4 className="font-semibold">
+													{PLANS.pro.name}{' '}
+													<span className="text-sm text-gray-500 font-normal">
+														${PLANS.pro.priceMonthly}/mo
+													</span>
+												</h4>
+												<ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300 mt-1">
+													<li>Higher monthly log limit</li>
+													<li>Email support</li>
+												</ul>
+												<div className="mt-2">
+													<Button
+														size="sm"
+														onClick={() => startCheckout('pro')}
+														disabled={org.plan === 'pro'}
+														className="w-full sm:w-auto"
+													>
+														{org.plan === 'pro' ? 'Current Plan' : 'Choose Pro'}
+													</Button>
+												</div>
+											</div>
+											<div className="border rounded-lg p-3 bg-white dark:bg-gray-900">
+												<h4 className="font-semibold">
+													{PLANS.enterprise.name}{' '}
+													<span className="text-sm text-gray-500 font-normal">
+														${PLANS.enterprise.priceMonthly}/mo
+													</span>
+												</h4>
+												<ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300 mt-1">
+													<li>Custom limits</li>
+													<li>Priority support</li>
+												</ul>
+												<div className="mt-2">
+													<Button
+														size="sm"
+														variant="secondary"
+														onClick={() => startCheckout('enterprise')}
+														disabled={org.plan === 'enterprise'}
+														className="w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-200"
+													>
+														{org.plan === 'enterprise' ? 'Current Plan' : 'Choose Enterprise'}
+													</Button>
+												</div>
+											</div>
+										</div>
 									</div>
 								</div>
-								<div className="border rounded-lg p-3 bg-white dark:bg-gray-900">
-									<h4 className="font-semibold">
-										{PLANS.enterprise.name}{' '}
-										<span className="text-sm text-gray-500 font-normal">
-											${PLANS.enterprise.priceMonthly}/mo
-										</span>
-									</h4>
-									<ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300 mt-1">
-										<li>Custom limits</li>
-										<li>Priority support</li>
-									</ul>
-									<div className="mt-2">
-										<Button
-											size="sm"
-											variant="secondary"
-											onClick={() => startCheckout('enterprise')}
-											disabled={org.plan === 'enterprise'}
-											className="w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-200"
-										>
-											{org.plan === 'enterprise' ? 'Current Plan' : 'Choose Enterprise'}
+							</CardBody>
+						</Card>
+
+						<Card>
+							<CardHeader
+								title="Members"
+								subtitle="Invite teammates by email or add users who already exist."
+							/>
+							<CardBody>
+								<h3 id="members-heading" className="sr-only">
+									Members
+								</h3>
+								<form
+									onSubmit={(e) => {
+										e.preventDefault();
+										setInviteName('');
+										setInviteEmail(newMemberEmail || '');
+										setInviteOpen(true);
+									}}
+									className="flex flex-col sm:flex-row gap-2 mb-4"
+								>
+									<div className="flex-1 min-w-0">
+										<Input
+											value={newMemberEmail}
+											onChange={(e) => setNewMemberEmail(e.target.value)}
+											placeholder="Click to add a new member to your organization"
+											name="email"
+											aria-label="New member email"
+											disabled={!isOwner}
+										/>
+									</div>
+									<Button
+										type="submit"
+										className="w-full sm:w-auto"
+										disabled={!isOwner}
+										aria-disabled={!isOwner}
+										aria-label="Invite member"
+									>
+										Invite Member
+									</Button>
+								</form>
+								{membersLoading && <p className="text-sm text-gray-500 mb-2">Loading members...</p>}
+								{membersError && (
+									<div className="mb-3 rounded border border-red-200 bg-red-50 p-3 text-red-700">
+										<p className="text-sm">{membersError}</p>
+										<Button size="sm" className="mt-2" onClick={fetchMembers}>
+											Retry
 										</Button>
 									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</CardBody>
-			</Card>
-
-			<Card>
-				<CardHeader
-					title="Members"
-					subtitle="Invite teammates by email or add users who already exist."
-				/>
-				<CardBody>
-					<h3 id="members-heading" className="sr-only">
-						Members
-					</h3>
-					<form onSubmit={addMember} className="flex flex-col sm:flex-row gap-2 mb-4">
-						<div className="flex-1 min-w-0">
-							<Input
-								value={newMemberEmail}
-								onChange={(e) => setNewMemberEmail(e.target.value)}
-								placeholder="user@example.com"
-								name="email"
-								aria-label="New member email"
-								disabled={!isOwner}
-							/>
-						</div>
-						<Button
-							type="submit"
-							className="w-full sm:w-auto"
-							disabled={!isOwner}
-							aria-disabled={!isOwner}
-							aria-label="Invite member"
-						>
-							Invite Member
-						</Button>
-					</form>
-					{membersLoading && <p className="text-sm text-gray-500 mb-2">Loading members...</p>}
-					{membersError && (
-						<div className="mb-3 rounded border border-red-200 bg-red-50 p-3 text-red-700">
-							<p className="text-sm">{membersError}</p>
-							<Button size="sm" className="mt-2" onClick={fetchMembers}>
-								Retry
-							</Button>
-						</div>
-					)}
-					<ul className="space-y-2" role="list" aria-labelledby="members-heading">
-						{!membersLoading && !membersError && members.length === 0 && (
-							<li className="text-sm text-gray-600">No members yet.</li>
-						)}
-						{members.map((m) => (
-							<li
-								key={m.user._id}
-								role="listitem"
-								aria-labelledby={`member-name-${m.user._id}`}
-								tabIndex={0}
-								className="flex flex-col sm:flex-row justify-between items-start sm:items-center border rounded p-2 bg-white dark:bg-gray-900 gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-							>
-								<div className="flex-1">
-									<span id={`member-name-${m.user._id}`} className="font-medium">
-										{m.user.name}
-									</span>{' '}
-									<span className="text-xs text-gray-500">{m.user.email}</span>{' '}
-									<span className="ml-2 text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800">
-										{m.role}
-									</span>
-								</div>
-								{m.role !== 'owner' && isOwner && (
-									<Button
-										size="sm"
-										variant="danger"
-										onClick={() => removeMember(m.user._id)}
-										aria-label={`Remove ${m.user.name}`}
-									>
-										Remove
-									</Button>
 								)}
-							</li>
-						))}
-					</ul>
-				</CardBody>
-			</Card>
-
-			<Card>
-				<CardHeader title="API Keys" />
-				<CardBody>
-					{/* Paid-plan notice removed per UX request */}
-					<h3 id="keys-heading" className="sr-only">
-						API Keys
-					</h3>
-					<form
-						onSubmit={createKey}
-						className="flex flex-col sm:flex-row gap-2 mb-4"
-						aria-labelledby="keys-heading"
-					>
-						<div className="flex-1 min-w-0">
-							<Input
-								value={newKeyName}
-								onChange={(e) => setNewKeyName(e.target.value)}
-								placeholder="Key Name"
-								name="keyName"
-								aria-label="API key name"
-								disabled={!isPaidOrg || !isOwner}
-							/>
-						</div>
-						<Button
-							type="submit"
-							variant="secondary"
-							disabled={!isPaidOrg || !isOwner}
-							className="w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-200"
-							aria-disabled={!isPaidOrg || !isOwner}
-							aria-label="Create API key"
-						>
-							Create Key
-						</Button>
-					</form>
-					{createdKey && (
-						<div className="p-3 bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 rounded text-sm mb-4 text-gray-900 dark:text-yellow-100">
-							<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-								<div className="flex-1">
-									<p className="font-medium text-gray-900 dark:text-yellow-100">
-										New Key (copy now):
-									</p>
-									<code className="break-all text-xs text-gray-800 dark:text-yellow-50">
-										{createdKey}
-									</code>
-								</div>
-								<div className="shrink-0 w-full sm:w-auto">
-									<Button
-										size="sm"
-										onClick={copyCreatedKey}
-										variant="secondary"
-										className="w-full sm:w-auto"
-										aria-label="Copy new API key"
-									>
-										Copy
-									</Button>
-								</div>
-							</div>
-						</div>
-					)}
-					{keysLoading && <p className="text-sm text-gray-500 mb-2">Loading...</p>}
-					{showKeysError && (
-						<div className="mb-3 rounded border border-red-200 bg-red-50 p-3 text-red-700">
-							<p className="text-sm">{keysError}</p>
-						</div>
-					)}
-					<ul className="space-y-2" role="list" aria-labelledby="keys-heading">
-						{!keysLoading && !showKeysError && apiKeys.length === 0 && isPaidOrg && (
-							<li className="text-sm text-gray-600">No keys created yet.</li>
-						)}
-						{apiKeys.map((k) => (
-							<li
-								key={k.keyId || k.name}
-								role="listitem"
-								aria-labelledby={`key-name-${k.keyId || k.name}`}
-								tabIndex={0}
-								className="flex flex-col sm:flex-row justify-between items-start sm:items-center border rounded p-2 bg-white dark:bg-gray-900 gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-							>
-								<div>
-									<span id={`key-name-${k.keyId || k.name}`} className="font-medium">
-										{k.name}
-									</span>
-									{k.keyId && <span className="ml-2 text-xs text-gray-400">id: {k.keyId}</span>}
-									<span className="ml-2 text-xs text-gray-500">
-										{k.revoked ? 'revoked' : 'active'}
-									</span>
-									{k.lastUsedAt && (
-										<span className="ml-2 text-xs text-gray-400">
-											last used {formatDate(k.lastUsedAt)}
-										</span>
+								<ul className="space-y-2" role="list" aria-labelledby="members-heading">
+									{!membersLoading && !membersError && members.length === 0 && (
+										<li className="text-sm text-gray-600">No members yet.</li>
 									)}
-								</div>
-								{!k.revoked && (
+									{members.map((m) => (
+										<li
+											key={m.user._id}
+											role="listitem"
+											aria-labelledby={`member-name-${m.user._id}`}
+											tabIndex={0}
+											className="flex flex-col sm:flex-row justify-between items-start sm:items-center border rounded p-2 bg-white dark:bg-gray-900 gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+										>
+											<div className="flex-1">
+												<span id={`member-name-${m.user._id}`} className="font-medium">
+													{m.user.name}
+												</span>{' '}
+												<span className="text-xs text-gray-500">{m.user.email}</span>{' '}
+												<span className="ml-2 text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800">
+													{m.role}
+												</span>
+											</div>
+											{m.role !== 'owner' && isOwner && (
+												<Button
+													size="sm"
+													variant="danger"
+													onClick={() => removeMember(m.user._id)}
+													aria-label={`Remove ${m.user.name}`}
+												>
+													Remove
+												</Button>
+											)}
+										</li>
+									))}
+								</ul>
+							</CardBody>
+						</Card>
+
+						<InviteMemberModal
+							isOpen={isInviteOpen}
+							onClose={() => setInviteOpen(false)}
+							onInvite={async ({ name, email }) => {
+								setInviteOpen(false);
+								setNewMemberEmail('');
+								// optimistic UI: add pending member using provided name
+								const tempId = `pending-member-${Date.now()}`;
+								const pending = {
+									user: { _id: tempId, name, email },
+									role: 'invited',
+									pending: true,
+								};
+								setMembers((prev) => [pending, ...prev]);
+								const evId = `evt-invite-${Date.now()}`;
+								setTimeline((t) => [
+									{
+										id: evId,
+										type: 'invite',
+										title: `${name} was invited`,
+										detail: 'Invitation pending',
+										time: new Date().toLocaleDateString(),
+										color: '#f59e0b',
+									},
+									...t,
+								]);
+								try {
+									const res = await API.post('/organizations/members', { email, name });
+									if (res.data?.data?.user) {
+										fetchMembers();
+									}
+									if (res.data?.data?.invitationUrl && res.data?.data?.emailDelivered === false) {
+										try {
+											await navigator.clipboard.writeText(res.data.data.invitationUrl);
+											toast.info(
+												'An error occurred sending the invite email, link copied to clipboard.',
+											);
+										} catch {
+											toast.info('An error occurred sending the invite email, try again.');
+										}
+									}
+									setTimeline((t) =>
+										t.map((it) =>
+											it.id === evId ? { ...it, detail: 'Invitation sent', color: '#10b981' } : it,
+										),
+									);
+									toast.success(res.data?.message || 'Invitation sent');
+								} catch (err) {
+									setMembers((prev) => prev.filter((m) => m.user._id !== tempId));
+									setTimeline((t) =>
+										t.map((it) =>
+											it.id === evId
+												? { ...it, title: `${it.title} (failed)`, color: '#ef4444' }
+												: it,
+										),
+									);
+									toast.error(
+										err?.response?.data?.message || 'An error occured, please try again.',
+									);
+								}
+							}}
+						/>
+
+						<Card>
+							<CardHeader title="API Keys" />
+							<CardBody>
+								{/* Paid-plan notice removed per UX request */}
+								<h3 id="keys-heading" className="sr-only">
+									API Keys
+								</h3>
+								<form
+									onSubmit={createKey}
+									className="flex flex-col sm:flex-row gap-2 mb-4"
+									aria-labelledby="keys-heading"
+								>
+									<div className="flex-1 min-w-0">
+										<Input
+											value={newKeyName}
+											onChange={(e) => setNewKeyName(e.target.value)}
+											placeholder="Key Name"
+											name="keyName"
+											aria-label="API key name"
+											disabled={!isPaidOrg || !isOwner}
+										/>
+									</div>
 									<Button
-										size="sm"
-										variant="danger"
-										onClick={() => revokeKey(k.keyId)}
-										disabled={!isPaidOrg}
-										aria-disabled={!isPaidOrg}
-										aria-label={`Revoke key ${k.name}`}
+										type="submit"
+										variant="secondary"
+										disabled={!isPaidOrg || !isOwner}
+										className="w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-200"
+										aria-disabled={!isPaidOrg || !isOwner}
+										aria-label="Create API key"
 									>
-										Revoke
+										Create Key
 									</Button>
+								</form>
+								{createdKey && (
+									<div className="p-3 bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 rounded text-sm mb-4 text-gray-900 dark:text-yellow-100">
+										<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+											<div className="flex-1">
+												<p className="font-medium text-gray-900 dark:text-yellow-100">
+													New Key (copy now):
+												</p>
+												<code className="break-all text-xs text-gray-800 dark:text-yellow-50">
+													{createdKey}
+												</code>
+											</div>
+											<div className="shrink-0 w-full sm:w-auto">
+												<Button
+													size="sm"
+													onClick={copyCreatedKey}
+													variant="secondary"
+													className="w-full sm:w-auto"
+													aria-label="Copy new API key"
+												>
+													Copy
+												</Button>
+											</div>
+										</div>
+									</div>
 								)}
-							</li>
-						))}
-					</ul>
-				</CardBody>
-			</Card>
+								{keysLoading && <p className="text-sm text-gray-500 mb-2">Loading...</p>}
+								{showKeysError && (
+									<div className="mb-3 rounded border border-red-200 bg-red-50 p-3 text-red-700">
+										<p className="text-sm">{keysError}</p>
+									</div>
+								)}
+								<ul className="space-y-2" role="list" aria-labelledby="keys-heading">
+									{!keysLoading && !showKeysError && apiKeys.length === 0 && isPaidOrg && (
+										<li className="text-sm text-gray-600">No keys created yet.</li>
+									)}
+									{apiKeys.map((k) => (
+										<li
+											key={k.keyId || k.name}
+											role="listitem"
+											aria-labelledby={`key-name-${k.keyId || k.name}`}
+											tabIndex={0}
+											className="flex flex-col sm:flex-row justify-between items-start sm:items-center border rounded p-2 bg-white dark:bg-gray-900 gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+										>
+											<div>
+												<span id={`key-name-${k.keyId || k.name}`} className="font-medium">
+													{k.name}
+												</span>
+												{k.keyId && (
+													<span className="ml-2 text-xs text-gray-400">id: {k.keyId}</span>
+												)}
+												<span className="ml-2 text-xs text-gray-500">
+													{k.revoked ? 'revoked' : 'active'}
+													{k.pending && ' • pending'}
+												</span>
+												{k.lastUsedAt && (
+													<span className="ml-2 text-xs text-gray-400">
+														last used {formatDate(k.lastUsedAt)}
+													</span>
+												)}
+											</div>
+											{!k.revoked && (
+												<Button
+													size="sm"
+													variant="danger"
+													onClick={() => revokeKey(k.keyId)}
+													disabled={!isPaidOrg}
+													aria-disabled={!isPaidOrg}
+													aria-label={`Revoke key ${k.name}`}
+												>
+													Revoke
+												</Button>
+											)}
+										</li>
+									))}
+								</ul>
+							</CardBody>
+						</Card>
+					</div>
+				</main>
+
+				<aside>
+					<div className="sticky top-6 space-y-4">
+						<Card>
+							<CardHeader title="Activity" subtitle="Recent organization events" />
+							<CardBody>
+								<Timeline items={timeline} />
+							</CardBody>
+						</Card>
+					</div>
+				</aside>
+			</div>
 		</div>
 	);
 }

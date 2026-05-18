@@ -14,16 +14,15 @@ function Home() {
 	const highlights = [
 		{
 			title: 'Timeline-first context',
-			description: 'Capture every decision, event, and follow-up without losing history.',
+			description: 'Capture every decision, event and follow-up without losing history.',
 		},
 		{
 			title: 'Team visibility',
-			description:
-				'Keep product, engineering, and support aligned with one shared source of truth.',
+			description: 'Keep product, engineering and support aligned with one shared source of truth.',
 		},
 		{
 			title: 'Fast, focused workflows',
-			description: 'Log issues, share updates, and find signal quickly with a UX built for speed.',
+			description: 'Log issues, share updates and find signal quickly with a UX built for speed.',
 		},
 	];
 
@@ -50,14 +49,14 @@ function Home() {
 					<div className="max-w-3xl">
 						<div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200/80 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-blue-700 shadow-sm backdrop-blur dark:border-blue-400/20 dark:bg-slate-900/70 dark:text-blue-200">
 							<span className="h-2 w-2 rounded-full bg-blue-600" />
-							Timeline-first operational context
+							Timeline-first operational center
 						</div>
 						<h1 className="max-w-2xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl lg:text-6xl dark:text-white">
-							Keep team decision visible, searchable and in sync.
+							Centralize decisions. Keep everyone in sync.
 						</h1>
 						<p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl dark:text-slate-300">
-							Devlogger gives teams one fast place to capture logs, track events, and preserve the
-							context behind every incident, fix, and follow-up.
+							Devlogger gives teams one fast place to capture logs, track events and preserve the
+							context behind every incident, fix and follow-up.
 						</p>
 
 						<div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -69,7 +68,7 @@ function Home() {
 											size="lg"
 											className="w-full rounded-full px-6 text-base font-semibold shadow-lg shadow-blue-600/20"
 										>
-											Get started free
+											Get started
 										</Button>
 									</Link>
 									<Link to="/sign-in" className="w-full sm:w-auto">
@@ -130,7 +129,7 @@ function Home() {
 										Live workspace
 									</p>
 									<h2 className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">
-										Operational intelligence for engineers
+										Every incident leaves a trail, trace it.
 									</h2>
 								</div>
 								<div className="rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
@@ -145,8 +144,8 @@ function Home() {
 										<span>2 min ago</span>
 									</div>
 									<p className="mt-3 text-base font-medium leading-7">
-										Rollback completed after a production alert. Follow-up assigned to platform
-										team, and the timeline keeps every note tied to the same incident.
+										Rollback completed after a production alert. Follow-up assigned to website team,
+										and the timeline keeps every note tied to the same incident.
 									</p>
 								</div>
 
@@ -170,7 +169,7 @@ function Home() {
 										Designed for speed
 									</p>
 									<p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-										Optimistic updates, clear ownership, and a visual hierarchy that makes the
+										Optimistic updates, clear ownership and a visual hierarchy that makes the
 										important stuff obvious at a glance.
 									</p>
 								</div>

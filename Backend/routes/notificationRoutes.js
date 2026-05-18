@@ -4,6 +4,7 @@ import { Router } from 'express';
 import authorize from '../middleware/auth.js';
 import {
 	getNotifications,
+	getNotification,
 	markAllRead,
 	markRead,
 	createNotification,
@@ -13,6 +14,7 @@ const router = Router();
 
 // get notifications for current user/org
 router.get('/', authorize, getNotifications);
+router.get('/:id', authorize, getNotification);
 
 // mark all read
 router.post('/mark-all-read', authorize, markAllRead);

@@ -244,10 +244,10 @@ function SignUp() {
 							Create your workspace
 						</div>
 						<h1 className="mt-5 max-w-2xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl lg:text-6xl dark:text-white">
-							Start a shared timeline for your team.
+							Start a shared timeline for your team
 						</h1>
 						<p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl dark:text-slate-300">
-							Create a Devlogger account to capture context, invite teammates, and build a reliable
+							Create a Devlogger account to capture context, invite teammates and build a reliable
 							operational history from day one.
 						</p>
 
@@ -305,7 +305,7 @@ function SignUp() {
 									value={form.name}
 									onChange={handleChange}
 									onBlur={handleBlur}
-									placeholder="Jane Doe"
+									placeholder="John Doe"
 									label="Full name"
 									error={errors.name}
 									required
@@ -316,7 +316,7 @@ function SignUp() {
 									value={form.email}
 									onChange={handleChange}
 									onBlur={handleBlur}
-									placeholder="you@example.com"
+									placeholder="email@example.com"
 									label="Email"
 									disabled={Boolean(invite?.email)}
 									error={errors.email}

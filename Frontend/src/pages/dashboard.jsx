@@ -180,7 +180,7 @@ function Dashboard() {
 					<Card className="border-white/60 bg-white/85 dark:border-slate-800 dark:bg-slate-950/80">
 						<CardHeader
 							title="Creator leaderboard"
-							subtitle="Who is contributing the most recent context"
+							subtitle="Who is contributing the most recently"
 							actions={
 								<div className="text-sm text-slate-500 dark:text-slate-400">
 									Total:{' '}
