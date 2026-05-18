@@ -146,4 +146,20 @@ describe('Integration: auth + logs', () => {
 			]),
 		);
 	});
+
+	test('public support ticket endpoint stores and accepts a message', async () => {
+		const res = await request(app)
+			.post('/api/v1/support/tickets')
+			.send({
+				name: 'Support User',
+				email: 'support@example.com',
+				subject: 'Need help with billing',
+				message: 'I cannot find the billing page and need a hand.',
+				metadata: { page: '/support' },
+			})
+			.expect(201);
+
+		expect(res.body.success).toBe(true);
+		expect(res.body.data.id).toBeDefined();
+	});
 });

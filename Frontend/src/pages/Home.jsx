@@ -101,6 +101,15 @@ function Home() {
 									View pricing
 								</Button>
 							</Link>
+							<Link to="/support" className="w-full sm:w-auto">
+								<Button
+									variant="ghost"
+									size="lg"
+									className="w-full rounded-full px-6 text-base font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-white/70 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-white/5"
+								>
+									Get help
+								</Button>
+							</Link>
 						</div>
 
 						<div className="mt-10 grid gap-4 sm:grid-cols-3">

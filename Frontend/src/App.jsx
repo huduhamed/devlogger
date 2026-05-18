@@ -11,6 +11,7 @@ import Home from './pages/Home.jsx';
 import CheckoutSuccess from './pages/CheckoutSuccess.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
+import Support from './pages/Support.jsx';
 
 function App() {
 	return (
@@ -40,6 +41,7 @@ function App() {
 
 					{/* pricing */}
 					<Route path="/pricing" element={<Pricing />} />
+					<Route path="/support" element={<Support />} />
 					<Route path="/checkout-success" element={<CheckoutSuccess />} />
 					<Route path="*" element={<Navigate to="/" replace />} />
 				</Routes>
