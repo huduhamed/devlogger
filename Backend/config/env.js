@@ -23,4 +23,5 @@ export const {
 	GOOGLE_CLIENT_SECRET,
 	RESEND_API_KEY,
 	RESEND_FROM_EMAIL,
+	SUPPORT_EMAIL_TO,
 } = process.env;

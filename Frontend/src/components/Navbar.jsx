@@ -161,6 +161,15 @@ function Navbar() {
 										Sign In
 									</Button>
 								</NavLink>
+								<NavLink to="/support">
+									<Button
+										variant="ghost"
+										size="sm"
+										className="font-semibold px-4 py-1 border border-blue-300 hover:bg-blue-50"
+									>
+										Support
+									</Button>
+								</NavLink>
 							</div>
 						)}
 					</div>
@@ -277,6 +286,12 @@ function Navbar() {
 							</>
 						) : (
 							<>
+								<NavLink
+									to="/support"
+									className={({ isActive }) => `${linkClasses({ isActive })} block`}
+								>
+									Support
+								</NavLink>
 								<NavLink
 									to="/pricing"
 									className={({ isActive }) => `${linkClasses({ isActive })} block`}

@@ -17,6 +17,7 @@ import organizationRoutes from './routes/organizationRoutes.js';
 import { PORT, FRONTEND_URL } from './config/env.js';
 import billingRoutes from './routes/billingRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import supportRoutes from './routes/supportRoutes.js';
 import { stripeWebhook } from './controllers/billingController.js';
 import errorHandler from './middleware/errorHandler.js';
 import connectToDB from './database/mongodb.js';
@@ -171,6 +172,7 @@ app.use('/api/v1/logs', logRoutes);
 app.use('/api/v1/organizations', organizationRoutes);
 app.use('/api/v1/billing', billingRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/support', supportRoutes);
 
 app.get('/', (req, res) => {
 	res.send('welcome onboard buddy!');

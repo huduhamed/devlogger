@@ -44,3 +44,14 @@ export const updateLogSchema = z.object({
 	}),
 	params: z.object({ id: z.string().min(1) }),
 });
+
+// support ticket schema
+export const supportTicketSchema = z.object({
+	body: z.object({
+		name: z.string().min(2).max(120).optional(),
+		email: z.string().email(),
+		subject: z.string().min(5).max(180),
+		message: z.string().min(10).max(8000),
+		metadata: z.record(z.any()).optional(),
+	}),
+});

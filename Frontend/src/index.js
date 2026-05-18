@@ -5,6 +5,7 @@ export { default as Dashboard } from './pages/dashboard.jsx';
 export { default as LogsList } from './pages/LogsList.jsx';
 export { default as Pricing } from './pages/Pricing.jsx';
 export { default as Notifications } from './pages/Notifications.jsx';
+export { default as Support } from './pages/Support.jsx';
 
 // components
 export { default as Navbar } from './components/Navbar.jsx';
