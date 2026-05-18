@@ -141,12 +141,15 @@ export default function Settings() {
 	};
 
 	return (
-		<div className="max-w-3xl sm:max-w-5xl mx-auto px-4 space-y-6">
-			<div className="flex items-center flex-wrap gap-3 mb-2">
-				<span className="text-2xl font-bold">Settings</span>
-				<span className="text-gray-500">Manage your profile & organization</span>
+		<div className="max-w-4xl mx-auto px-4 py-8">
+			{/* Header */}
+			<div className="mb-8">
+				<h1 className="text-3xl font-bold mb-2">Settings</h1>
+				<p className="text-gray-600 dark:text-gray-400">
+					Manage your account and workspace preferences
+				</p>
 				{org && (
-					<div className="ml-auto flex items-center gap-2">
+					<div className="mt-4 flex items-center flex-wrap gap-2">
 						<Badge color="blue" className="font-medium">
 							{org.name}
 						</Badge>
@@ -155,13 +158,15 @@ export default function Settings() {
 				)}
 			</div>
 
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+			{/* Two-column layout */}
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 				<Card>
-					<CardHeader title="Profile" subtitle="Personal information & security" />
+					<CardHeader title="Profile Settings" subtitle="Manage your account details" />
 					<CardBody>
-						<form onSubmit={saveProfile} className="space-y-4">
-							<div className="flex flex-col sm:flex-row sm:items-center gap-4">
-								<div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+						<form onSubmit={saveProfile} className="space-y-5">
+							{/* Avatar Section */}
+							<div className="flex flex-col sm:flex-row sm:items-end gap-4">
+								<div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center flex-shrink-0 shadow-md">
 									{profile.avatarUrl ? (
 										<img
 											src={profile.avatarUrl}
@@ -169,19 +174,31 @@ export default function Settings() {
 											className="w-full h-full object-cover"
 										/>
 									) : (
-										<span className="text-gray-500 text-sm">No Avatar</span>
+										<span className="text-white text-3xl font-bold">
+											{user?.name?.charAt(0)?.toUpperCase() || 'U'}
+										</span>
 									)}
 								</div>
-								<div>
-									<label className="block text-xs font-medium mb-1">Avatar</label>
+								<div className="flex-1">
+									<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+										Profile Picture
+									</label>
 									<input
 										type="file"
 										accept="image/*"
 										onChange={handleAvatarFile}
-										className="text-xs"
+										className="text-sm file:mr-2 file:py-2 file:px-3 file:rounded file:border-0 file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-900/30 dark:file:text-indigo-300 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50 cursor-pointer"
 									/>
+									<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+										JPG, PNG or GIF (max. 2MB)
+									</p>
 								</div>
 							</div>
+
+							{/* Divider */}
+							<hr className="border-gray-200 dark:border-gray-700" />
+
+							{/* Name Field */}
 							<Input
 								label="Name"
 								name="name"
@@ -189,6 +206,8 @@ export default function Settings() {
 								onChange={onProfileChange}
 								required
 							/>
+
+							{/* Email Field */}
 							<Input
 								label="Email"
 								type="email"
@@ -197,23 +216,24 @@ export default function Settings() {
 								onChange={onProfileChange}
 								required
 							/>
+
+							{/* Password Field */}
 							<Input
 								label="New Password"
 								type="password"
 								name="password"
 								value={profile.password}
 								onChange={onProfileChange}
-								placeholder="Leave blank to keep current"
+								placeholder="Leave blank to keep your current password"
 							/>
-							<Input
-								label="Avatar URL"
-								name="avatarUrl"
-								value={profile.avatarUrl}
-								onChange={onProfileChange}
-								placeholder="https://..."
-							/>
+
+							{/* Save Button */}
 							<div className="flex justify-end">
-								<Button type="submit" loading={loading} className="w-full sm:w-auto">
+								<Button
+									type="submit"
+									loading={loading}
+									className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700"
+								>
 									Save Profile
 								</Button>
 							</div>
@@ -221,8 +241,9 @@ export default function Settings() {
 					</CardBody>
 				</Card>
 
+				{/* Organization Card */}
 				<Card>
-					<CardHeader title="Organization" subtitle="Name & identity" />
+					<CardHeader title="Workspace Settings" subtitle="Manage organization details" />
 					<CardBody>
 						{!org ? (
 							<form
@@ -230,7 +251,7 @@ export default function Settings() {
 									e.preventDefault();
 									setOrgLoading(true);
 									try {
-										await API.post('/organizations', { name: orgForm.name });
+										const res = await API.post('/organizations', { name: orgForm.name });
 										toast.success('Organization created');
 										await refreshOrg?.();
 									} catch (err) {
@@ -244,34 +265,44 @@ export default function Settings() {
 								className="space-y-4"
 							>
 								<Input
-									label="Organization Name"
+									label="Workspace Name"
 									name="name"
 									value={orgForm.name}
 									onChange={onOrgChange}
 									required
 								/>
 								<div className="flex justify-end">
-									<Button type="submit" loading={orgLoading} className="w-full sm:w-auto">
+									<Button
+										type="submit"
+										loading={orgLoading}
+										className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700"
+									>
 										Create Organization
 									</Button>
 								</div>
 							</form>
 						) : !isOwner ? (
-							<div className="text-sm text-gray-600">
-								You are not the owner. Only the owner can rename the organization.
+							<div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+								Contact owner for organization's related changes.
 							</div>
 						) : (
 							<form onSubmit={saveOrg} className="space-y-4">
 								<Input
-									label="Organization Name"
+									label="Workspace Name"
 									name="name"
 									value={orgForm.name}
 									onChange={onOrgChange}
 									required
 								/>
-								<p className="text-xs text-gray-500">Slug auto-updates from the name.</p>
+								<p className="text-xs text-gray-500 dark:text-gray-400">
+									The workspace URL slug will automatically update based on the name.
+								</p>
 								<div className="flex justify-end">
-									<Button type="submit" loading={orgLoading} className="w-full sm:w-auto">
+									<Button
+										type="submit"
+										loading={orgLoading}
+										className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700"
+									>
 										Save Organization
 									</Button>
 								</div>
@@ -281,28 +312,58 @@ export default function Settings() {
 				</Card>
 			</div>
 
+			{/* Advanced Info Card */}
 			<Card>
-				<CardHeader title="Advanced" subtitle="Additional controls" />
+				<CardHeader title="Information" subtitle="Important notes about your account" />
 				<CardBody>
-					<ul className="text-sm list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
-						<li>
-							Password changes immediately invalidate old credentials (fresh token on next login).
-						</li>
-						<li>Avatar stored client-side base64 now; prefer object storage in production.</li>
-						<li>Org rename propagates on next member refresh.</li>
-					</ul>
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+							<p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+								Password Updates
+							</p>
+							<p className="text-xs text-gray-500 dark:text-gray-400">
+								Changes take effect after your next login.
+							</p>
+						</div>
+						<div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+							<p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+								Avatar Storage
+							</p>
+							<p className="text-xs text-gray-500 dark:text-gray-400">
+								Profile pictures are stored securely with your account.
+							</p>
+						</div>
+						<div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+							<p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+								Workspace Changes
+							</p>
+							<p className="text-xs text-gray-500 dark:text-gray-400">
+								Changes sync across all members in real-time.
+							</p>
+						</div>
+					</div>
 				</CardBody>
 			</Card>
 
+			{/* Danger Zone Card */}
+
+			{/* Danger Zone Card */}
 			<Card>
-				<CardHeader title="Danger Zone" subtitle="Irreversible actions" />
+				<CardHeader title="Danger Zone" subtitle="Irreversible actions that require confirmation" />
 				<CardBody>
-					<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 border border-red-300 rounded bg-red-50 dark:bg-red-900/20 dark:border-red-700">
-						<div className="text-sm text-red-700 dark:text-red-300">
-							<strong>Delete Account:</strong> This permanently removes your user and cannot be
-							undone.
+					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/10 dark:border-red-800">
+						<div className="text-sm">
+							<p className="font-semibold text-red-700 dark:text-red-400">Delete Your Account</p>
+							<p className="text-red-600 dark:text-red-300 text-xs mt-1">
+								Permanently delete your account and all associated data. This action cannot be
+								undone.
+							</p>
 						</div>
-						<Button variant="danger" onClick={() => setDeleteModalOpen(true)}>
+						<Button
+							variant="danger"
+							onClick={() => setDeleteModalOpen(true)}
+							className="w-full sm:w-auto flex-shrink-0"
+						>
 							Delete Account
 						</Button>
 					</div>

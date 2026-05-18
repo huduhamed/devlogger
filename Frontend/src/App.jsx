@@ -6,6 +6,7 @@ import { Dashboard, SignIn, SignUp, Navbar, LogsList, Pricing, Notifications } f
 import Settings from './pages/Settings.jsx';
 import OrganizationSettings from './pages/OrganizationSettings.jsx';
 import CreateLog from './pages/CreateLog.jsx';
+import NotificationDetail from './pages/NotificationDetail.jsx';
 import Home from './pages/Home.jsx';
 import CheckoutSuccess from './pages/CheckoutSuccess.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
@@ -30,6 +31,7 @@ function App() {
 					<Route element={<PrivateRoute />}>
 						<Route path="/dashboard" element={<Dashboard />} />
 						<Route path="/notifications" element={<Notifications />} />
+						<Route path="/notifications/:id" element={<NotificationDetail />} />
 						<Route path="/create-log" element={<CreateLog />} />
 						<Route path="/logs" element={<LogsList />} />
 						<Route path="/organization" element={<OrganizationSettings />} />

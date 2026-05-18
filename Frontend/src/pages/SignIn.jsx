@@ -158,7 +158,7 @@ function SignIn() {
 
 	const trustPoints = [
 		'Secure team access with one sign-in flow',
-		'Fast access to logs, timelines, and org context',
+		'Fast access to logs, timelines and org context',
 		'Real-time collaboration without extra setup',
 	];
 
@@ -176,7 +176,7 @@ function SignIn() {
 							Welcome back to the operational timeline.
 						</h1>
 						<p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl dark:text-slate-300">
-							Sign in to Devlogger to review recent events, coordinate with your team, and move from
+							Sign in to Devlogger to review recent events, coordinate with your team and move from
 							signal to action without losing context.
 						</p>
 
@@ -195,7 +195,7 @@ function SignIn() {
 					<Card className="w-full border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/85">
 						<CardHeader
 							title="Sign in"
-							subtitle="Access your dashboard, logs, and organization context"
+							subtitle="Access your dashboard, logs and organization resource"
 							className="border-slate-200/80 dark:border-slate-800"
 						/>
 						<CardBody className="p-6 sm:p-8">
@@ -206,7 +206,7 @@ function SignIn() {
 									value={form.email}
 									onChange={handleChange}
 									onBlur={handleBlur}
-									placeholder="you@example.com"
+									placeholder="email@example.com"
 									label="Email"
 									autoComplete="email"
 									error={errors.email}

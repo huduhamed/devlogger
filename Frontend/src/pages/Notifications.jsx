@@ -1,4 +1,5 @@
 import { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // internal imports
 import NotificationsContext from '../context/NotificationsContext.jsx';
@@ -6,6 +7,7 @@ import Button from '../components/ui/Button.jsx';
 
 // notifications page
 function Notifications() {
+	const navigate = useNavigate();
 	const {
 		notifications = [],
 		loading,
@@ -78,17 +80,23 @@ function Notifications() {
 									tabIndex={0}
 									className={`p-4 border-b last:border-b-0 border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start gap-3 ${n.read ? '' : 'bg-blue-50 dark:bg-gray-900/60'}`}
 								>
-									<article id={`notif-${n.id || n._id}`} role="article" className="flex-1">
-										<div
-											id={`notif-${n.id || n._id}-title`}
-											className="text-sm text-gray-900 dark:text-gray-100"
-										>
-											{n.text}
-										</div>
-										<div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-											{formatDate(n.createdAt)}
-										</div>
-									</article>
+									<button
+										type="button"
+										className="flex-1 text-left focus:outline-none"
+										onClick={() => navigate(`/notifications/${n.id || n._id}`)}
+									>
+										<article id={`notif-${n.id || n._id}`} role="article">
+											<div
+												id={`notif-${n.id || n._id}-title`}
+												className="text-sm text-gray-900 dark:text-gray-100"
+											>
+												{n.text}
+											</div>
+											<div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+												{formatDate(n.createdAt)}
+											</div>
+										</article>
+									</button>
 									<div className="ml-0 sm:ml-4 w-full sm:w-auto">
 										{!n.read && (
 											<Button

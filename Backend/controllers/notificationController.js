@@ -23,6 +23,30 @@ export async function getNotifications(req, res, next) {
 	}
 }
 
+// GET /api/v1/notifications/:id
+export async function getNotification(req, res, next) {
+	try {
+		const { id } = req.params;
+		const userId = req.user?._id;
+		const orgId = req.user?.organization;
+
+		const notification = await Notification.findById(id).lean();
+		if (!notification) return res.status(404).json({ message: 'Notification not found.' });
+
+		if (notification.user && String(notification.user) !== String(userId)) {
+			if (!notification.organization || String(notification.organization) !== String(orgId)) {
+				return res
+					.status(403)
+					.json({ message: 'You do not have permission to view this notification.' });
+			}
+		}
+
+		return res.status(200).json({ data: notification });
+	} catch (err) {
+		next(err);
+	}
+}
+
 // POST /api/v1/notifications/mark-all-read
 export async function markAllRead(req, res, next) {
 	try {

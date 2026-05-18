@@ -114,9 +114,9 @@ function Notification() {
 									key={n._id || n.id}
 									className="w-full p-3 hover:bg-stone-100 dark:hover:bg-gray-700 text-left cursor-pointer flex justify-between items-start"
 									onClick={() => {
-										// mark read optimistically
-										markAllRead();
-										navigate('/notifications');
+										const id = n._id || n.id;
+										if (!n.read) markAllRead();
+										navigate(`/notifications/${id}`);
 									}}
 								>
 									<div>

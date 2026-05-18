@@ -81,48 +81,101 @@ export default function Pricing() {
 	}, [location.search, auth?.token]);
 
 	return (
-		<div className="max-w-6xl mx-auto">
-			<div className="mb-6">
-				<h1 className="text-3xl font-bold">Choose your plan</h1>
-				<p className="text-gray-600">
-					Pick the plan that fits your team and usage. You can manage or cancel anytime.
+		<div className="max-w-6xl mx-auto px-4">
+			<header className="text-center max-w-2xl mx-auto py-12">
+				<h1 className="text-4xl font-extrabold">Simple and transparent pricing</h1>
+				<p className="mt-3 text-lg text-gray-600">
+					Pick a plan that fits your team — upgrade anytime.
 				</p>
-			</div>
+			</header>
 
 			{error && (
-				<div role="alert" className="mb-4 p-3 border border-red-300 bg-red-50 text-red-800 rounded">
+				<div role="alert" className="mb-6 p-3 border border-red-300 bg-red-50 text-red-800 rounded">
 					{error}
 				</div>
 			)}
 
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+			<div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
 				{['free', 'pro', 'enterprise'].map((id) => {
 					const p = PLANS[id];
 					const isFree = id === 'free';
 
 					return (
-						<div key={id} className="relative">
-							{p.popular && (
-								<div className="absolute  right-0 z-10">
-									<span className="bg-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-tr-lg rounded-bl-lg">
-										Most Popular
-									</span>
-								</div>
-							)}
-							<Card className={id === 'pro' ? 'border-blue-400 border-2' : ''}>
-								<CardHeader title={p.name} subtitle={p.blurb} />
+						<div
+							key={id}
+							className={`transform hover:scale-[1.01] transition ${p.popular ? 'z-10 -mt-2' : ''}`}
+						>
+							<Card className={`h-full shadow-md ${id === 'pro' ? 'ring-2 ring-blue-300' : ''}`}>
+								<CardHeader
+									title={p.name}
+									subtitle={p.blurb}
+									actions={
+										p.popular ? (
+											<span className="text-xs font-semibold bg-blue-600 text-white px-3 py-1 rounded">
+												Popular
+											</span>
+										) : null
+									}
+								/>
 								<CardBody>
-									<div className="text-3xl font-bold">
-										{p.priceMonthly ? `$${p.priceMonthly}/mo` : 'Free'}
+									<div className="flex items-baseline gap-3">
+										<div className="text-4xl font-extrabold">
+											{p.priceMonthly ? `$${p.priceMonthly}` : 'Free'}
+										</div>
+										<div className="text-sm text-gray-500 mt-1">{p.priceMonthly ? '/mo' : ''}</div>
 									</div>
-									<ul className="mt-4 space-y-1 text-sm text-gray-700 dark:text-gray-300">
-										<li>• {p.logsPerMonth.toLocaleString()} logs / month</li>
-										<li>• Up to {p.members.toLocaleString()} members</li>
-										<li>• {p.apiKeys.toLocaleString()} API keys</li>
+
+									<ul className="mt-6 space-y-3 text-sm text-gray-700 dark:text-gray-300">
+										<li className="flex items-start gap-3">
+											<svg
+												className="w-5 h-5 text-green-500 mt-1"
+												viewBox="0 0 20 20"
+												fill="currentColor"
+												aria-hidden
+											>
+												<path
+													fillRule="evenodd"
+													d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-4.121-4.121a1 1 0 111.414-1.414L8.414 12.172l7.293-7.293a1 1 0 011.414 0z"
+													clipRule="evenodd"
+												/>
+											</svg>
+											<span>{p.logsPerMonth.toLocaleString()} logs / month</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<svg
+												className="w-5 h-5 text-green-500 mt-1"
+												viewBox="0 0 20 20"
+												fill="currentColor"
+												aria-hidden
+											>
+												<path
+													fillRule="evenodd"
+													d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-4.121-4.121a1 1 0 111.414-1.414L8.414 12.172l7.293-7.293a1 1 0 011.414 0z"
+													clipRule="evenodd"
+												/>
+											</svg>
+											<span>Up to {p.members.toLocaleString()} members</span>
+										</li>
+										<li className="flex items-start gap-3">
+											<svg
+												className="w-5 h-5 text-green-500 mt-1"
+												viewBox="0 0 20 20"
+												fill="currentColor"
+												aria-hidden
+											>
+												<path
+													fillRule="evenodd"
+													d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-4.121-4.121a1 1 0 111.414-1.414L8.414 12.172l7.293-7.293a1 1 0 011.414 0z"
+													clipRule="evenodd"
+												/>
+											</svg>
+											<span>{p.apiKeys.toLocaleString()} API keys</span>
+										</li>
 									</ul>
+
 									<div className="mt-6">
 										{isFree ? (
-											<Button variant="outline" disabled className="w-full sm:w-auto">
+											<Button variant="outline" disabled className="w-full">
 												Current
 											</Button>
 										) : (
@@ -130,9 +183,9 @@ export default function Pricing() {
 												onClick={() => startCheckout(id)}
 												loading={loadingPlan === id}
 												disabled={!config.configured || !config.prices[id]}
-												className="w-full sm:w-auto"
+												className="w-full"
 											>
-												{id === 'pro' ? 'Choose Pro' : 'Choose Enterprise'}
+												{id === 'pro' ? 'Get Pro' : 'Get enterprise'}
 											</Button>
 										)}
 									</div>
@@ -143,9 +196,9 @@ export default function Pricing() {
 				})}
 			</div>
 
-			<p className="mt-6 text-xs text-gray-500">
+			<div className="mt-8 text-center text-sm text-gray-500">
 				Payments are handled securely by Stripe. You’ll be redirected to Stripe Checkout.
-			</p>
+			</div>
 		</div>
 	);
 }

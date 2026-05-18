@@ -8,6 +8,7 @@ import {
 	listMembers,
 	addMember,
 	removeMember,
+	getOrganizationEvents,
 	createApiKey,
 	listApiKeys,
 	revokeApiKey,
@@ -25,6 +26,7 @@ router.post('/', authorize, createOrganization);
 // authenticated org-level operations
 router.get('/me', authorize, getOrganization);
 router.get('/members', authorize, listMembers);
+router.get('/events', authorize, getOrganizationEvents);
 router.patch('/me', authorize, requireOrgOwner, updateOrganization);
 router.post('/members', authorize, requireOrgOwner, addMember);
 router.delete('/members/:userId', authorize, requireOrgOwner, removeMember);

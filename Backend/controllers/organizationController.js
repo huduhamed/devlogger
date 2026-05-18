@@ -7,6 +7,7 @@ import Organization from '../models/Organization.js';
 import User from '../models/User.js';
 import ApiKey from '../models/ApiKey.js';
 import OrganizationInvite from '../models/OrganizationInvite.js';
+import OrganizationEvent from '../models/OrganizationEvent.js';
 import { getPlanConfig } from '../config/plans.js';
 import { STRIPE_SECRET_KEY } from '../config/env.js';
 import {
@@ -92,6 +93,12 @@ function currentMonthKey() {
 // check if paid plan
 function isPaidPlan(plan) {
 	return plan === 'pro' || plan === 'enterprise';
+}
+
+function getDisplayName(user) {
+	const rawName = user?.name?.trim();
+	if (rawName) return rawName.split(/\s+/)[0];
+	return user?.username?.trim() || user?.email || 'Member';
 }
 
 // reserve a usage slot atomically to avoid concurrent overages
@@ -232,6 +239,20 @@ export async function addMember(req, res, next) {
 				inviteUrl,
 			});
 
+			// persist organization event for invite
+			try {
+				const inviteData = { email: normalizedEmail, role };
+				if (req.body?.name) inviteData.userName = req.body.name;
+				await OrganizationEvent.create({
+					organization: org._id,
+					type: 'member_invite_sent',
+					actor: req.user?._id,
+					data: inviteData,
+				});
+			} catch (err) {
+				// non-fatal: continue even if event logging fails
+			}
+
 			return res.status(201).json({
 				success: true,
 				message: delivery.delivered ? 'Invitation sent' : 'Invitation created.',
@@ -271,6 +292,23 @@ export async function addMember(req, res, next) {
 			existingMembers: org.members.slice(0, -1),
 		});
 
+		// persist organization event for member added
+		try {
+			await OrganizationEvent.create({
+				organization: org._id,
+				type: 'member_added',
+				actor: req.user?._id,
+				data: {
+					user: user._id,
+					userName: getDisplayName(user),
+					userEmail: user.email,
+					role,
+				},
+			});
+		} catch (err) {
+			// ignore event persistence errors
+		}
+
 		return res.status(201).json({
 			success: true,
 			message: 'Member added',
@@ -301,6 +339,18 @@ export async function removeMember(req, res, next) {
 		org.members = org.members.filter((m) => m.user.toString() !== userId);
 		await org.save();
 
+		// persist organization event for member removed
+		try {
+			await OrganizationEvent.create({
+				organization: org._id,
+				type: 'member_removed',
+				actor: req.user?._id,
+				data: { userId },
+			});
+		} catch (err) {
+			// ignore
+		}
+
 		return res.status(200).json({ success: true, message: 'Member removed' });
 	} catch (err) {
 		next(err);
@@ -327,6 +377,18 @@ export async function createApiKey(req, res, next) {
 		const keyHash = await bcrypt.hash(secret, 12);
 
 		await ApiKey.create({ org: org._id, name, keyId, keyHash });
+
+		// persist organization event for api key created
+		try {
+			await OrganizationEvent.create({
+				organization: org._id,
+				type: 'api_key_created',
+				actor: req.user?._id,
+				data: { keyId, name },
+			});
+		} catch (err) {
+			// ignore
+		}
 		return res.status(201).json({ success: true, message: 'API key created', apiKey: rawKey });
 	} catch (err) {
 		next(err);
@@ -353,6 +415,25 @@ export async function listApiKeys(req, res, next) {
 	}
 }
 
+// list organization events (timeline)
+export async function getOrganizationEvents(req, res, next) {
+	try {
+		const orgId = req.user?.organization;
+		if (!orgId)
+			return res.status(400).json({ message: 'No workspace is linked to your account yet.' });
+
+		const events = await OrganizationEvent.find({ organization: orgId })
+			.populate('actor', 'name email')
+			.sort({ createdAt: -1 })
+			.limit(200)
+			.lean();
+
+		return res.status(200).json({ success: true, data: events });
+	} catch (err) {
+		next(err);
+	}
+}
+
 // revoke APi key
 export async function revokeApiKey(req, res, next) {
 	try {
@@ -368,6 +449,18 @@ export async function revokeApiKey(req, res, next) {
 		if (!key) return res.status(404).json({ message: 'Key not found or already revoked' });
 		key.revoked = true;
 		await key.save();
+
+		// persist organization event for api key revoked
+		try {
+			await OrganizationEvent.create({
+				organization: org._id,
+				type: 'api_key_revoked',
+				actor: req.user?._id,
+				data: { keyId },
+			});
+		} catch (err) {
+			// ignore
+		}
 
 		return res.status(200).json({ success: true, message: 'API key revoked' });
 	} catch (err) {
