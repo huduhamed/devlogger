@@ -279,7 +279,12 @@ function OrganizationSettings() {
 		}
 	}, [org]);
 
-	if (loading) return <div className="p-6">Loading organization...</div>;
+	if (loading)
+		return (
+			<div className="p-6" role="status" aria-live="polite">
+				Loading organization...
+			</div>
+		);
 	if (!org)
 		return (
 			<div className="p-6">
@@ -291,7 +296,14 @@ function OrganizationSettings() {
 		);
 
 	return (
-		<div className="max-w-3xl sm:max-w-6xl mx-auto px-4 p-4 space-y-6">
+		<div
+			className="max-w-3xl sm:max-w-6xl mx-auto px-4 p-4 space-y-6"
+			role="main"
+			aria-labelledby="org-heading"
+		>
+			<h1 id="org-heading" className="sr-only">
+				Organization Settings
+			</h1>
 			<Card>
 				<CardHeader title="Organization" subtitle="Overview of your plan and usage" />
 				<CardBody>
@@ -403,16 +415,27 @@ function OrganizationSettings() {
 					subtitle="Invite teammates by email or add users who already exist."
 				/>
 				<CardBody>
+					<h3 id="members-heading" className="sr-only">
+						Members
+					</h3>
 					<form onSubmit={addMember} className="flex flex-col sm:flex-row gap-2 mb-4">
 						<div className="flex-1 min-w-0">
 							<Input
 								value={newMemberEmail}
 								onChange={(e) => setNewMemberEmail(e.target.value)}
 								placeholder="user@example.com"
+								name="email"
+								aria-label="New member email"
 								disabled={!isOwner}
 							/>
 						</div>
-						<Button type="submit" className="w-full sm:w-auto" disabled={!isOwner}>
+						<Button
+							type="submit"
+							className="w-full sm:w-auto"
+							disabled={!isOwner}
+							aria-disabled={!isOwner}
+							aria-label="Invite member"
+						>
 							Invite Member
 						</Button>
 					</form>
@@ -425,29 +448,36 @@ function OrganizationSettings() {
 							</Button>
 						</div>
 					)}
-					<ul className="space-y-2">
+					<ul className="space-y-2" role="list" aria-labelledby="members-heading">
 						{!membersLoading && !membersError && members.length === 0 && (
 							<li className="text-sm text-gray-600">No members yet.</li>
 						)}
 						{members.map((m) => (
 							<li
 								key={m.user._id}
-								className="flex flex-col sm:flex-row justify-between items-start sm:items-center border rounded p-2 bg-white dark:bg-gray-900 gap-2"
+								role="listitem"
+								aria-labelledby={`member-name-${m.user._id}`}
+								tabIndex={0}
+								className="flex flex-col sm:flex-row justify-between items-start sm:items-center border rounded p-2 bg-white dark:bg-gray-900 gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
 							>
 								<div className="flex-1">
-									<span className="font-medium">{m.user.name}</span>{' '}
+									<span id={`member-name-${m.user._id}`} className="font-medium">
+										{m.user.name}
+									</span>{' '}
 									<span className="text-xs text-gray-500">{m.user.email}</span>{' '}
 									<span className="ml-2 text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800">
 										{m.role}
 									</span>
 								</div>
 								{m.role !== 'owner' && isOwner && (
-									<button
+									<Button
+										size="sm"
+										variant="danger"
 										onClick={() => removeMember(m.user._id)}
-										className="text-red-600 text-sm hover:underline self-end sm:self-auto"
+										aria-label={`Remove ${m.user.name}`}
 									>
 										Remove
-									</button>
+									</Button>
 								)}
 							</li>
 						))}
@@ -459,12 +489,21 @@ function OrganizationSettings() {
 				<CardHeader title="API Keys" />
 				<CardBody>
 					{/* Paid-plan notice removed per UX request */}
-					<form onSubmit={createKey} className="flex flex-col sm:flex-row gap-2 mb-4">
+					<h3 id="keys-heading" className="sr-only">
+						API Keys
+					</h3>
+					<form
+						onSubmit={createKey}
+						className="flex flex-col sm:flex-row gap-2 mb-4"
+						aria-labelledby="keys-heading"
+					>
 						<div className="flex-1 min-w-0">
 							<Input
 								value={newKeyName}
 								onChange={(e) => setNewKeyName(e.target.value)}
 								placeholder="Key Name"
+								name="keyName"
+								aria-label="API key name"
 								disabled={!isPaidOrg || !isOwner}
 							/>
 						</div>
@@ -473,6 +512,8 @@ function OrganizationSettings() {
 							variant="secondary"
 							disabled={!isPaidOrg || !isOwner}
 							className="w-full sm:w-auto dark:bg-white dark:text-black dark:hover:bg-gray-200"
+							aria-disabled={!isPaidOrg || !isOwner}
+							aria-label="Create API key"
 						>
 							Create Key
 						</Button>
@@ -494,6 +535,7 @@ function OrganizationSettings() {
 										onClick={copyCreatedKey}
 										variant="secondary"
 										className="w-full sm:w-auto"
+										aria-label="Copy new API key"
 									>
 										Copy
 									</Button>
@@ -507,17 +549,22 @@ function OrganizationSettings() {
 							<p className="text-sm">{keysError}</p>
 						</div>
 					)}
-					<ul className="space-y-2">
+					<ul className="space-y-2" role="list" aria-labelledby="keys-heading">
 						{!keysLoading && !showKeysError && apiKeys.length === 0 && isPaidOrg && (
 							<li className="text-sm text-gray-600">No keys created yet.</li>
 						)}
 						{apiKeys.map((k) => (
 							<li
 								key={k.keyId || k.name}
-								className="flex flex-col sm:flex-row justify-between items-start sm:items-center border rounded p-2 bg-white dark:bg-gray-900 gap-2"
+								role="listitem"
+								aria-labelledby={`key-name-${k.keyId || k.name}`}
+								tabIndex={0}
+								className="flex flex-col sm:flex-row justify-between items-start sm:items-center border rounded p-2 bg-white dark:bg-gray-900 gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
 							>
 								<div>
-									<span className="font-medium">{k.name}</span>
+									<span id={`key-name-${k.keyId || k.name}`} className="font-medium">
+										{k.name}
+									</span>
 									{k.keyId && <span className="ml-2 text-xs text-gray-400">id: {k.keyId}</span>}
 									<span className="ml-2 text-xs text-gray-500">
 										{k.revoked ? 'revoked' : 'active'}
@@ -529,13 +576,16 @@ function OrganizationSettings() {
 									)}
 								</div>
 								{!k.revoked && (
-									<button
+									<Button
+										size="sm"
+										variant="danger"
 										onClick={() => revokeKey(k.keyId)}
 										disabled={!isPaidOrg}
-										className="text-red-600 text-sm hover:underline self-end sm:self-auto"
+										aria-disabled={!isPaidOrg}
+										aria-label={`Revoke key ${k.name}`}
 									>
 										Revoke
-									</button>
+									</Button>
 								)}
 							</li>
 						))}

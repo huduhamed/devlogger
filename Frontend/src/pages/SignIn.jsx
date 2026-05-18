@@ -156,70 +156,128 @@ function SignIn() {
 		</button>
 	);
 
+	const trustPoints = [
+		'Secure team access with one sign-in flow',
+		'Fast access to logs, timelines, and org context',
+		'Real-time collaboration without extra setup',
+	];
+
 	return (
-		<div className="min-h-[80vh] flex items-center justify-center px-4">
-			<Card className="w-full max-w-md">
-				<CardHeader title="Welcome back" subtitle="Sign in to access your Devlogger dashboard" />
-				<CardBody>
-					<form onSubmit={handleSubmit} className="space-y-4">
-						<Input
-							type="email"
-							name="email"
-							value={form.email}
-							onChange={handleChange}
-							onBlur={handleBlur}
-							placeholder="you@example.com"
-							label="Email"
-							autoComplete="email"
-							error={errors.email}
-							required
-						/>
-						<Input
-							type={showPassword ? 'text' : 'password'}
-							name="password"
-							value={form.password}
-							onChange={handleChange}
-							onBlur={handleBlur}
-							placeholder="••••••••"
-							label="Password"
-							autoComplete="current-password"
-							rightAdornment={passwordToggleButton}
-							error={errors.password}
-							required
-						/>
-						<Button
-							className="w-full"
-							type="submit"
-							variant="primary"
-							loading={loading}
-							disabled={errors.email || errors.password}
-						>
-							Sign In
-						</Button>
-						<div className="text-right">
-							<Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
-								Forgot password?
-							</Link>
+		<div className="relative isolate overflow-hidden">
+			<div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.14),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.08),_transparent_28%),linear-gradient(to_bottom,_rgba(248,250,252,0.96),_rgba(241,245,249,0.9))] dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.16),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(148,163,184,0.12),_transparent_28%),linear-gradient(to_bottom,_rgba(3,7,18,0.96),_rgba(15,23,42,0.98))]" />
+			<div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
+				<div className="grid w-full gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
+					<div className="flex flex-col justify-center">
+						<div className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-200/80 bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-blue-700 shadow-sm backdrop-blur dark:border-blue-400/20 dark:bg-slate-900/70 dark:text-blue-200">
+							<span className="h-2 w-2 rounded-full bg-blue-600" />
+							Secure access
 						</div>
-					</form>
-					<div className="flex items-center my-4">
-						<div className="flex-grow border-t border-gray-200 dark:border-gray-700" />
-						<span className="mx-2 text-xs text-gray-500">or</span>
-						<div className="flex-grow border-t border-gray-200 dark:border-gray-700" />
+						<h1 className="mt-5 max-w-2xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl lg:text-6xl dark:text-white">
+							Welcome back to the operational timeline.
+						</h1>
+						<p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl dark:text-slate-300">
+							Sign in to Devlogger to review recent events, coordinate with your team, and move from
+							signal to action without losing context.
+						</p>
+
+						<div className="mt-8 grid gap-3 sm:grid-cols-3 lg:max-w-3xl">
+							{trustPoints.map((point) => (
+								<div
+									key={point}
+									className="rounded-2xl border border-white/70 bg-white/75 p-4 text-sm leading-6 text-slate-700 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300"
+								>
+									{point}
+								</div>
+							))}
+						</div>
 					</div>
-					<GoogleAuthButton
-						onSuccess={handleGoogleSuccess}
-						onFailure={handleGoogleFailure}
-						loading={loading}
-					/>
-					<div className="text-center text-sm mt-4">
-						Don’t have an account?{' '}
-						<Link to="/sign-up" className="text-blue-600 hover:underline">
-							Sign up
-						</Link>
-					</div>
-				</CardBody>
-			</Card>
+
+					<Card className="w-full border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/85">
+						<CardHeader
+							title="Sign in"
+							subtitle="Access your dashboard, logs, and organization context"
+							className="border-slate-200/80 dark:border-slate-800"
+						/>
+						<CardBody className="p-6 sm:p-8">
+							<form onSubmit={handleSubmit} className="space-y-4">
+								<Input
+									type="email"
+									name="email"
+									value={form.email}
+									onChange={handleChange}
+									onBlur={handleBlur}
+									placeholder="you@example.com"
+									label="Email"
+									autoComplete="email"
+									error={errors.email}
+									required
+								/>
+								<Input
+									type={showPassword ? 'text' : 'password'}
+									name="password"
+									value={form.password}
+									onChange={handleChange}
+									onBlur={handleBlur}
+									placeholder="••••••••"
+									label="Password"
+									autoComplete="current-password"
+									rightAdornment={passwordToggleButton}
+									error={errors.password}
+									required
+								/>
+								<div className="flex items-center justify-between gap-3">
+									<label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+										<input
+											type="checkbox"
+											className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-700"
+										/>
+										Remember this device
+									</label>
+									<Link
+										to="/forgot-password"
+										className="text-sm font-medium text-blue-700 hover:underline dark:text-blue-300"
+									>
+										Forgot password?
+									</Link>
+								</div>
+								<Button
+									className="w-full rounded-full py-3 text-base font-semibold"
+									type="submit"
+									variant="primary"
+									loading={loading}
+									disabled={errors.email || errors.password}
+								>
+									Sign in
+								</Button>
+							</form>
+
+							<div className="my-6 flex items-center gap-3">
+								<div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+								<span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+									Or continue with
+								</span>
+								<div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+							</div>
+
+							<GoogleAuthButton
+								onSuccess={handleGoogleSuccess}
+								onFailure={handleGoogleFailure}
+								loading={loading}
+							/>
+
+							<div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+								Don’t have an account?{' '}
+								<Link
+									to="/sign-up"
+									className="font-semibold text-blue-700 hover:underline dark:text-blue-300"
+								>
+									Create one now
+								</Link>
+							</div>
+						</CardBody>
+					</Card>
+				</div>
+			</div>
 		</div>
 	);
 }
